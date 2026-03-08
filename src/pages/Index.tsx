@@ -1,11 +1,12 @@
 import { motion } from 'framer-motion';
-import { Calendar, Zap, Trash2 } from 'lucide-react';
+import { Zap, Trash2, LogOut } from 'lucide-react';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { usePlannerStore } from '@/hooks/use-planner-store';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const store = usePlannerStore();
