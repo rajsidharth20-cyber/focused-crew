@@ -10,6 +10,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const store = usePlannerStore();
+  const { signOut } = useAuth();
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
