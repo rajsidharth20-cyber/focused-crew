@@ -1,14 +1,16 @@
 import { motion } from 'framer-motion';
-import { Calendar, Zap, Trash2 } from 'lucide-react';
+import { Zap, Trash2, LogOut } from 'lucide-react';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { usePlannerStore } from '@/hooks/use-planner-store';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const store = usePlannerStore();
+  const { signOut } = useAuth();
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -32,13 +34,22 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">{today}</p>
             </div>
           </div>
-          <button
-            onClick={store.clearDay}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Clear Day
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={store.clearDay}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear Day
+            </button>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
