@@ -34,13 +34,22 @@ const Index = () => {
               <p className="text-xs text-muted-foreground">{today}</p>
             </div>
           </div>
-          <button
-            onClick={store.clearDay}
-            className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            Clear Day
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={store.clearDay}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear Day
+            </button>
+            <button
+              onClick={signOut}
+              className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Sign Out
+            </button>
+          </div>
         </div>
       </header>
 
