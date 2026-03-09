@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Zap, Loader2 } from 'lucide-react';
+import { Zap, Loader2, User } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -10,6 +10,7 @@ export default function Auth() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
   if (loading) {
@@ -32,12 +33,21 @@ export default function Auth() {
         if (error) throw error;
         toast.success('Welcome back!');
       } else {
-        const { error } = await supabase.auth.signUp({
+        if (!username.trim()) {
+          toast.error('Please enter a username.');
+          setSubmitting(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        // Save username to profile if user was created
+        if (data.user) {
+          await supabase.from('profiles').upsert({ id: data.user.id, username: username.trim() });
+        }
         toast.success('Check your email to confirm your account.');
       }
     } catch (err: any) {
@@ -60,6 +70,22 @@ export default function Auth() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <label className="text-xs text-muted-foreground font-medium block mb-1.5">Username</label>
+              <div className="relative">
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <input
+                  type="text"
+                  value={username}
+                  onChange={e => setUsername(e.target.value)}
+                  required
+                  className="w-full bg-secondary/50 border border-border rounded-md pl-9 pr-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  placeholder="Your name"
+                />
+              </div>
+            </div>
+          )}
           <div>
             <label className="text-xs text-muted-foreground font-medium block mb-1.5">Email</label>
             <input
