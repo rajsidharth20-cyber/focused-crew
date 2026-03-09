@@ -5,12 +5,20 @@ import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
 import { AIAdvisor } from '@/components/AIAdvisor';
+import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
 
+const getGreeting = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good morning';
+  if (hour < 17) return 'Good afternoon';
+  return 'Good evening';
+};
+
 const Index = () => {
   const store = usePlannerStore();
-  const { signOut } = useAuth();
+  const { username, signOut } = useAuth();
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
