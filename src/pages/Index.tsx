@@ -38,7 +38,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="font-display text-lg font-bold text-foreground tracking-tight">
-                FocusFlow
+                {username ? `${getGreeting()}, ${username}` : 'FocusFlow'}
               </h1>
               <p className="text-xs text-muted-foreground">{today}</p>
             </div>
