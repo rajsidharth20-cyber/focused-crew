@@ -1,28 +1,32 @@
 import { useState } from 'react';
-import { Plus, X, Check, MessageSquare, ListChecks } from 'lucide-react';
+import { Plus, X, Check, MessageSquare, ListChecks, Clock, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
 interface DailyObjectivesProps {
   subjects: Subject[];
   objectives: DailyObjective[];
-  onAdd: (subjectId: string, task: string, minutes: number) => void;
+  pastObjectives: DailyObjective[];
+  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string) => void;
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onRemove: (id: string) => void;
 }
 
-export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNote, onRemove }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove }: DailyObjectivesProps) {
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
   const [minutes, setMinutes] = useState('30');
+  const [deadline, setDeadline] = useState('');
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
+  const [showPast, setShowPast] = useState(false);
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
-      onAdd(subjectId, task.trim(), parseInt(minutes) || 30);
+      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined);
       setTask('');
+      setDeadline('');
     }
   };
 
@@ -38,14 +42,17 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
   const completedCount = objectives.filter(o => o.completed).length;
   const totalMinutes = objectives.reduce((sum, o) => sum + o.estimatedMinutes, 0);
   const completedMinutes = objectives.filter(o => o.completed).reduce((sum, o) => sum + o.estimatedMinutes, 0);
+  const today = new Date().toISOString().split('T')[0];
 
-  const renderObjective = (o: DailyObjective) => (
+  const isOverdue = (o: DailyObjective) => o.deadline && o.deadline < today && !o.completed;
+
+  const renderObjective = (o: DailyObjective, isPast = false) => (
     <motion.div
       key={o.id}
       initial={{ opacity: 0, y: -5 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 5 }}
-      className="bg-secondary/30 rounded-md overflow-hidden"
+      className={`bg-secondary/30 rounded-md overflow-hidden ${isOverdue(o) ? 'ring-1 ring-destructive/50' : ''}`}
     >
       <div className="flex items-center gap-3 px-3 py-2.5">
         <button
@@ -62,6 +69,12 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
           </span>
           <span className="ml-2 text-xs text-primary/70 font-display">{getSubjectName(o.subjectId)}</span>
           <span className="ml-1 text-xs text-muted-foreground">· {o.estimatedMinutes}min</span>
+          {isPast && <span className="ml-1 text-xs text-muted-foreground">· {o.date}</span>}
+          {o.deadline && (
+            <span className={`ml-1 text-xs font-display ${isOverdue(o) ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+              · Due {o.deadline}
+            </span>
+          )}
         </div>
         <button
           onClick={() => setActiveNote(activeNote === o.id ? null : o.id)}
@@ -155,7 +168,7 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
             onChange={e => setTask(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
             placeholder="What needs to be done..."
-            className="flex-1 min-w-[150px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+            className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <input
             value={minutes}
@@ -165,6 +178,12 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
             step="5"
             placeholder="min"
             className="w-16 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+          <input
+            value={deadline}
+            onChange={e => setDeadline(e.target.value)}
+            type="date"
+            className="bg-secondary/50 border border-border rounded-md px-2 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <button onClick={handleAdd} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" />
@@ -188,7 +207,7 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
 
       {/* Completed Objectives */}
       {objectives.filter(o => o.completed).length > 0 && (
-        <div>
+        <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
             Completed
           </h4>
@@ -202,6 +221,31 @@ export function DailyObjectives({ subjects, objectives, onAdd, onToggle, onAddNo
 
       {objectives.length === 0 && (
         <p className="text-sm text-muted-foreground text-center py-4">No objectives for today yet.</p>
+      )}
+
+      {/* Past Objectives */}
+      {pastObjectives.length > 0 && (
+        <div className="mt-4 border-t border-border/50 pt-4">
+          <button
+            onClick={() => setShowPast(!showPast)}
+            className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
+          >
+            <History className="w-3.5 h-3.5" />
+            Previous Objectives ({pastObjectives.length})
+          </button>
+          <AnimatePresence>
+            {showPast && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="space-y-2"
+              >
+                {pastObjectives.map(o => renderObjective(o, true))}
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       )}
     </div>
   );

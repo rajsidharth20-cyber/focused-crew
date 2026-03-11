@@ -52,6 +52,7 @@ export type Database = {
           completed: boolean
           created_at: string
           date: string
+          deadline: string | null
           estimated_minutes: number
           id: string
           progress_notes: string[]
@@ -63,6 +64,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           date?: string
+          deadline?: string | null
           estimated_minutes?: number
           id?: string
           progress_notes?: string[]
@@ -74,6 +76,7 @@ export type Database = {
           completed?: boolean
           created_at?: string
           date?: string
+          deadline?: string | null
           estimated_minutes?: number
           id?: string
           progress_notes?: string[]
@@ -134,6 +137,7 @@ export type Database = {
         Row: {
           completed: boolean
           created_at: string
+          deadline: string | null
           id: string
           subject_id: string
           target: string
@@ -142,6 +146,7 @@ export type Database = {
         Insert: {
           completed?: boolean
           created_at?: string
+          deadline?: string | null
           id?: string
           subject_id: string
           target: string
@@ -150,6 +155,7 @@ export type Database = {
         Update: {
           completed?: boolean
           created_at?: string
+          deadline?: string | null
           id?: string
           subject_id?: string
           target?: string
