@@ -69,10 +69,10 @@ export default function Auth() {
       <div className="glass-card glow-amber p-8 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-6 justify-center">
           <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary" />
+           <Zap className="w-5 h-5 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            FocusFlow
+            Task Pilot
           </h1>
         </div>
 
