@@ -42,7 +42,7 @@ export interface PlannerState {
 }
 
 export function usePlannerStore() {
-  const { user } = useAuth();
+  const { user, isGuest } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>([]);
@@ -53,21 +53,44 @@ export function usePlannerStore() {
 
   const today = new Date().toISOString().split('T')[0];
 
+  // Guest mode: localStorage helpers
+  const getGuestData = useCallback(() => {
+    try {
+      const raw = localStorage.getItem('taskpilot_guest_data');
+      return raw ? JSON.parse(raw) : { subjects: [], weeklyTargets: [], dailyObjectives: [], commitments: [] };
+    } catch { return { subjects: [], weeklyTargets: [], dailyObjectives: [], commitments: [] }; }
+  }, []);
+
+  const saveGuestData = useCallback((data: any) => {
+    localStorage.setItem('taskpilot_guest_data', JSON.stringify(data));
+  }, []);
+
   useEffect(() => {
+    if (isGuest) {
+      const data = getGuestData();
+      setSubjects(data.subjects || []);
+      const allWT = data.weeklyTargets || [];
+      setWeeklyTargets(allWT.filter((t: WeeklyTarget) => !t.deadline || t.deadline >= today));
+      setPastWeeklyTargets(allWT.filter((t: WeeklyTarget) => t.deadline && t.deadline < today));
+      const allDO = data.dailyObjectives || [];
+      setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
+      setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
+      setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      setLoading(false);
+      return;
+    }
+
     if (!user) return;
     setLoading(true);
 
     const fetchAll = async () => {
       const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', user.id),
-        // Current weekly targets: no deadline or deadline >= today
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('commitments').select('*').eq('user_id', user.id).eq('date', today),
-        // Past daily objectives: date < today and not completed, or completed but from past
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
-        // Past weekly targets: deadline < today
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
       ]);
 
@@ -95,7 +118,7 @@ export function usePlannerStore() {
     };
 
     fetchAll();
-  }, [user, today]);
+  }, [user, isGuest, today, getGuestData]);
 
   const addSubject = useCallback(async (name: string) => {
     if (!user) return;
