@@ -37,7 +37,7 @@ const Index = () => {
             </div>
             <div>
               <h1 className="font-display text-lg font-bold text-foreground tracking-tight">
-                {username ? `${getGreeting()}, ${username}` : 'FocusFlow'}
+                {username ? `${getGreeting()}, ${username}` : 'Task Pilot'}
               </h1>
               <p className="text-xs text-muted-foreground">{today}</p>
             </div>

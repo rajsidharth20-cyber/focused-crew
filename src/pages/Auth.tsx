@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Zap, Loader2, User } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Zap, Loader2, User, UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest, enterGuestMode } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -21,7 +22,13 @@ export default function Auth() {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  if (user || isGuest) return <Navigate to="/" replace />;
+
+  const handleGuestMode = () => {
+    enterGuestMode();
+    toast.success('Welcome, Guest! Your data will be stored locally.');
+    navigate('/');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,10 +69,10 @@ export default function Auth() {
       <div className="glass-card glow-amber p-8 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-6 justify-center">
           <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-            <Zap className="w-5 h-5 text-primary" />
+           <Zap className="w-5 h-5 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            FocusFlow
+            Task Pilot
           </h1>
         </div>
 
@@ -127,6 +134,26 @@ export default function Auth() {
           >
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
+        </p>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleGuestMode}
+          className="w-full flex items-center justify-center gap-2 bg-secondary/50 border border-border text-muted-foreground py-2.5 rounded-md text-sm font-medium hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <UserX className="w-4 h-4" />
+          Continue as Guest
+        </button>
+        <p className="text-center text-[10px] text-muted-foreground mt-1.5">
+          Data stored locally only — won't sync across devices
         </p>
       </div>
     </div>
