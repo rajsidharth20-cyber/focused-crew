@@ -22,7 +22,13 @@ export default function Auth() {
     );
   }
 
-  if (user) return <Navigate to="/" replace />;
+  if (user || isGuest) return <Navigate to="/" replace />;
+
+  const handleGuestMode = () => {
+    enterGuestMode();
+    toast.success('Welcome, Guest! Your data will be stored locally.');
+    navigate('/');
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
