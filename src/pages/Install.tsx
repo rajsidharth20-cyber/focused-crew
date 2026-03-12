@@ -46,7 +46,7 @@ export default function InstallPage() {
             <Smartphone className="w-8 h-8 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground mb-2">Already Installed!</h1>
-          <p className="text-sm text-muted-foreground mb-6">FocusFlow is running as an app.</p>
+          <p className="text-sm text-muted-foreground mb-6">Task Pilot is running as an app.</p>
           <button
             onClick={() => navigate('/')}
             className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
