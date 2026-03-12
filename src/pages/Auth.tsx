@@ -135,6 +135,26 @@ export default function Auth() {
             {isLogin ? 'Sign up' : 'Sign in'}
           </button>
         </p>
+
+        <div className="relative my-4">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-border" />
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+
+        <button
+          onClick={handleGuestMode}
+          className="w-full flex items-center justify-center gap-2 bg-secondary/50 border border-border text-muted-foreground py-2.5 rounded-md text-sm font-medium hover:text-foreground hover:bg-secondary transition-colors"
+        >
+          <UserX className="w-4 h-4" />
+          Continue as Guest
+        </button>
+        <p className="text-center text-[10px] text-muted-foreground mt-1.5">
+          Data stored locally only — won't sync across devices
+        </p>
       </div>
     </div>
   );

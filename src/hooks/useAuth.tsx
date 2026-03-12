@@ -7,8 +7,10 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   username: string | null;
+  isGuest: boolean;
   setUsername: (name: string) => Promise<void>;
   signOut: () => Promise<void>;
+  enterGuestMode: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -16,8 +18,10 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   username: null,
+  isGuest: false,
   setUsername: async () => {},
   signOut: async () => {},
+  enterGuestMode: () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -25,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [username, setUsernameState] = useState<string | null>(null);
+  const [isGuest, setIsGuest] = useState(false);
 
   const fetchUsername = async (userId: string) => {
     const { data } = await supabase
@@ -36,12 +41,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
+    // Check for guest mode in localStorage
+    const guestMode = localStorage.getItem('taskpilot_guest');
+    if (guestMode === 'true') {
+      setIsGuest(true);
+      setUsernameState(localStorage.getItem('taskpilot_guest_username') || 'Guest');
+      setLoading(false);
+    }
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        setIsGuest(false);
+        localStorage.removeItem('taskpilot_guest');
         setTimeout(() => fetchUsername(session.user.id), 0);
-      } else {
+      } else if (!isGuest) {
         setUsernameState(null);
       }
       setLoading(false);
@@ -51,6 +66,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        setIsGuest(false);
+        localStorage.removeItem('taskpilot_guest');
         fetchUsername(session.user.id);
       }
       setLoading(false);
@@ -59,18 +76,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
+  const enterGuestMode = () => {
+    localStorage.setItem('taskpilot_guest', 'true');
+    localStorage.setItem('taskpilot_guest_username', 'Guest');
+    setIsGuest(true);
+    setUsernameState('Guest');
+  };
+
   const setUsername = async (name: string) => {
+    if (isGuest) {
+      localStorage.setItem('taskpilot_guest_username', name);
+      setUsernameState(name);
+      return;
+    }
     if (!user) return;
     await supabase.from('profiles').upsert({ id: user.id, username: name });
     setUsernameState(name);
   };
 
   const signOut = async () => {
+    if (isGuest) {
+      setIsGuest(false);
+      setUsernameState(null);
+      localStorage.removeItem('taskpilot_guest');
+      localStorage.removeItem('taskpilot_guest_username');
+      localStorage.removeItem('taskpilot_guest_data');
+      return;
+    }
     await supabase.auth.signOut();
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, username, setUsername, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, username, isGuest, setUsername, signOut, enterGuestMode }}>
       {children}
     </AuthContext.Provider>
   );

@@ -24,8 +24,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "FocusFlow - AI Schedule Planner",
-        short_name: "FocusFlow",
+        name: "Task Pilot - AI Schedule Planner",
+        short_name: "Task Pilot",
         description: "AI-powered daily schedule organizer that helps you decide what to do next",
         theme_color: "#d4910a",
         background_color: "#171310",
