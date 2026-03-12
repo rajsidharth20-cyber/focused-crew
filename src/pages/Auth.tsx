@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
-import { Zap, Loader2, User } from 'lucide-react';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { Zap, Loader2, User, UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 
 export default function Auth() {
-  const { user, loading } = useAuth();
+  const { user, loading, isGuest, enterGuestMode } = useAuth();
+  const navigate = useNavigate();
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
