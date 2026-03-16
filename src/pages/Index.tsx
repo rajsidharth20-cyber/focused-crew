@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Zap, Trash2, LogOut } from 'lucide-react';
+import { Plane, Trash2, LogOut } from 'lucide-react';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
@@ -11,9 +11,9 @@ import { useAuth } from '@/hooks/useAuth';
 
 const getGreeting = () => {
   const hour = new Date().getHours();
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
+  if (hour < 12) return 'Clear skies this morning';
+  if (hour < 17) return 'Smooth cruising this afternoon';
+  return 'Evening descent';
 };
 
 const Index = () => {
@@ -33,7 +33,7 @@ const Index = () => {
         <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-              <Zap className="w-4 h-4 text-primary" />
+              <Plane className="w-4 h-4 text-primary" />
             </div>
             <div>
               <h1 className="font-display text-lg font-bold text-foreground tracking-tight">
@@ -45,11 +45,11 @@ const Index = () => {
           <div className="flex items-center gap-3">
             <button onClick={store.clearDay} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors">
               <Trash2 className="w-3.5 h-3.5" />
-              Clear Day
+              Clear Runway
             </button>
             <button onClick={signOut} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
               <LogOut className="w-3.5 h-3.5" />
-              Sign Out
+              Disembark
             </button>
           </div>
         </div>

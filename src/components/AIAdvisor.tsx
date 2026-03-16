@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Sparkles, Send, Loader2, BarChart3 } from 'lucide-react';
+import { Radar, Send, Loader2, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import type { PlannerState } from '@/hooks/use-planner-store';
@@ -149,12 +149,12 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
   };
 
   return (
-    <div className="glass-card glow-amber p-5">
+    <div className="glass-card glow-sky p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-primary" />
+          <Radar className="w-4 h-4 text-primary" />
           <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-gradient">
-            AI Advisor
+            Control Tower
           </h3>
         </div>
         <div className="flex gap-1 bg-secondary/50 rounded-md p-0.5">
@@ -164,7 +164,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
               mode === 'next' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            What's Next?
+            Next Heading
           </button>
           <button
             onClick={() => setMode('summary')}
@@ -173,7 +173,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
             }`}
           >
             <BarChart3 className="w-3 h-3" />
-            Summary
+            Debrief
           </button>
         </div>
       </div>
@@ -183,7 +183,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
           value={userMessage}
           onChange={e => setUserMessage(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAsk()}
-          placeholder={mode === 'next' ? "Any context? (e.g. 'I just finished studying chapter 3')" : "Any notes about your day?"}
+          placeholder={mode === 'next' ? "Status update? (e.g. 'Just finished chapter 3')" : "Any notes about your flight today?"}
           className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
         <button
@@ -192,7 +192,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
           className="bg-primary text-primary-foreground px-4 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center gap-2"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-          {mode === 'next' ? 'Advise' : 'Summarize'}
+          {mode === 'next' ? 'Advise' : 'Debrief'}
         </button>
       </div>
 
