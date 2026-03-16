@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, BookOpen } from 'lucide-react';
+import { Plus, X, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject } from '@/hooks/use-planner-store';
 
@@ -22,9 +22,9 @@ export function SubjectManager({ subjects, onAdd, onRemove }: SubjectManagerProp
   return (
     <div className="glass-card p-5">
       <div className="flex items-center gap-2 mb-4">
-        <BookOpen className="w-4 h-4 text-primary" />
+        <Navigation className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Subjects
+          Routes
         </h3>
       </div>
       <div className="flex gap-2 mb-3">
@@ -32,7 +32,7 @@ export function SubjectManager({ subjects, onAdd, onRemove }: SubjectManagerProp
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          placeholder="Add a subject..."
+          placeholder="Add a route..."
           className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
         <button

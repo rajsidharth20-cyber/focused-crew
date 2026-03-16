@@ -17,9 +17,9 @@ const typeIcons = {
 };
 
 const typeColors: Record<string, string> = {
-  class: 'text-blue-400',
-  visit: 'text-green-400',
-  meeting: 'text-purple-400',
+  class: 'text-primary',
+  visit: 'text-success',
+  meeting: 'text-accent',
   other: 'text-muted-foreground',
 };
 
@@ -45,7 +45,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Commitments
+          Scheduled Stops
         </h3>
       </div>
 
@@ -63,7 +63,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         <input
           value={title}
           onChange={e => setTitle(e.target.value)}
-          placeholder="What..."
+          placeholder="Where to..."
           className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
         <input
@@ -110,7 +110,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
           })}
         </AnimatePresence>
         {commitments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No commitments today.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">No scheduled stops today.</p>
         )}
       </div>
     </div>

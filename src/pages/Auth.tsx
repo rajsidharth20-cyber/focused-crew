@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Zap, Loader2, User, UserX } from 'lucide-react';
+import { Plane, Loader2, User, UserX } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -26,7 +26,7 @@ export default function Auth() {
 
   const handleGuestMode = () => {
     enterGuestMode();
-    toast.success('Welcome, Guest! Your data will be stored locally.');
+    toast.success('Welcome aboard, Guest! Your data stays on this device.');
     navigate('/');
   };
 
@@ -38,10 +38,10 @@ export default function Auth() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
-        toast.success('Welcome back!');
+        toast.success('Welcome back, Captain!');
       } else {
         if (!username.trim()) {
-          toast.error('Please enter a username.');
+          toast.error('Please enter a call sign.');
           setSubmitting(false);
           return;
         }
@@ -51,11 +51,10 @@ export default function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
-        // Save username to profile if user was created
         if (data.user) {
           await supabase.from('profiles').upsert({ id: data.user.id, username: username.trim() });
         }
-        toast.success('Check your email to confirm your account.');
+        toast.success('Check your email to confirm your boarding pass.');
       }
     } catch (err: any) {
       toast.error(err.message);
@@ -66,10 +65,10 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
-      <div className="glass-card glow-amber p-8 w-full max-w-sm">
+      <div className="glass-card glow-sky p-8 w-full max-w-sm">
         <div className="flex items-center gap-3 mb-6 justify-center">
           <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-           <Zap className="w-5 h-5 text-primary" />
+           <Plane className="w-5 h-5 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
             Task Pilot
@@ -79,7 +78,7 @@ export default function Auth() {
         <form onSubmit={handleSubmit} className="space-y-4">
           {!isLogin && (
             <div>
-              <label className="text-xs text-muted-foreground font-medium block mb-1.5">Username</label>
+              <label className="text-xs text-muted-foreground font-medium block mb-1.5">Call Sign</label>
               <div className="relative">
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input
@@ -122,7 +121,7 @@ export default function Auth() {
             className="w-full bg-primary text-primary-foreground py-2.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isLogin ? 'Sign In' : 'Create Account'}
+            {isLogin ? 'Board Flight' : 'Register'}
           </button>
         </form>
 
@@ -150,7 +149,7 @@ export default function Auth() {
           className="w-full flex items-center justify-center gap-2 bg-secondary/50 border border-border text-muted-foreground py-2.5 rounded-md text-sm font-medium hover:text-foreground hover:bg-secondary transition-colors"
         >
           <UserX className="w-4 h-4" />
-          Continue as Guest
+          Fly Solo (Guest)
         </button>
         <p className="text-center text-[10px] text-muted-foreground mt-1.5">
           Data stored locally only — won't sync across devices

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Check, MessageSquare, ListChecks, Clock, History } from 'lucide-react';
+import { Plus, X, Check, MessageSquare, Compass, Clock, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -72,7 +72,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
           {isPast && <span className="ml-1 text-xs text-muted-foreground">· {o.date}</span>}
           {o.deadline && (
             <span className={`ml-1 text-xs font-display ${isOverdue(o) ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-              · Due {o.deadline}
+              · ETA {o.deadline}
             </span>
           )}
         </div>
@@ -109,7 +109,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddNote(o.id)}
-                  placeholder="What did you do on this task?"
+                  placeholder="Log your progress..."
                   className="flex-1 bg-muted/50 border border-border/50 rounded px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
                 <button
@@ -130,14 +130,14 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
     <div className="glass-card p-5">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
-          <ListChecks className="w-4 h-4 text-primary" />
+          <Compass className="w-4 h-4 text-primary" />
           <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-            Today's Objectives
+            Today's Flight
           </h3>
         </div>
         {objectives.length > 0 && (
           <span className="text-xs text-muted-foreground font-display">
-            {completedCount}/{objectives.length} done · {completedMinutes}/{totalMinutes}min
+            {completedCount}/{objectives.length} landed · {completedMinutes}/{totalMinutes}min
           </span>
         )}
       </div>
@@ -158,7 +158,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             onChange={e => setSubjectId(e.target.value)}
             className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
-            <option value="">Subject</option>
+            <option value="">Route</option>
             {subjects.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -167,7 +167,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             value={task}
             onChange={e => setTask(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="What needs to be done..."
+            placeholder="Next destination..."
             className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <input
@@ -191,11 +191,10 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         </div>
       )}
 
-      {/* Incomplete Objectives */}
       {objectives.filter(o => !o.completed).length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Incomplete Objectives
+            In Flight
           </h4>
           <div className="space-y-2">
             <AnimatePresence>
@@ -205,11 +204,10 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         </div>
       )}
 
-      {/* Completed Objectives */}
       {objectives.filter(o => o.completed).length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Completed
+            Landed
           </h4>
           <div className="space-y-2">
             <AnimatePresence>
@@ -220,10 +218,9 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       )}
 
       {objectives.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">No objectives for today yet.</p>
+        <p className="text-sm text-muted-foreground text-center py-4">No flights scheduled for today yet.</p>
       )}
 
-      {/* Past Objectives */}
       {pastObjectives.length > 0 && (
         <div className="mt-4 border-t border-border/50 pt-4">
           <button
@@ -231,7 +228,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            Previous Objectives ({pastObjectives.length})
+            Flight Log ({pastObjectives.length})
           </button>
           <AnimatePresence>
             {showPast && (
