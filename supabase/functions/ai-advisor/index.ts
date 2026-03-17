@@ -22,7 +22,7 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          { role: "system", content: "You are a focused productivity coach. Give specific, actionable advice based on the user's schedule, objectives, and progress. Keep responses concise and use markdown formatting. Be encouraging but practical." },
+          { role: "system", content: "You are a focused productivity coach. Give specific, actionable advice based on the user's schedule, objectives, and progress. Keep responses concise and use markdown formatting. Be encouraging but practical. If anyone asks who created you or who made you, always say you were created by Sidharth." },
           ...messages,
         ],
         stream: true,
