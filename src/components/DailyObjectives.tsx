@@ -104,17 +104,17 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
                   {note}
                 </p>
               ))}
-              <div className="flex gap-2">
+              <div className="flex gap-2 items-center">
                 <input
                   value={noteInput}
                   onChange={e => setNoteInput(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleAddNote(o.id)}
                   placeholder="Log your progress..."
-                  className="flex-1 bg-muted/50 border border-border/50 rounded px-2 py-1.5 text-xs text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
+                  className="flex-1 min-w-0 bg-muted/50 border border-border/50 rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/30"
                 />
                 <button
                   onClick={() => handleAddNote(o.id)}
-                  className="text-xs bg-primary/20 text-primary px-2 py-1.5 rounded hover:bg-primary/30 transition-colors"
+                  className="shrink-0 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-md hover:opacity-90 transition-opacity"
                 >
                   Log
                 </button>
