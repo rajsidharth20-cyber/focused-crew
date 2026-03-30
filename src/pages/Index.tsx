@@ -63,7 +63,6 @@ const Index = () => {
               <LogOut className="w-3.5 h-3.5" />
               {theme === 'war' ? 'Retreat' : 'Disembark'}
             </button>
-            </button>
           </div>
         </div>
       </header>
