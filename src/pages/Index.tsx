@@ -4,6 +4,7 @@ import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
+import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { usePlannerStore } from '@/hooks/use-planner-store';
@@ -56,6 +57,10 @@ const Index = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }}>
+          <FlightProtocols protocols={store.protocols} onAdd={store.addProtocol} onRemove={store.removeProtocol} />
+        </motion.div>
+
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
           <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments }} />
         </motion.div>
