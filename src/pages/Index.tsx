@@ -1,5 +1,7 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut } from 'lucide-react';
+import { Plane, Trash2, LogOut, Swords } from 'lucide-react';
+import { SettingsDialog } from '@/components/SettingsDialog';
+import { useTheme } from '@/hooks/use-theme';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
