@@ -39,6 +39,7 @@ export interface PlannerState {
   weeklyTargets: WeeklyTarget[];
   dailyObjectives: DailyObjective[];
   commitments: Commitment[];
+  protocols: string[];
 }
 
 export function usePlannerStore() {
@@ -49,6 +50,7 @@ export function usePlannerStore() {
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const [protocols, setProtocols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
   const today = new Date().toISOString().split('T')[0];
@@ -76,6 +78,7 @@ export function usePlannerStore() {
       setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
       setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      setProtocols(data.protocols || []);
       setLoading(false);
       return;
     }
@@ -293,6 +296,41 @@ export function usePlannerStore() {
     await supabase.from('commitments').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
+  const addProtocol = useCallback((protocol: string) => {
+    setProtocols(prev => {
+      const updated = [...prev, protocol];
+      if (isGuest) {
+        const data = getGuestData(); data.protocols = updated; saveGuestData(data);
+      } else {
+        // For authenticated users, store in localStorage keyed by user id
+        if (user) localStorage.setItem(`taskpilot_protocols_${user.id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [isGuest, user, getGuestData, saveGuestData]);
+
+  const removeProtocol = useCallback((index: number) => {
+    setProtocols(prev => {
+      const updated = prev.filter((_, i) => i !== index);
+      if (isGuest) {
+        const data = getGuestData(); data.protocols = updated; saveGuestData(data);
+      } else {
+        if (user) localStorage.setItem(`taskpilot_protocols_${user.id}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  }, [isGuest, user, getGuestData, saveGuestData]);
+
+  // Load protocols for authenticated users
+  useEffect(() => {
+    if (!isGuest && user) {
+      try {
+        const raw = localStorage.getItem(`taskpilot_protocols_${user.id}`);
+        if (raw) setProtocols(JSON.parse(raw));
+      } catch {}
+    }
+  }, [user, isGuest]);
+
   const clearDay = useCallback(async () => {
     setDailyObjectives([]);
     setCommitments([]);
@@ -317,6 +355,7 @@ export function usePlannerStore() {
     dailyObjectives,
     pastObjectives,
     commitments,
+    protocols,
     loading,
     addSubject,
     removeSubject,
@@ -329,6 +368,8 @@ export function usePlannerStore() {
     removeDailyObjective,
     addCommitment,
     removeCommitment,
+    addProtocol,
+    removeProtocol,
     clearDay,
   };
 }
