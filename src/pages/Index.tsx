@@ -12,8 +12,13 @@ import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
 
-const getGreeting = () => {
+const getGreeting = (theme: string) => {
   const hour = new Date().getHours();
+  if (theme === 'war') {
+    if (hour < 12) return 'Morning briefing';
+    if (hour < 17) return 'Afternoon ops';
+    return 'Night watch';
+  }
   if (hour < 12) return 'Clear skies this morning';
   if (hour < 17) return 'Smooth cruising this afternoon';
   return 'Evening descent';
