@@ -44,7 +44,7 @@ export function SettingsDialog() {
               >
                 <Swords className="w-6 h-6" />
                 <span className="text-sm font-display font-semibold">War</span>
-                <span className="text-[10px] text-muted-foreground">Tactical amber ops</span>
+                <span className="text-[10px] text-muted-foreground">Tactical fire ops</span>
               </button>
             </div>
           </div>
