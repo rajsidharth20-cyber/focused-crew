@@ -6,6 +6,7 @@ import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
+import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
