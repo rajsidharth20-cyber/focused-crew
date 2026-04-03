@@ -109,6 +109,9 @@ const Index = () => {
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <Commitments commitments={store.commitments} onAdd={store.addCommitment} onRemove={store.removeCommitment} />
             </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+              <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
+            </motion.div>
           </div>
         </div>
       </main>
