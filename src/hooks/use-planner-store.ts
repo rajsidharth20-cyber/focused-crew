@@ -89,6 +89,7 @@ export function usePlannerStore() {
       setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
       setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      setEvents(data.events || []);
       setProtocols(data.protocols || []);
       setLoading(false);
       return;
