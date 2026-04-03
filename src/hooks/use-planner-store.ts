@@ -60,6 +60,7 @@ export function usePlannerStore() {
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const [events, setEvents] = useState<PlannerEvent[]>([]);
   const [protocols, setProtocols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
