@@ -34,12 +34,22 @@ export interface Commitment {
   type: 'class' | 'visit' | 'meeting' | 'other';
 }
 
+export interface PlannerEvent {
+  id: string;
+  title: string;
+  eventDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  description: string | null;
+}
+
 export interface PlannerState {
   subjects: Subject[];
   weeklyTargets: WeeklyTarget[];
   dailyObjectives: DailyObjective[];
   commitments: Commitment[];
   protocols: string[];
+  events: PlannerEvent[];
 }
 
 export function usePlannerStore() {
