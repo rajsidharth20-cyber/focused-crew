@@ -99,7 +99,7 @@ export function usePlannerStore() {
     setLoading(true);
 
     const fetchAll = async () => {
-      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes] = await Promise.all([
+      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', user.id),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
@@ -107,6 +107,7 @@ export function usePlannerStore() {
         supabase.from('commitments').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
+        supabase.from('events').select('*').eq('user_id', user.id).gte('event_date', today).order('event_date', { ascending: true }),
       ]);
 
       setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
