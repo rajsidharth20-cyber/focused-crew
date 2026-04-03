@@ -34,12 +34,22 @@ export interface Commitment {
   type: 'class' | 'visit' | 'meeting' | 'other';
 }
 
+export interface PlannerEvent {
+  id: string;
+  title: string;
+  eventDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  description: string | null;
+}
+
 export interface PlannerState {
   subjects: Subject[];
   weeklyTargets: WeeklyTarget[];
   dailyObjectives: DailyObjective[];
   commitments: Commitment[];
   protocols: string[];
+  events: PlannerEvent[];
 }
 
 export function usePlannerStore() {
@@ -50,6 +60,7 @@ export function usePlannerStore() {
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
+  const [events, setEvents] = useState<PlannerEvent[]>([]);
   const [protocols, setProtocols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -78,6 +89,7 @@ export function usePlannerStore() {
       setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
       setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      setEvents(data.events || []);
       setProtocols(data.protocols || []);
       setLoading(false);
       return;
@@ -87,7 +99,7 @@ export function usePlannerStore() {
     setLoading(true);
 
     const fetchAll = async () => {
-      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes] = await Promise.all([
+      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', user.id),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
@@ -95,6 +107,7 @@ export function usePlannerStore() {
         supabase.from('commitments').select('*').eq('user_id', user.id).eq('date', today),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
+        supabase.from('events').select('*').eq('user_id', user.id).gte('event_date', today).order('event_date', { ascending: true }),
       ]);
 
       setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
@@ -116,6 +129,11 @@ export function usePlannerStore() {
       setCommitments((cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
+      })));
+
+      setEvents((evRes.data ?? []).map((e: any) => ({
+        id: e.id, title: e.title, eventDate: e.event_date,
+        startTime: e.start_time, endTime: e.end_time, description: e.description,
       })));
       setLoading(false);
     };
@@ -348,6 +366,37 @@ export function usePlannerStore() {
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
+  const addEvent = useCallback(async (title: string, eventDate: string, startTime?: string, endTime?: string, description?: string) => {
+    if (isGuest) {
+      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate, startTime: startTime || null, endTime: endTime || null, description: description || null };
+      setEvents(prev => {
+        const updated = [...prev, newE].sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+        const data = getGuestData(); data.events = [...(data.events || []), newE]; saveGuestData(data);
+        return updated;
+      });
+      return;
+    }
+    if (!user) return;
+    const { data, error } = await supabase.from('events')
+      .insert({ title, event_date: eventDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id })
+      .select().single();
+    if (!error && data) setEvents(prev => [...prev, {
+      id: data.id, title: data.title, eventDate: data.event_date,
+      startTime: data.start_time, endTime: data.end_time, description: data.description,
+    }].sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
+  }, [user, isGuest, getGuestData, saveGuestData]);
+
+  const removeEvent = useCallback(async (id: string) => {
+    setEvents(prev => prev.filter(e => e.id !== id));
+    if (isGuest) {
+      const data = getGuestData();
+      data.events = (data.events || []).filter((e: any) => e.id !== id);
+      saveGuestData(data);
+      return;
+    }
+    await supabase.from('events').delete().eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
+
   return {
     subjects,
     weeklyTargets,
@@ -356,6 +405,7 @@ export function usePlannerStore() {
     pastObjectives,
     commitments,
     protocols,
+    events,
     loading,
     addSubject,
     removeSubject,
@@ -370,6 +420,8 @@ export function usePlannerStore() {
     removeCommitment,
     addProtocol,
     removeProtocol,
+    addEvent,
+    removeEvent,
     clearDay,
   };
 }

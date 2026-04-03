@@ -6,6 +6,7 @@ import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
+import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
@@ -73,7 +74,7 @@ const Index = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols }} />
+          <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -107,6 +108,9 @@ const Index = () => {
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
               <Commitments commitments={store.commitments} onAdd={store.addCommitment} onRemove={store.removeCommitment} />
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }}>
+              <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
             </motion.div>
           </div>
         </div>
