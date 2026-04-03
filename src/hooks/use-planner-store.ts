@@ -366,6 +366,37 @@ export function usePlannerStore() {
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
+  const addEvent = useCallback(async (title: string, eventDate: string, startTime?: string, endTime?: string, description?: string) => {
+    if (isGuest) {
+      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate, startTime: startTime || null, endTime: endTime || null, description: description || null };
+      setEvents(prev => {
+        const updated = [...prev, newE].sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+        const data = getGuestData(); data.events = [...(data.events || []), newE]; saveGuestData(data);
+        return updated;
+      });
+      return;
+    }
+    if (!user) return;
+    const { data, error } = await supabase.from('events')
+      .insert({ title, event_date: eventDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id })
+      .select().single();
+    if (!error && data) setEvents(prev => [...prev, {
+      id: data.id, title: data.title, eventDate: data.event_date,
+      startTime: data.start_time, endTime: data.end_time, description: data.description,
+    }].sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
+  }, [user, isGuest, getGuestData, saveGuestData]);
+
+  const removeEvent = useCallback(async (id: string) => {
+    setEvents(prev => prev.filter(e => e.id !== id));
+    if (isGuest) {
+      const data = getGuestData();
+      data.events = (data.events || []).filter((e: any) => e.id !== id);
+      saveGuestData(data);
+      return;
+    }
+    await supabase.from('events').delete().eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
+
   return {
     subjects,
     weeklyTargets,
@@ -374,6 +405,7 @@ export function usePlannerStore() {
     pastObjectives,
     commitments,
     protocols,
+    events,
     loading,
     addSubject,
     removeSubject,
@@ -388,6 +420,8 @@ export function usePlannerStore() {
     removeCommitment,
     addProtocol,
     removeProtocol,
+    addEvent,
+    removeEvent,
     clearDay,
   };
 }
