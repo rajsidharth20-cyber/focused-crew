@@ -130,6 +130,11 @@ export function usePlannerStore() {
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
       })));
+
+      setEvents((evRes.data ?? []).map((e: any) => ({
+        id: e.id, title: e.title, eventDate: e.event_date,
+        startTime: e.start_time, endTime: e.end_time, description: e.description,
+      })));
       setLoading(false);
     };
 
