@@ -74,7 +74,7 @@ const Index = () => {
         </motion.div>
 
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-          <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols }} />
+          <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
         </motion.div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
