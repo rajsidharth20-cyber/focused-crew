@@ -14,7 +14,7 @@ interface DailyObjectivesProps {
   onCarryForward: (id: string, targetDate?: string) => void;
 }
 
-export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove, onCarryForward }: DailyObjectivesProps) {
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
   const [minutes, setMinutes] = useState('30');
@@ -22,6 +22,8 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
+  const [carryForwardId, setCarryForwardId] = useState<string | null>(null);
+  const [carryForwardDate, setCarryForwardDate] = useState('');
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
