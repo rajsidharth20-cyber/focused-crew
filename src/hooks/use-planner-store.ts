@@ -64,8 +64,7 @@ export function usePlannerStore() {
   const [events, setEvents] = useState<PlannerEvent[]>([]);
   const [protocols, setProtocols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const today = new Date().toISOString().split('T')[0];
+  const today = getEffectiveToday();
 
   // Guest mode: localStorage helpers
   const getGuestData = useCallback(() => {
