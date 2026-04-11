@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { getEffectiveToday } from '@/lib/day-boundary';
 
 export interface Subject {
   id: string;
