@@ -106,6 +106,7 @@ const Index = () => {
                 onToggle={store.toggleDailyObjective}
                 onAddNote={store.addProgressNote}
                 onRemove={store.removeDailyObjective}
+                onCarryForward={store.carryForwardObjective}
               />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
