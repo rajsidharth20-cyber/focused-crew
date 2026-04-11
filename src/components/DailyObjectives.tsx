@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Check, MessageSquare, Compass, Clock, History } from 'lucide-react';
+import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -11,6 +11,7 @@ interface DailyObjectivesProps {
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onRemove: (id: string) => void;
+  onCarryForward: (id: string, targetDate?: string) => void;
 }
 
 export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove }: DailyObjectivesProps) {
