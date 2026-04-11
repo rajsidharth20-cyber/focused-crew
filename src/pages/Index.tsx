@@ -12,6 +12,7 @@ import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
+import { useEventReminders } from '@/hooks/use-event-reminders';
 
 const getGreeting = (theme: string) => {
   const hour = new Date().getHours();
@@ -29,6 +30,7 @@ const Index = () => {
   const store = usePlannerStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
+  useEventReminders(store.events);
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -104,6 +106,7 @@ const Index = () => {
                 onToggle={store.toggleDailyObjective}
                 onAddNote={store.addProgressNote}
                 onRemove={store.removeDailyObjective}
+                onCarryForward={store.carryForwardObjective}
               />
             </motion.div>
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>

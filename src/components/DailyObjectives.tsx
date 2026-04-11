@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Check, MessageSquare, Compass, Clock, History } from 'lucide-react';
+import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -11,9 +11,10 @@ interface DailyObjectivesProps {
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onRemove: (id: string) => void;
+  onCarryForward: (id: string, targetDate?: string) => void;
 }
 
-export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onRemove, onCarryForward }: DailyObjectivesProps) {
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
   const [minutes, setMinutes] = useState('30');
@@ -21,6 +22,8 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
+  const [carryForwardId, setCarryForwardId] = useState<string | null>(null);
+  const [carryForwardDate, setCarryForwardDate] = useState('');
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
@@ -85,6 +88,15 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
           )}
         </button>
+        {!o.completed && (
+          <button
+            onClick={() => setCarryForwardId(carryForwardId === o.id ? null : o.id)}
+            className="text-muted-foreground hover:text-primary transition-colors"
+            title="Carry forward"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
         <button onClick={() => onRemove(o.id)} className="text-muted-foreground hover:text-destructive transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
@@ -119,6 +131,42 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
                   Log
                 </button>
               </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {carryForwardId === o.id && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-border/50"
+          >
+            <div className="px-3 py-2.5 flex gap-2 items-center">
+              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Move to:</span>
+              <button
+                onClick={() => { onCarryForward(o.id); setCarryForwardId(null); }}
+                className="text-xs bg-primary/20 text-primary px-2 py-1 rounded hover:bg-primary/30 transition-colors"
+              >
+                Tomorrow
+              </button>
+              <input
+                type="date"
+                value={carryForwardDate}
+                onChange={e => setCarryForwardDate(e.target.value)}
+                className="text-xs bg-secondary/50 border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              {carryForwardDate && (
+                <button
+                  onClick={() => { onCarryForward(o.id, carryForwardDate); setCarryForwardId(null); setCarryForwardDate(''); }}
+                  className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90 transition-opacity"
+                >
+                  Move
+                </button>
+              )}
             </div>
           </motion.div>
         )}
