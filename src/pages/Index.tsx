@@ -30,6 +30,7 @@ const Index = () => {
   const store = usePlannerStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
+  useEventReminders(store.events);
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
