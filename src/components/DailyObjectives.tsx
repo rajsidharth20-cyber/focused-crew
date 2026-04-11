@@ -88,6 +88,15 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-primary" />
           )}
         </button>
+        {!o.completed && (
+          <button
+            onClick={() => setCarryForwardId(carryForwardId === o.id ? null : o.id)}
+            className="text-muted-foreground hover:text-primary transition-colors"
+            title="Carry forward"
+          >
+            <ArrowRight className="w-3.5 h-3.5" />
+          </button>
+        )}
         <button onClick={() => onRemove(o.id)} className="text-muted-foreground hover:text-destructive transition-colors">
           <X className="w-3.5 h-3.5" />
         </button>
