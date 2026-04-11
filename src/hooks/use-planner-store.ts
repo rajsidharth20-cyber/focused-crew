@@ -283,6 +283,41 @@ export function usePlannerStore() {
     await supabase.from('daily_objectives').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
+  const carryForwardObjective = useCallback(async (id: string, targetDate?: string) => {
+    const newDate = targetDate || (() => {
+      const d = new Date(today);
+      d.setDate(d.getDate() + 1);
+      return d.toISOString().split('T')[0];
+    })();
+    
+    const allObjs = [...dailyObjectives, ...pastObjectives];
+    const obj = allObjs.find(o => o.id === id);
+    if (!obj) return;
+
+    // Remove from current lists
+    setDailyObjectives(prev => prev.filter(o => o.id !== id));
+    setPastObjectives(prev => prev.filter(o => o.id !== id));
+
+    if (isGuest) {
+      const data = getGuestData();
+      const updated = (data.dailyObjectives || []).map((o: DailyObjective) =>
+        o.id === id ? { ...o, date: newDate, completed: false } : o
+      );
+      data.dailyObjectives = updated;
+      saveGuestData(data);
+      // If target date is today, add back to current
+      if (newDate === today) {
+        setDailyObjectives(prev => [...prev, { ...obj, date: newDate, completed: false }]);
+      }
+      return;
+    }
+    
+    await supabase.from('daily_objectives').update({ date: newDate, completed: false }).eq('id', id);
+    if (newDate === today) {
+      setDailyObjectives(prev => [...prev, { ...obj, date: newDate, completed: false }]);
+    }
+  }, [dailyObjectives, pastObjectives, today, isGuest, getGuestData, saveGuestData]);
+
   const addCommitment = useCallback(async (title: string, startTime: string, endTime: string, type: Commitment['type']) => {
     if (isGuest) {
       const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: today };
