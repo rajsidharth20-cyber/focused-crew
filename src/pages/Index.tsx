@@ -12,6 +12,7 @@ import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
+import { useEventReminders } from '@/hooks/use-event-reminders';
 
 const getGreeting = (theme: string) => {
   const hour = new Date().getHours();
