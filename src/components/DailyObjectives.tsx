@@ -135,6 +135,42 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {carryForwardId === o.id && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="border-t border-border/50"
+          >
+            <div className="px-3 py-2.5 flex gap-2 items-center">
+              <CalendarClock className="w-3.5 h-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground">Move to:</span>
+              <button
+                onClick={() => { onCarryForward(o.id); setCarryForwardId(null); }}
+                className="text-xs bg-primary/20 text-primary px-2 py-1 rounded hover:bg-primary/30 transition-colors"
+              >
+                Tomorrow
+              </button>
+              <input
+                type="date"
+                value={carryForwardDate}
+                onChange={e => setCarryForwardDate(e.target.value)}
+                className="text-xs bg-secondary/50 border border-border rounded px-2 py-1 text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              />
+              {carryForwardDate && (
+                <button
+                  onClick={() => { onCarryForward(o.id, carryForwardDate); setCarryForwardId(null); setCarryForwardDate(''); }}
+                  className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90 transition-opacity"
+                >
+                  Move
+                </button>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 
