@@ -457,6 +457,7 @@ export function usePlannerStore() {
     removeProtocol,
     addEvent,
     removeEvent,
+    carryForwardObjective,
     clearDay,
   };
 }
