@@ -125,7 +125,7 @@ export function usePlannerStore() {
         id: o.id, subjectId: o.subject_id, task: o.task,
         estimatedMinutes: o.estimated_minutes, completed: o.completed,
         progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
-        priority: o.priority || 'medium',
+        priority: (o.priority || 'medium') as Priority,
       });
       setDailyObjectives((doRes.data ?? []).map(mapDO));
       setPastObjectives((pastDoRes.data ?? []).map(mapDO));
@@ -239,7 +239,7 @@ export function usePlannerStore() {
       id: data.id, subjectId: data.subject_id, task: data.task,
       estimatedMinutes: data.estimated_minutes, completed: data.completed,
       progressNotes: data.progress_notes ?? [], date: data.date, deadline: data.deadline,
-      priority: data.priority || 'medium',
+      priority: (data.priority || 'medium') as Priority,
     }]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
