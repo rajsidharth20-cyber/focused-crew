@@ -16,6 +16,8 @@ export interface WeeklyTarget {
   deadline: string | null;
 }
 
+export type Priority = 'high' | 'medium' | 'low';
+
 export interface DailyObjective {
   id: string;
   subjectId: string;
@@ -25,6 +27,7 @@ export interface DailyObjective {
   progressNotes: string[];
   date: string;
   deadline: string | null;
+  priority: Priority;
 }
 
 export interface Commitment {
@@ -122,6 +125,7 @@ export function usePlannerStore() {
         id: o.id, subjectId: o.subject_id, task: o.task,
         estimatedMinutes: o.estimated_minutes, completed: o.completed,
         progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
+        priority: o.priority || 'medium',
       });
       setDailyObjectives((doRes.data ?? []).map(mapDO));
       setPastObjectives((pastDoRes.data ?? []).map(mapDO));
@@ -217,9 +221,9 @@ export function usePlannerStore() {
     await supabase.from('weekly_targets').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
-  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string) => {
+  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string, priority: Priority = 'medium') => {
     if (isGuest) {
-      const newO: DailyObjective = { id: crypto.randomUUID(), subjectId, task, estimatedMinutes, completed: false, progressNotes: [], date: today, deadline: deadline || null };
+      const newO: DailyObjective = { id: crypto.randomUUID(), subjectId, task, estimatedMinutes, completed: false, progressNotes: [], date: today, deadline: deadline || null, priority };
       setDailyObjectives(prev => {
         const updated = [...prev, newO];
         const data = getGuestData(); data.dailyObjectives = [...(data.dailyObjectives || []), newO]; saveGuestData(data);
@@ -229,12 +233,13 @@ export function usePlannerStore() {
     }
     if (!user) return;
     const { data, error } = await supabase.from('daily_objectives')
-      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null })
+      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority })
       .select().single();
     if (!error && data) setDailyObjectives(prev => [...prev, {
       id: data.id, subjectId: data.subject_id, task: data.task,
       estimatedMinutes: data.estimated_minutes, completed: data.completed,
       progressNotes: data.progress_notes ?? [], date: data.date, deadline: data.deadline,
+      priority: data.priority || 'medium',
     }]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
@@ -270,6 +275,32 @@ export function usePlannerStore() {
     }
     await supabase.from('daily_objectives').update({ progress_notes: newNotes }).eq('id', id);
   }, [dailyObjectives, pastObjectives, isGuest, getGuestData, saveGuestData]);
+
+  const updateProgressNotes = useCallback(async (id: string, notes: string[]) => {
+    const updater = (prev: DailyObjective[]) => prev.map(o => o.id === id ? { ...o, progressNotes: notes } : o);
+    setDailyObjectives(updater);
+    setPastObjectives(updater);
+    if (isGuest) {
+      const data = getGuestData();
+      data.dailyObjectives = (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, progressNotes: notes } : o);
+      saveGuestData(data);
+      return;
+    }
+    await supabase.from('daily_objectives').update({ progress_notes: notes }).eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
+
+  const updateObjectivePriority = useCallback(async (id: string, priority: Priority) => {
+    const updater = (prev: DailyObjective[]) => prev.map(o => o.id === id ? { ...o, priority } : o);
+    setDailyObjectives(updater);
+    setPastObjectives(updater);
+    if (isGuest) {
+      const data = getGuestData();
+      data.dailyObjectives = (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, priority } : o);
+      saveGuestData(data);
+      return;
+    }
+    await supabase.from('daily_objectives').update({ priority }).eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
 
   const removeDailyObjective = useCallback(async (id: string) => {
     setDailyObjectives(prev => prev.filter(o => o.id !== id));
@@ -450,6 +481,8 @@ export function usePlannerStore() {
     addDailyObjective,
     toggleDailyObjective,
     addProgressNote,
+    updateProgressNotes,
+    updateObjectivePriority,
     removeDailyObjective,
     addCommitment,
     removeCommitment,
