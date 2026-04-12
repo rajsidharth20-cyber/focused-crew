@@ -105,6 +105,8 @@ const Index = () => {
                 onAdd={store.addDailyObjective}
                 onToggle={store.toggleDailyObjective}
                 onAddNote={store.addProgressNote}
+                onUpdateNotes={store.updateProgressNotes}
+                onUpdatePriority={store.updateObjectivePriority}
                 onRemove={store.removeDailyObjective}
                 onCarryForward={store.carryForwardObjective}
               />

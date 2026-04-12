@@ -55,6 +55,7 @@ export type Database = {
           deadline: string | null
           estimated_minutes: number
           id: string
+          priority: string
           progress_notes: string[]
           subject_id: string
           task: string
@@ -67,6 +68,7 @@ export type Database = {
           deadline?: string | null
           estimated_minutes?: number
           id?: string
+          priority?: string
           progress_notes?: string[]
           subject_id: string
           task: string
@@ -79,6 +81,7 @@ export type Database = {
           deadline?: string | null
           estimated_minutes?: number
           id?: string
+          priority?: string
           progress_notes?: string[]
           subject_id?: string
           task?: string
