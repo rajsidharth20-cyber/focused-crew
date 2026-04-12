@@ -1,0 +1,1 @@
+ALTER TABLE public.daily_objectives ADD COLUMN priority text NOT NULL DEFAULT 'medium';
