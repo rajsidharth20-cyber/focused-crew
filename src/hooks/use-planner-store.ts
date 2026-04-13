@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
@@ -67,7 +67,8 @@ export function usePlannerStore() {
   const [events, setEvents] = useState<PlannerEvent[]>([]);
   const [protocols, setProtocols] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
-  const today = getEffectiveToday();
+  // Memoize today so it stays stable across re-renders within the same effective day
+  const [today] = useState(() => getEffectiveToday());
 
   // Guest mode: localStorage helpers
   const getGuestData = useCallback(() => {
