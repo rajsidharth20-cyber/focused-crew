@@ -76,17 +76,22 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   };
 
   const handleEditNote = (obj: DailyObjective, idx: number) => {
+    const parsed = parseNote(obj.progressNotes[idx]);
     setEditingNoteIdx({ id: obj.id, idx });
-    setEditNoteValue(obj.progressNotes[idx]);
+    setEditNoteValue(parsed.text);
   };
 
   const handleSaveEditNote = () => {
     if (!editingNoteIdx) return;
     const obj = [...objectives, ...pastObjectives].find(o => o.id === editingNoteIdx.id);
     if (!obj) return;
+    const parsed = parseNote(obj.progressNotes[editingNoteIdx.idx]);
     const updated = [...obj.progressNotes];
     if (editNoteValue.trim()) {
-      updated[editingNoteIdx.idx] = editNoteValue.trim();
+      updated[editingNoteIdx.idx] = JSON.stringify({
+        text: editNoteValue.trim(),
+        timestamp: parsed.timestamp || new Date().toISOString(),
+      });
     } else {
       updated.splice(editingNoteIdx.idx, 1);
     }
