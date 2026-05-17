@@ -22,6 +22,29 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: stri
   low: { label: 'Low', color: 'text-muted-foreground', bg: 'bg-muted/30' },
 };
 
+const parseNote = (note: string): { text: string; timestamp: string | null } => {
+  try {
+    const parsed = JSON.parse(note);
+    if (parsed && typeof parsed.text === 'string' && typeof parsed.timestamp === 'string') {
+      return { text: parsed.text, timestamp: parsed.timestamp };
+    }
+  } catch {
+    // Not JSON — treat as plain text (backward compat)
+  }
+  return { text: note, timestamp: null };
+};
+
+const formatTimestamp = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward }: DailyObjectivesProps) {
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
@@ -53,17 +76,22 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   };
 
   const handleEditNote = (obj: DailyObjective, idx: number) => {
+    const parsed = parseNote(obj.progressNotes[idx]);
     setEditingNoteIdx({ id: obj.id, idx });
-    setEditNoteValue(obj.progressNotes[idx]);
+    setEditNoteValue(parsed.text);
   };
 
   const handleSaveEditNote = () => {
     if (!editingNoteIdx) return;
     const obj = [...objectives, ...pastObjectives].find(o => o.id === editingNoteIdx.id);
     if (!obj) return;
+    const parsed = parseNote(obj.progressNotes[editingNoteIdx.idx]);
     const updated = [...obj.progressNotes];
     if (editNoteValue.trim()) {
-      updated[editingNoteIdx.idx] = editNoteValue.trim();
+      updated[editingNoteIdx.idx] = JSON.stringify({
+        text: editNoteValue.trim(),
+        timestamp: parsed.timestamp || new Date().toISOString(),
+      });
     } else {
       updated.splice(editingNoteIdx.idx, 1);
     }
@@ -188,9 +216,19 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
                       </div>
                     ) : (
                       <>
-                        <p className="flex-1 text-xs text-muted-foreground pl-3 border-l-2 border-primary/30">
-                          {note}
-                        </p>
+                        {(() => {
+                          const parsed = parseNote(note);
+                          return (
+                            <div className="flex-1 pl-3 border-l-2 border-primary/30">
+                              <p className="text-xs text-muted-foreground">{parsed.text}</p>
+                              {parsed.timestamp && (
+                                <span className="text-[10px] text-muted-foreground/50 font-display">
+                                  {formatTimestamp(parsed.timestamp)}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })()}
                         <button onClick={() => handleEditNote(o, i)} className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary transition-opacity">
                           <Pencil className="w-3 h-3" />
                         </button>
