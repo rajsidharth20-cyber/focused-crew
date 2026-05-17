@@ -22,6 +22,29 @@ const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: stri
   low: { label: 'Low', color: 'text-muted-foreground', bg: 'bg-muted/30' },
 };
 
+const parseNote = (note: string): { text: string; timestamp: string | null } => {
+  try {
+    const parsed = JSON.parse(note);
+    if (parsed && typeof parsed.text === 'string' && typeof parsed.timestamp === 'string') {
+      return { text: parsed.text, timestamp: parsed.timestamp };
+    }
+  } catch {
+    // Not JSON — treat as plain text (backward compat)
+  }
+  return { text: note, timestamp: null };
+};
+
+const formatTimestamp = (iso: string) => {
+  const d = new Date(iso);
+  return d.toLocaleString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+  });
+};
+
 export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward }: DailyObjectivesProps) {
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
