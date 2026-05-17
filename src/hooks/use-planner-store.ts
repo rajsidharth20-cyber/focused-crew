@@ -264,7 +264,8 @@ export function usePlannerStore() {
     const all = [...dailyObjectives, ...pastObjectives];
     const o = all.find(o => o.id === id);
     if (!o) return;
-    const newNotes = [...o.progressNotes, note];
+    const noteEntry = JSON.stringify({ text: note, timestamp: new Date().toISOString() });
+    const newNotes = [...o.progressNotes, noteEntry];
     const updater = (prev: DailyObjective[]) => prev.map(o => o.id === id ? { ...o, progressNotes: newNotes } : o);
     setDailyObjectives(updater);
     setPastObjectives(updater);
