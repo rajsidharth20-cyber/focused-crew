@@ -21,7 +21,7 @@ export function SettingsDialog() {
         <div className="space-y-4 pt-2">
           <div>
             <Label className="text-sm font-medium text-muted-foreground mb-3 block">Theme</Label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <button
                 onClick={() => setTheme('flight')}
                 className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
@@ -32,7 +32,7 @@ export function SettingsDialog() {
               >
                 <Plane className="w-6 h-6" />
                 <span className="text-sm font-display font-semibold">Flight</span>
-                <span className="text-[10px] text-muted-foreground">Sky blue cockpit</span>
+                <span className="text-[10px] text-muted-foreground text-center">Sky blue cockpit</span>
               </button>
               <button
                 onClick={() => setTheme('war')}
@@ -44,7 +44,19 @@ export function SettingsDialog() {
               >
                 <Swords className="w-6 h-6" />
                 <span className="text-sm font-display font-semibold">War</span>
-                <span className="text-[10px] text-muted-foreground">Tactical fire ops</span>
+                <span className="text-[10px] text-muted-foreground text-center">Tactical fire ops</span>
+              </button>
+              <button
+                onClick={() => setTheme('premium')}
+                className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                  theme === 'premium'
+                    ? 'border-primary bg-primary/10 text-foreground'
+                    : 'border-border bg-card text-muted-foreground hover:border-muted-foreground'
+                }`}
+              >
+                <Sparkles className="w-6 h-6" />
+                <span className="text-sm font-display font-semibold">Premium</span>
+                <span className="text-[10px] text-muted-foreground text-center">Light & elegant</span>
               </button>
             </div>
           </div>
