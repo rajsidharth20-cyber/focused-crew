@@ -1,4 +1,4 @@
-import { Settings, Swords, Plane } from 'lucide-react';
+import { Settings, Swords, Plane, Sparkles } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useTheme } from '@/hooks/use-theme';
