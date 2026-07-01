@@ -109,6 +109,58 @@
     --font-display: 'JetBrains Mono', monospace;
     --font-body: 'Inter', sans-serif;
   }
+
+  [data-theme="premium"] {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 10%;
+
+    --primary: 235 85% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 15% 96%;
+    --secondary-foreground: 240 10% 20%;
+
+    --muted: 240 15% 96%;
+    --muted-foreground: 240 5% 45%;
+
+    --accent: 265 85% 65%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 75% 62%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 10% 92%;
+    --input: 240 10% 92%;
+    --ring: 235 85% 60%;
+
+    --radius: 1.25rem;
+
+    --sidebar-background: 240 20% 98%;
+    --sidebar-foreground: 240 10% 10%;
+    --sidebar-primary: 235 85% 60%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 15% 96%;
+    --sidebar-accent-foreground: 240 10% 20%;
+    --sidebar-border: 240 10% 92%;
+    --sidebar-ring: 235 85% 60%;
+
+    --success: 158 70% 42%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 95% 55%;
+    --warning-foreground: 240 10% 10%;
+
+    --runway: 235 85% 60%;
+
+    --font-display: 'Inter', sans-serif;
+    --font-body: 'Inter', sans-serif;
+  }
 }
 
 @layer base {
