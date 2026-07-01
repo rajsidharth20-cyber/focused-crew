@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-export type AppTheme = 'flight' | 'war';
+export type AppTheme = 'flight' | 'war' | 'premium';
 
 export function useTheme() {
   const [theme, setThemeState] = useState<AppTheme>(() => {
