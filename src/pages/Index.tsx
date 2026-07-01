@@ -27,12 +27,13 @@ const getGreeting = (theme: string) => {
   return 'Good evening';
 };
 
-const fadeUp = {
+import type { Variants } from 'framer-motion';
+const fadeUp: Variants = {
   hidden: { opacity: 0, y: 16 },
   show: (i: number) => ({
     opacity: 1,
     y: 0,
-    transition: { delay: 0.05 + i * 0.06, duration: 0.5, ease: [0.2, 0.8, 0.2, 1] },
+    transition: { delay: 0.05 + i * 0.06, duration: 0.5, ease: 'easeOut' },
   }),
 };
 
