@@ -101,14 +101,26 @@ const StudyTimer = () => {
               <p className="text-[11px] text-muted-foreground truncate">Focus, log, analyze.</p>
             </div>
           </div>
-          <ManualSessionDialog
-            tags={study.tags}
-            subjects={planner.subjects}
-            onSave={(input) => {
-              study.addSession({ ...input, type: 'manual', plannedSeconds: null });
-              toast.success('Session added');
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadWeekly}
+              disabled={downloadingReport}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border border-primary/40 text-primary hover:bg-primary/10 transition disabled:opacity-50"
+              aria-label="Download weekly report as PDF"
+            >
+              {downloadingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Weekly report</span>
+            </button>
+            <ManualSessionDialog
+              tags={study.tags}
+              subjects={planner.subjects}
+              onSave={(input) => {
+                study.addSession({ ...input, type: 'manual', plannedSeconds: null });
+                toast.success('Session added');
+              }}
+            />
+          </div>
+
         </div>
       </header>
 
