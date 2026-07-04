@@ -178,6 +178,90 @@ export type Database = {
         }
         Relationships: []
       }
+      study_sessions: {
+        Row: {
+          created_at: string
+          duration_seconds: number
+          ended_at: string
+          id: string
+          notes: string | null
+          planned_seconds: number | null
+          started_at: string
+          subject_id: string | null
+          tag_id: string | null
+          topic: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string
+          id?: string
+          notes?: string | null
+          planned_seconds?: number | null
+          started_at?: string
+          subject_id?: string | null
+          tag_id?: string | null
+          topic?: string | null
+          type?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          duration_seconds?: number
+          ended_at?: string
+          id?: string
+          notes?: string | null
+          planned_seconds?: number | null
+          started_at?: string
+          subject_id?: string | null
+          tag_id?: string | null
+          topic?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "study_sessions_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "study_sessions_tag_id_fkey"
+            columns: ["tag_id"]
+            isOneToOne: false
+            referencedRelation: "study_tags"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      study_tags: {
+        Row: {
+          color: string
+          created_at: string
+          id: string
+          name: string
+          user_id: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          id?: string
+          name: string
+          user_id: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          id?: string
+          name?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       subjects: {
         Row: {
           created_at: string
