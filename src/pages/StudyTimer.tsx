@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Timer, Hourglass } from 'lucide-react';
+import { ArrowLeft, Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
 import { PomodoroTimer } from '@/components/study/PomodoroTimer';
 import { StopwatchTimer } from '@/components/study/StopwatchTimer';
 import { TagManager } from '@/components/study/TagManager';
