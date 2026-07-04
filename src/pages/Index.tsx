@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { useTheme } from '@/hooks/use-theme';
 import { SubjectManager } from '@/components/SubjectManager';
