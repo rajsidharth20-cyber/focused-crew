@@ -19,10 +19,34 @@ type Mode = 'pomodoro' | 'stopwatch';
 const StudyTimer = () => {
   const study = useStudyStore();
   const planner = usePlannerStore();
+  const { username } = useAuth();
   const [mode, setMode] = useState<Mode>('pomodoro');
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
+  const [downloadingReport, setDownloadingReport] = useState(false);
+
+  const handleDownloadWeekly = async () => {
+    setDownloadingReport(true);
+    const t = toast.loading('Building your weekly report…');
+    try {
+      await generateWeeklyReportPDF({
+        username,
+        sessions: study.sessions,
+        tags: study.tags,
+        subjects: planner.subjects,
+        dailyObjectives: planner.dailyObjectives,
+        pastObjectives: planner.pastObjectives,
+      });
+      toast.success('Weekly report downloaded', { id: t });
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not generate report', { id: t });
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
 
   const activeContext = () => ({
     tagId: tagId || null,
