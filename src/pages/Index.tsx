@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2 } from 'lucide-react';
+import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
