@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2 } from 'lucide-react';
+import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
@@ -112,6 +113,14 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <Link
+              to="/study"
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-2.5 py-1.5 rounded-md hover:bg-primary/10"
+              aria-label="Open Study Timer"
+            >
+              <Timer className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Study</span>
+            </Link>
             <SettingsDialog />
             <button
               onClick={handleDownloadSummary}

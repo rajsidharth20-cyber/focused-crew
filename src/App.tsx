@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Install from "./pages/Install";
+import StudyTimer from "./pages/StudyTimer";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -35,6 +36,7 @@ const App = () => (
             <Route path="/auth" element={<Auth />} />
             <Route path="/install" element={<Install />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
+            <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
