@@ -1,5 +1,8 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2 } from 'lucide-react';
+import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
+import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { useTheme } from '@/hooks/use-theme';
 import { SubjectManager } from '@/components/SubjectManager';
@@ -43,6 +46,28 @@ const Index = () => {
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
   useEventReminders(store.events);
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+
+  const handleDownloadSummary = async () => {
+    setDownloadingPdf(true);
+    const t = toast.loading('Preparing your daily summary…');
+    try {
+      await generateDailySummaryPDF({
+        username,
+        subjects: store.subjects,
+        dailyObjectives: store.dailyObjectives,
+        weeklyTargets: store.weeklyTargets,
+        commitments: store.commitments,
+        events: store.events,
+      });
+      toast.success('Summary downloaded', { id: t });
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not generate PDF', { id: t });
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
 
   const today = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
@@ -88,6 +113,15 @@ const Index = () => {
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
             <SettingsDialog />
+            <button
+              onClick={handleDownloadSummary}
+              disabled={downloadingPdf}
+              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-2.5 py-1.5 rounded-md hover:bg-primary/10 disabled:opacity-50"
+              aria-label="Download daily summary as PDF"
+            >
+              {downloadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Summary PDF</span>
+            </button>
             <button
               onClick={store.clearDay}
               className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2.5 py-1.5 rounded-md hover:bg-destructive/10"
