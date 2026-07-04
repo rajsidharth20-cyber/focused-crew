@@ -14,6 +14,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
+import { QuoteCard } from '@/components/QuoteCard';
 
 const getGreeting = (theme: string) => {
   const hour = new Date().getHours();
