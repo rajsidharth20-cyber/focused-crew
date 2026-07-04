@@ -2,3 +2,6 @@ project_id = "noznnfeuifjqkhnqoooc"
 
 [functions.ai-advisor]
 verify_jwt = false
+
+[functions.daily-quote]
+verify_jwt = false

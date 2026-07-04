@@ -199,6 +199,30 @@ export type Database = {
         }
         Relationships: []
       }
+      user_quotes: {
+        Row: {
+          author: string | null
+          created_at: string
+          id: string
+          text: string
+          user_id: string
+        }
+        Insert: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          text: string
+          user_id: string
+        }
+        Update: {
+          author?: string | null
+          created_at?: string
+          id?: string
+          text?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       weekly_targets: {
         Row: {
           completed: boolean

@@ -14,6 +14,7 @@ import { ProgressRing } from '@/components/ProgressRing';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
+import { QuoteCard } from '@/components/QuoteCard';
 
 const getGreeting = (theme: string) => {
   const hour = new Date().getHours();
@@ -106,6 +107,8 @@ const Index = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
+        {/* QUOTE */}
+        <QuoteCard />
         {/* HERO */}
         <motion.section
           initial={{ opacity: 0, y: 20 }}
