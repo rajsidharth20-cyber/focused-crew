@@ -1,41 +1,34 @@
-## Goal
-Send real push notifications for upcoming events and scheduled stops that arrive even when the tab is closed or the browser is in the background — on desktop and on installed PWA (Android). iOS requires the app to be installed to the home screen (Apple's restriction).
+## Weekly Study Report PDF
 
-## How it will work
-1. User clicks "Enable Notifications" → browser asks permission → we subscribe them to the Push service using a VAPID public key.
-2. Subscription is saved to the database, tied to the user.
-3. A scheduled backend job runs every minute, finds events/stops starting in 30m, 15m, or now, and sends Web Push messages to that user's devices.
-4. The service worker receives the push (even with browser closed) and shows a system notification.
+Add a "Weekly Report" button on the Study Timer page that generates and downloads a branded PDF of the last 7 days of study activity.
 
-## Pieces to build
+### Where it lives
+- Button in the `/study` page header, next to "Add missed session" — icon: `FileDown`, label "Weekly Report".
+- Reuses the existing `jsPDF` dependency (already used by `src/lib/daily-summary-pdf.ts`), so no new packages.
 
-### Backend (Lovable Cloud)
-- Table `push_subscriptions` (user_id, endpoint, p256dh, auth, created_at) with RLS so users only manage their own.
-- Table column `notified_thresholds` on `events` (and equivalent for scheduled stops if separate) to avoid duplicate sends.
-- Edge function `send-event-reminders` — runs each minute via pg_cron + pg_net, queries events within the next 30 min, sends Web Push using the `web-push` library, marks thresholds as sent.
-- Edge function `save-push-subscription` — stores subscription from the client.
-- Secrets: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` (mailto). I will generate these and ask you to paste them into the secrets prompt.
+### Report contents (A4, multi-page)
+1. **Cover header** — "Task Pilot — Weekly Study Report", user's call sign, date range (last 7 days, Mon–Sun of current week).
+2. **Headline stats block** — this week's focused time, daily average this week, longest study day this week, active days / 7.
+3. **This week vs last week** — totals, delta, and a small horizontal bar comparison.
+4. **This month vs last month** — totals + delta.
+5. **Daily breakdown** — bar chart (drawn with jsPDF primitives) of Mon–Sun focus minutes, with the current day highlighted.
+6. **Time per study type** — Pomodoro / Stopwatch / Manual totals + percentage bars.
+7. **Subject-wise hours** — table sorted by hours (top 10), with a bar for each row.
+8. **Tag-wise hours** — same treatment, with each tag's color swatch.
+9. **Topic-wise hours** — top 10 topics by minutes.
+10. **Planned vs actual (week)** — sum of estimated minutes on this week's objectives vs actual focused time, with a progress bar and a short qualitative note ("Ahead of plan" / "Behind plan" / "On track").
+11. **Footer** on every page with page number and generation timestamp.
 
-### Frontend
-- Custom service worker (`public/sw-push.js` injected into the existing PWA SW via `injectManifest` mode) that handles `push` and `notificationclick`.
-- Switch `vite-plugin-pwa` to `injectManifest` strategy so we can add custom push handlers while keeping precaching.
-- New hook `usePushNotifications` — requests permission, subscribes, posts subscription to backend.
-- "Enable Notifications" button in Settings (or a banner on the dashboard).
-- Keep the existing in-app `useEventReminders` toast hook for foreground reminders.
+### Technical details
+- New file: `src/lib/weekly-report-pdf.ts` exporting `generateWeeklyReportPDF({ username, sessions, tags, subjects, dailyObjectives, pastObjectives })`.
+- All aggregation logic lives in the PDF module (pure functions over `StudySession[]`) so the page component stays lean; mirrors the math already in `src/components/study/StudyStats.tsx` (week/month windows, per-tag, per-subject, per-topic, per-type).
+- Week definition: Monday-start, matching `StudyStats`.
+- Charts drawn with `doc.rect` / `doc.setFillColor` / `doc.text` — no chart library.
+- Uses the same navy/blue palette as `daily-summary-pdf.ts` for visual consistency.
+- Edit `src/pages/StudyTimer.tsx`: import the new generator, add a `downloadingReport` state, add the button with a spinner + `toast.loading` / `toast.success` / `toast.error` (matches the existing Summary PDF pattern in `src/pages/Index.tsx`).
+- Guests: works from local session data with no backend calls.
+- Empty state: if there are zero sessions in the last 7 days, still generate the PDF but include a "No sessions logged this week" note in the stats section so the download never fails silently.
 
-### Verification
-- After deploy: enable notifications in the preview, create an event a couple minutes out, close the tab, confirm the OS notification appears.
-- Edge function logs checked for delivery status.
-
-## Technical notes (for reference)
-```text
-client → subscribe(VAPID public) → /functions/save-push-subscription → DB
-pg_cron (every 1 min) → /functions/send-event-reminders → web-push → FCM/APNs/Mozilla → SW push event → showNotification
-```
-- iOS Safari only delivers Web Push to apps added to the Home Screen (iOS 16.4+).
-- Chrome/Edge/Firefox on desktop and Android work without install.
-- A user must grant permission once; we'll show a clear prompt.
-
-## What I need from you
-1. Approve this plan.
-2. After I generate VAPID keys, paste them into the secret prompts I'll show.
+### Files touched
+- `src/lib/weekly-report-pdf.ts` (new)
+- `src/pages/StudyTimer.tsx` (add button + handler)

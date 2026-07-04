@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Timer, Hourglass } from 'lucide-react';
+import { ArrowLeft, Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '@/hooks/useAuth';
+import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
 import { PomodoroTimer } from '@/components/study/PomodoroTimer';
 import { StopwatchTimer } from '@/components/study/StopwatchTimer';
 import { TagManager } from '@/components/study/TagManager';
@@ -17,10 +19,34 @@ type Mode = 'pomodoro' | 'stopwatch';
 const StudyTimer = () => {
   const study = useStudyStore();
   const planner = usePlannerStore();
+  const { username } = useAuth();
   const [mode, setMode] = useState<Mode>('pomodoro');
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
+  const [downloadingReport, setDownloadingReport] = useState(false);
+
+  const handleDownloadWeekly = async () => {
+    setDownloadingReport(true);
+    const t = toast.loading('Building your weekly report…');
+    try {
+      await generateWeeklyReportPDF({
+        username,
+        sessions: study.sessions,
+        tags: study.tags,
+        subjects: planner.subjects,
+        dailyObjectives: planner.dailyObjectives,
+        pastObjectives: planner.pastObjectives,
+      });
+      toast.success('Weekly report downloaded', { id: t });
+    } catch (e) {
+      console.error(e);
+      toast.error('Could not generate report', { id: t });
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
+
 
   const activeContext = () => ({
     tagId: tagId || null,
@@ -75,14 +101,26 @@ const StudyTimer = () => {
               <p className="text-[11px] text-muted-foreground truncate">Focus, log, analyze.</p>
             </div>
           </div>
-          <ManualSessionDialog
-            tags={study.tags}
-            subjects={planner.subjects}
-            onSave={(input) => {
-              study.addSession({ ...input, type: 'manual', plannedSeconds: null });
-              toast.success('Session added');
-            }}
-          />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleDownloadWeekly}
+              disabled={downloadingReport}
+              className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border border-primary/40 text-primary hover:bg-primary/10 transition disabled:opacity-50"
+              aria-label="Download weekly report as PDF"
+            >
+              {downloadingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
+              <span className="hidden sm:inline">Weekly report</span>
+            </button>
+            <ManualSessionDialog
+              tags={study.tags}
+              subjects={planner.subjects}
+              onSave={(input) => {
+                study.addSession({ ...input, type: 'manual', plannedSeconds: null });
+                toast.success('Session added');
+              }}
+            />
+          </div>
+
         </div>
       </header>
 
