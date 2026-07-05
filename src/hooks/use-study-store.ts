@@ -152,10 +152,26 @@ export function useStudyStore() {
     if (!error && data) setSessions(prev => [mapSession(data), ...prev]);
   }, [user, isGuest]);
 
+  const updateSession = useCallback(async (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'notes'>>) => {
+    setSessions(prev => {
+      const u = prev.map(s => s.id === id ? { ...s, ...patch } : s);
+      if (isGuest) writeLS(GUEST_SESSIONS, u);
+      return u;
+    });
+    if (!isGuest) {
+      const dbPatch: any = {};
+      if ('tagId' in patch) dbPatch.tag_id = patch.tagId ?? null;
+      if ('subjectId' in patch) dbPatch.subject_id = patch.subjectId ?? null;
+      if ('topic' in patch) dbPatch.topic = patch.topic ?? null;
+      if ('notes' in patch) dbPatch.notes = patch.notes ?? null;
+      await db.from('study_sessions').update(dbPatch).eq('id', id);
+    }
+  }, [isGuest]);
+
   const removeSession = useCallback(async (id: string) => {
     setSessions(prev => { const u = prev.filter(s => s.id !== id); if (isGuest) writeLS(GUEST_SESSIONS, u); return u; });
     if (!isGuest) await db.from('study_sessions').delete().eq('id', id);
   }, [isGuest]);
 
-  return { tags, sessions, loading, addTag, updateTag, removeTag, addSession, removeSession };
+  return { tags, sessions, loading, addTag, updateTag, removeTag, addSession, updateSession, removeSession };
 }

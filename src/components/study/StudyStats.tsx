@@ -33,6 +33,10 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
   const stats = useMemo(() => {
     const now = new Date();
     const todayStr = now.toISOString().slice(0, 10);
+    const secondsIntoDay = now.getHours() * 3600 + now.getMinutes() * 60 + now.getSeconds();
+
+    const yStart = new Date(now); yStart.setDate(yStart.getDate() - 1); yStart.setHours(0, 0, 0, 0);
+    const yCutoff = new Date(yStart.getTime() + secondsIntoDay * 1000);
 
     const thisWeekStart = startOfWeek(now);
     const lastWeekStart = new Date(thisWeekStart); lastWeekStart.setDate(lastWeekStart.getDate() - 7);
@@ -40,7 +44,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastMonthEnd = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    let today = 0, thisWeek = 0, lastWeek = 0, thisMonth = 0, lastMonth = 0, total = 0;
+    let today = 0, yesterdaySoFar = 0, thisWeek = 0, lastWeek = 0, thisMonth = 0, lastMonth = 0, total = 0;
     const perDay = new Map<string, number>();
     const perSubject = new Map<string, number>();
     const perTag = new Map<string, number>();
@@ -54,6 +58,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       const dk = dayKey(s.startedAt);
       perDay.set(dk, (perDay.get(dk) ?? 0) + dur);
       if (dk === todayStr) today += dur;
+      if (start >= yStart && start <= yCutoff) yesterdaySoFar += dur;
       if (start >= thisWeekStart) thisWeek += dur;
       else if (start >= lastWeekStart) lastWeek += dur;
       if (start >= thisMonthStart) thisMonth += dur;
@@ -73,11 +78,10 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       if (sec > longestDay.sec) longestDay = { day, sec };
     });
 
-    // Planned vs actual today: sum estimated minutes of today's objectives vs today study seconds
     const plannedTodaySec = objectives.reduce((sum, o) => sum + (o.estimatedMinutes || 0) * 60, 0);
 
     return {
-      today, thisWeek, lastWeek, thisMonth, lastMonth, total,
+      today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
       avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
     };
@@ -109,8 +113,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <BigStat icon={Flame} tint="primary" label="Today" value={fmtHours(stats.today)} />
+        <BigStat icon={Calendar} tint="accent" label="Yesterday (so far)" value={fmtHours(stats.yesterdaySoFar)} sub="same time" />
         <BigStat icon={Trophy} tint="accent" label="Lifetime" value={fmtHours(stats.total)} />
         <BigStat icon={Calendar} tint="primary" label="Daily avg" value={fmtHours(stats.avgDaily)} />
         <BigStat icon={Timer} tint="destructive" label="Longest day" value={fmtHours(stats.longestDay.sec)} sub={stats.longestDay.day !== '—' ? stats.longestDay.day : undefined} />

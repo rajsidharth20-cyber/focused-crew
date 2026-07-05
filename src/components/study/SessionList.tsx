@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Clock } from 'lucide-react';
+import { Trash2, Clock, Pencil, Check, X } from 'lucide-react';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject } from '@/hooks/use-planner-store';
 
@@ -8,6 +9,7 @@ interface Props {
   tags: StudyTag[];
   subjects: Subject[];
   onRemove: (id: string) => void;
+  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic'>>) => void;
 }
 
 const fmtDur = (s: number) => {
@@ -20,8 +22,25 @@ const fmtWhen = (iso: string) => {
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 };
 
-export function SessionList({ sessions, tags, subjects, onRemove }: Props) {
+export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Props) {
   const recent = sessions.slice(0, 30);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string }>({ topic: '', tagId: '', subjectId: '' });
+
+  const startEdit = (s: StudySession) => {
+    setEditingId(s.id);
+    setDraft({ topic: s.topic ?? '', tagId: s.tagId ?? '', subjectId: s.subjectId ?? '' });
+  };
+  const saveEdit = () => {
+    if (!editingId) return;
+    onUpdate(editingId, {
+      topic: draft.topic.trim() || null,
+      tagId: draft.tagId || null,
+      subjectId: draft.subjectId || null,
+    });
+    setEditingId(null);
+  };
+
   return (
     <div className="glass-card p-5 space-y-3">
       <div className="flex items-center justify-between">
@@ -36,6 +55,7 @@ export function SessionList({ sessions, tags, subjects, onRemove }: Props) {
             {recent.map(s => {
               const tag = tags.find(t => t.id === s.tagId);
               const subject = subjects.find(sub => sub.id === s.subjectId);
+              const isEditing = editingId === s.id;
               return (
                 <motion.div
                   key={s.id}
@@ -43,24 +63,66 @@ export function SessionList({ sessions, tags, subjects, onRemove }: Props) {
                   initial={{ opacity: 0, y: 6 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, x: -20 }}
-                  className="flex items-center gap-3 p-2.5 rounded-lg border border-border/40 bg-secondary/30 hover:bg-secondary/50 transition"
+                  className="p-2.5 rounded-lg border border-border/40 bg-secondary/30 hover:bg-secondary/50 transition"
                 >
-                  <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag?.color ?? 'hsl(var(--muted-foreground))' }} />
-                  <div className="min-w-0 flex-1">
-                    <div className="text-sm font-medium truncate">{s.topic || 'Untitled session'}</div>
-                    <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-2">
-                      <span className="capitalize">{s.type}</span>
-                      {tag && <span>· {tag.name}</span>}
-                      {subject && <span>· {subject.name}</span>}
-                      <span>· {fmtWhen(s.startedAt)}</span>
+                  {isEditing ? (
+                    <div className="space-y-2">
+                      <input
+                        value={draft.topic}
+                        onChange={e => setDraft(d => ({ ...d, topic: e.target.value }))}
+                        placeholder="Topic"
+                        className="w-full bg-background border border-border/60 rounded px-2 py-1.5 text-sm"
+                      />
+                      <div className="grid grid-cols-2 gap-2">
+                        <select
+                          value={draft.tagId}
+                          onChange={e => setDraft(d => ({ ...d, tagId: e.target.value }))}
+                          className="bg-background border border-border/60 rounded px-2 py-1.5 text-xs"
+                        >
+                          <option value="">— No tag —</option>
+                          {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                        </select>
+                        <select
+                          value={draft.subjectId}
+                          onChange={e => setDraft(d => ({ ...d, subjectId: e.target.value }))}
+                          className="bg-background border border-border/60 rounded px-2 py-1.5 text-xs"
+                        >
+                          <option value="">— No subject —</option>
+                          {subjects.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
+                        </select>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <button onClick={() => setEditingId(null)} className="text-xs px-2 py-1 rounded hover:bg-secondary text-muted-foreground inline-flex items-center gap-1">
+                          <X className="w-3 h-3" />Cancel
+                        </button>
+                        <button onClick={saveEdit} className="text-xs px-2 py-1 rounded bg-primary text-primary-foreground inline-flex items-center gap-1">
+                          <Check className="w-3 h-3" />Save
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-sm font-semibold tabular-nums text-primary inline-flex items-center gap-1">
-                    <Clock className="w-3 h-3" />{fmtDur(s.durationSeconds)}
-                  </div>
-                  <button onClick={() => onRemove(s.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
-                    <Trash2 className="w-3.5 h-3.5" />
-                  </button>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: tag?.color ?? 'hsl(var(--muted-foreground))' }} />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium truncate">{s.topic || 'Untitled session'}</div>
+                        <div className="text-[11px] text-muted-foreground flex flex-wrap gap-x-2">
+                          <span className="capitalize">{s.type}</span>
+                          <span>· {tag ? tag.name : 'no tag'}</span>
+                          <span>· {subject ? subject.name : 'no subject'}</span>
+                          <span>· {fmtWhen(s.startedAt)}</span>
+                        </div>
+                      </div>
+                      <div className="text-sm font-semibold tabular-nums text-primary inline-flex items-center gap-1">
+                        <Clock className="w-3 h-3" />{fmtDur(s.durationSeconds)}
+                      </div>
+                      <button onClick={() => startEdit(s)} className="p-1.5 rounded hover:bg-primary/10 text-muted-foreground hover:text-primary" aria-label="Edit">
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button onClick={() => onRemove(s.id)} className="p-1.5 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive">
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </motion.div>
               );
             })}

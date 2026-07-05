@@ -7,7 +7,7 @@ interface DailyObjectivesProps {
   subjects: Subject[];
   objectives: DailyObjective[];
   pastObjectives: DailyObjective[];
-  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority) => void;
+  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string) => void;
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onUpdateNotes: (id: string, notes: string[]) => void;
@@ -51,6 +51,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [minutes, setMinutes] = useState('30');
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
+  const [initialNote, setInitialNote] = useState('');
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
@@ -61,10 +62,11 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
-      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority);
+      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority, initialNote.trim() || undefined);
       setTask('');
       setDeadline('');
       setPriority('medium');
+      setInitialNote('');
     }
   };
 
@@ -372,6 +374,18 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
           <button onClick={handleAdd} className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm font-medium hover:opacity-90 transition-opacity">
             <Plus className="w-4 h-4" />
           </button>
+        </div>
+      )}
+
+      {subjects.length > 0 && (
+        <div className="mb-4">
+          <input
+            value={initialNote}
+            onChange={e => setInitialNote(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="Optional note for this objective…"
+            className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
         </div>
       )}
 
