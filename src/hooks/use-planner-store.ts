@@ -222,9 +222,12 @@ export function usePlannerStore() {
     await supabase.from('weekly_targets').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
-  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string, priority: Priority = 'medium') => {
+  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string, priority: Priority = 'medium', initialNote?: string) => {
+    const initialNotes = initialNote && initialNote.trim()
+      ? [JSON.stringify({ text: initialNote.trim(), timestamp: new Date().toISOString() })]
+      : [];
     if (isGuest) {
-      const newO: DailyObjective = { id: crypto.randomUUID(), subjectId, task, estimatedMinutes, completed: false, progressNotes: [], date: today, deadline: deadline || null, priority };
+      const newO: DailyObjective = { id: crypto.randomUUID(), subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, date: today, deadline: deadline || null, priority };
       setDailyObjectives(prev => {
         const updated = [...prev, newO];
         const data = getGuestData(); data.dailyObjectives = [...(data.dailyObjectives || []), newO]; saveGuestData(data);
@@ -234,7 +237,7 @@ export function usePlannerStore() {
     }
     if (!user) return;
     const { data, error } = await supabase.from('daily_objectives')
-      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority })
+      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority, progress_notes: initialNotes })
       .select().single();
     if (!error && data) setDailyObjectives(prev => [...prev, {
       id: data.id, subjectId: data.subject_id, task: data.task,
