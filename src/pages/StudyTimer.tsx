@@ -160,7 +160,7 @@ const StudyTimer = () => {
             {mode === 'pomodoro'
               ? <PomodoroTimer onComplete={handlePomodoroComplete} />
               : <StopwatchTimer onSave={handleStopwatchSave} />}
-            <SessionList sessions={study.sessions} tags={study.tags} subjects={planner.subjects} onRemove={study.removeSession} />
+            <SessionList sessions={study.sessions} tags={study.tags} subjects={planner.subjects} onRemove={study.removeSession} onUpdate={study.updateSession} />
           </div>
           <div className="space-y-6">
             <TagManager tags={study.tags} onAdd={study.addTag} onUpdate={study.updateTag} onRemove={study.removeTag} />
