@@ -377,6 +377,18 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         </div>
       )}
 
+      {subjects.length > 0 && (
+        <div className="mb-4">
+          <input
+            value={initialNote}
+            onChange={e => setInitialNote(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && handleAdd()}
+            placeholder="Optional note for this objective…"
+            className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+          />
+        </div>
+      )}
+
       {inFlight.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
