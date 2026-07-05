@@ -11,6 +11,7 @@ import { TagManager } from '@/components/study/TagManager';
 import { ManualSessionDialog } from '@/components/study/ManualSessionDialog';
 import { StudyStats } from '@/components/study/StudyStats';
 import { SessionList } from '@/components/study/SessionList';
+import { StudyObjectivesPanel } from '@/components/study/StudyObjectivesPanel';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 
@@ -163,6 +164,7 @@ const StudyTimer = () => {
             <SessionList sessions={study.sessions} tags={study.tags} subjects={planner.subjects} onRemove={study.removeSession} onUpdate={study.updateSession} />
           </div>
           <div className="space-y-6">
+            <StudyObjectivesPanel subjects={planner.subjects} objectives={planner.dailyObjectives} onToggle={planner.toggleDailyObjective} />
             <TagManager tags={study.tags} onAdd={study.addTag} onUpdate={study.updateTag} onRemove={study.removeTag} />
           </div>
         </div>
