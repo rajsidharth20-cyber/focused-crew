@@ -7,7 +7,7 @@ interface DailyObjectivesProps {
   subjects: Subject[];
   objectives: DailyObjective[];
   pastObjectives: DailyObjective[];
-  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority) => void;
+  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string) => void;
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onUpdateNotes: (id: string, notes: string[]) => void;
@@ -51,6 +51,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [minutes, setMinutes] = useState('30');
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
+  const [initialNote, setInitialNote] = useState('');
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
@@ -61,10 +62,11 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
-      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority);
+      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority, initialNote.trim() || undefined);
       setTask('');
       setDeadline('');
       setPriority('medium');
+      setInitialNote('');
     }
   };
 
