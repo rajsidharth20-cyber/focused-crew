@@ -173,5 +173,5 @@ export function useStudyStore() {
     if (!isGuest) await db.from('study_sessions').delete().eq('id', id);
   }, [isGuest]);
 
-  return { tags, sessions, loading, addTag, updateTag, removeTag, addSession, removeSession };
+  return { tags, sessions, loading, addTag, updateTag, removeTag, addSession, updateSession, removeSession };
 }
