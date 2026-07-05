@@ -113,8 +113,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <BigStat icon={Flame} tint="primary" label="Today" value={fmtHours(stats.today)} />
+        <BigStat icon={Calendar} tint="accent" label="Yesterday (so far)" value={fmtHours(stats.yesterdaySoFar)} sub="same time" />
         <BigStat icon={Trophy} tint="accent" label="Lifetime" value={fmtHours(stats.total)} />
         <BigStat icon={Calendar} tint="primary" label="Daily avg" value={fmtHours(stats.avgDaily)} />
         <BigStat icon={Timer} tint="destructive" label="Longest day" value={fmtHours(stats.longestDay.sec)} sub={stats.longestDay.day !== '—' ? stats.longestDay.day : undefined} />
