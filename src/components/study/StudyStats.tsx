@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, TrendingDown, Trophy, Calendar, Timer, Target, BookOpen } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen } from 'lucide-react';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -101,10 +101,6 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     }).sort((a, b) => b.sec - a.sec);
   }, [stats.perTag, tags]);
 
-  const topicRows = useMemo(() => {
-    return Array.from(stats.perTopic.entries()).map(([topic, sec]) => ({ topic, sec }))
-      .sort((a, b) => b.sec - a.sec).slice(0, 8);
-  }, [stats.perTopic]);
 
   const weekDelta = stats.thisWeek - stats.lastWeek;
   const monthDelta = stats.thisMonth - stats.lastMonth;
