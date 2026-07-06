@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, TrendingDown, Trophy, Calendar, Timer, Target, BookOpen } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen } from 'lucide-react';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -101,10 +101,6 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     }).sort((a, b) => b.sec - a.sec);
   }, [stats.perTag, tags]);
 
-  const topicRows = useMemo(() => {
-    return Array.from(stats.perTopic.entries()).map(([topic, sec]) => ({ topic, sec }))
-      .sort((a, b) => b.sec - a.sec).slice(0, 8);
-  }, [stats.perTopic]);
 
   const weekDelta = stats.thisWeek - stats.lastWeek;
   const monthDelta = stats.thisMonth - stats.lastMonth;
@@ -113,10 +109,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         <BigStat icon={Flame} tint="primary" label="Today" value={fmtHours(stats.today)} />
         <BigStat icon={Calendar} tint="accent" label="Yesterday (so far)" value={fmtHours(stats.yesterdaySoFar)} sub="same time" />
-        <BigStat icon={Trophy} tint="accent" label="Lifetime" value={fmtHours(stats.total)} />
         <BigStat icon={Calendar} tint="primary" label="Daily avg" value={fmtHours(stats.avgDaily)} />
         <BigStat icon={Timer} tint="destructive" label="Longest day" value={fmtHours(stats.longestDay.sec)} sub={stats.longestDay.day !== '—' ? stats.longestDay.day : undefined} />
       </div>
@@ -165,31 +160,6 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <BreakdownCard title="Subject-wise hours" icon={BookOpen} rows={subjectRows.map(r => ({ label: r.name, sec: r.sec }))} />
         <BreakdownCard title="Tag-wise hours" icon={Flame} rows={tagRows.map(r => ({ label: r.name, sec: r.sec, color: r.color }))} />
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <BreakdownCard title="Topic-wise hours" icon={BookOpen} rows={topicRows.map(r => ({ label: r.topic, sec: r.sec }))} />
-        <div className="glass-card p-5 space-y-3">
-          <div className="flex items-center gap-2">
-            <Timer className="w-4 h-4 text-primary" />
-            <h3 className="font-display text-sm font-bold uppercase tracking-widest">Time per study type</h3>
-          </div>
-          {(['pomodoro','stopwatch','manual'] as const).map(k => {
-            const sec = stats.perType[k];
-            const pct = stats.total > 0 ? (sec / stats.total) * 100 : 0;
-            return (
-              <div key={k} className="space-y-1">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="capitalize text-muted-foreground">{k}</span>
-                  <span className="tabular-nums font-semibold">{fmtHours(sec)}</span>
-                </div>
-                <div className="h-1.5 bg-secondary/60 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-primary" style={{ width: `${pct}%` }} />
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { SettingsDialog } from '@/components/SettingsDialog';
+import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
@@ -121,6 +122,7 @@ const Index = () => {
               <Timer className="w-3.5 h-3.5" />
               <span>Study Timer</span>
             </Link>
+            <ProfileDialog />
             <SettingsDialog />
             <button
               onClick={handleDownloadSummary}
