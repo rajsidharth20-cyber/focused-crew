@@ -95,7 +95,7 @@ export default function Auth() {
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+          {mode === 'signup' && (
             <div>
               <label className="text-xs text-muted-foreground font-medium block mb-1.5">Call Sign</label>
               <div className="relative">
@@ -122,37 +122,53 @@ export default function Auth() {
               placeholder="you@example.com"
             />
           </div>
-          <div>
-            <label className="text-xs text-muted-foreground font-medium block mb-1.5">Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-              placeholder="••••••••"
-            />
-          </div>
+          {mode !== 'forgot' && (
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-xs text-muted-foreground font-medium">Password</label>
+                {mode === 'login' && (
+                  <button type="button" onClick={() => setMode('forgot')} className="text-[11px] text-primary hover:underline inline-flex items-center gap-1">
+                    <KeyRound className="w-3 h-3" /> Forgot?
+                  </button>
+                )}
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                placeholder="••••••••"
+              />
+            </div>
+          )}
           <button
             type="submit"
             disabled={submitting}
             className="w-full bg-primary text-primary-foreground py-2.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {isLogin ? 'Board Flight' : 'Register'}
+            {mode === 'login' ? 'Board Flight' : mode === 'signup' ? 'Register' : 'Send reset link'}
           </button>
         </form>
 
         <p className="text-center text-xs text-muted-foreground mt-4">
-          {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-primary hover:underline font-medium"
-          >
-            {isLogin ? 'Sign up' : 'Sign in'}
-          </button>
+          {mode === 'forgot' ? (
+            <button onClick={() => setMode('login')} className="text-primary hover:underline font-medium">Back to sign in</button>
+          ) : (
+            <>
+              {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
+              <button
+                onClick={() => setMode(isLogin ? 'signup' : 'login')}
+                className="text-primary hover:underline font-medium"
+              >
+                {isLogin ? 'Sign up' : 'Sign in'}
+              </button>
+            </>
+          )}
         </p>
+
 
         <div className="relative my-4">
           <div className="absolute inset-0 flex items-center">
