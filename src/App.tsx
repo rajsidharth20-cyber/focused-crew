@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import StudyTimer from "./pages/StudyTimer";
+import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -34,6 +35,7 @@ const App = () => (
         <BrowserRouter>
           <Routes>
             <Route path="/auth" element={<Auth />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/install" element={<Install />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
