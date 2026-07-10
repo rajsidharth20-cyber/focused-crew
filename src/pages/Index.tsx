@@ -119,13 +119,14 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
             <Link
               to="/study"
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-primary text-primary-foreground shadow-md hover:opacity-90 transition"
               aria-label="Open Study Timer"
             >
               <Timer className="w-3.5 h-3.5" />
-              <span>Study Timer</span>
+              <span className="hidden sm:inline">Study Timer</span>
             </Link>
             <ProfileDialog />
             <SettingsDialog />
