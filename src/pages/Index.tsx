@@ -48,10 +48,12 @@ const fadeUp: Variants = {
 
 const Index = () => {
   const store = usePlannerStore();
+  const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
   useEventReminders(store.events);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const handleDownloadSummary = async () => {
     setDownloadingPdf(true);
