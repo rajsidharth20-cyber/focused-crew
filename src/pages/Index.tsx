@@ -16,7 +16,10 @@ import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { ProgressRing } from '@/components/ProgressRing';
+import { StreakCard } from '@/components/StreakCard';
+import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { usePlannerStore } from '@/hooks/use-planner-store';
+import { useStudyStore } from '@/hooks/use-study-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
 import { QuoteCard } from '@/components/QuoteCard';
@@ -45,10 +48,12 @@ const fadeUp: Variants = {
 
 const Index = () => {
   const store = usePlannerStore();
+  const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
   useEventReminders(store.events);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
 
   const handleDownloadSummary = async () => {
     setDownloadingPdf(true);
@@ -114,13 +119,14 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-1.5 sm:gap-2">
+            <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
             <Link
               to="/study"
               className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-primary text-primary-foreground shadow-md hover:opacity-90 transition"
               aria-label="Open Study Timer"
             >
               <Timer className="w-3.5 h-3.5" />
-              <span>Study Timer</span>
+              <span className="hidden sm:inline">Study Timer</span>
             </Link>
             <ProfileDialog />
             <SettingsDialog />
@@ -198,56 +204,78 @@ const Index = () => {
           </div>
         </motion.section>
 
-        {/* Protocols */}
-        <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
-          <FlightProtocols protocols={store.protocols} onAdd={store.addProtocol} onRemove={store.removeProtocol} />
+        {/* Streak */}
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+          <StreakCard sessions={studyStore.sessions} />
         </motion.div>
 
-        {/* AI */}
-        <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
-          <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
-        </motion.div>
+        {/* Focus mode */}
+        {focusMode && (
+          <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
+            <JustTellMeMode
+              subjects={store.subjects}
+              objectives={store.dailyObjectives}
+              onToggle={store.toggleDailyObjective}
+              active={focusMode}
+              onExit={() => setFocusMode(false)}
+            />
+          </motion.div>
+        )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div className="space-y-6">
-            <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
-              <SubjectManager subjects={store.subjects} onAdd={store.addSubject} onRemove={store.removeSubject} />
+        {!focusMode && (
+          <>
+            {/* Protocols */}
+            <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
+              <FlightProtocols protocols={store.protocols} onAdd={store.addProtocol} onRemove={store.removeProtocol} />
             </motion.div>
-            <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}>
-              <WeeklyTargets
-                subjects={store.subjects}
-                targets={store.weeklyTargets}
-                pastTargets={store.pastWeeklyTargets}
-                onAdd={store.addWeeklyTarget}
-                onToggle={store.toggleWeeklyTarget}
-                onRemove={store.removeWeeklyTarget}
-              />
-            </motion.div>
-          </div>
 
-          <div className="space-y-6">
-            <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
-              <DailyObjectives
-                subjects={store.subjects}
-                objectives={store.dailyObjectives}
-                pastObjectives={store.pastObjectives}
-                onAdd={store.addDailyObjective}
-                onToggle={store.toggleDailyObjective}
-                onAddNote={store.addProgressNote}
-                onUpdateNotes={store.updateProgressNotes}
-                onUpdatePriority={store.updateObjectivePriority}
-                onRemove={store.removeDailyObjective}
-                onCarryForward={store.carryForwardObjective}
-              />
+            {/* AI */}
+            <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+              <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
             </motion.div>
-            <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
-              <Commitments commitments={store.commitments} onAdd={store.addCommitment} onRemove={store.removeCommitment} />
-            </motion.div>
-            <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
-              <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
-            </motion.div>
-          </div>
-        </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="space-y-6">
+                <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
+                  <SubjectManager subjects={store.subjects} onAdd={store.addSubject} onRemove={store.removeSubject} />
+                </motion.div>
+                <motion.div custom={3} initial="hidden" animate="show" variants={fadeUp}>
+                  <WeeklyTargets
+                    subjects={store.subjects}
+                    targets={store.weeklyTargets}
+                    pastTargets={store.pastWeeklyTargets}
+                    onAdd={store.addWeeklyTarget}
+                    onToggle={store.toggleWeeklyTarget}
+                    onRemove={store.removeWeeklyTarget}
+                  />
+                </motion.div>
+              </div>
+
+              <div className="space-y-6">
+                <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
+                  <DailyObjectives
+                    subjects={store.subjects}
+                    objectives={store.dailyObjectives}
+                    pastObjectives={store.pastObjectives}
+                    onAdd={store.addDailyObjective}
+                    onToggle={store.toggleDailyObjective}
+                    onAddNote={store.addProgressNote}
+                    onUpdateNotes={store.updateProgressNotes}
+                    onUpdatePriority={store.updateObjectivePriority}
+                    onRemove={store.removeDailyObjective}
+                    onCarryForward={store.carryForwardObjective}
+                  />
+                </motion.div>
+                <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
+                  <Commitments commitments={store.commitments} onAdd={store.addCommitment} onRemove={store.removeCommitment} />
+                </motion.div>
+                <motion.div custom={6} initial="hidden" animate="show" variants={fadeUp}>
+                  <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
+                </motion.div>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* Mobile-only Clear */}
         <div className="sm:hidden pt-2">
