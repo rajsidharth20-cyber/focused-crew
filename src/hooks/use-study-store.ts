@@ -21,6 +21,7 @@ export interface StudySession {
   startedAt: string;
   endedAt: string;
   notes: string | null;
+  delayMinutes: number | null;
 }
 
 const db = supabase as any;
