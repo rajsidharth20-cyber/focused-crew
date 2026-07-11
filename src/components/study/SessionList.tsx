@@ -25,18 +25,25 @@ const fmtWhen = (iso: string) => {
 export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Props) {
   const recent = sessions.slice(0, 30);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string }>({ topic: '', tagId: '', subjectId: '' });
+  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string; delayMinutes: string }>({ topic: '', tagId: '', subjectId: '', delayMinutes: '' });
 
   const startEdit = (s: StudySession) => {
     setEditingId(s.id);
-    setDraft({ topic: s.topic ?? '', tagId: s.tagId ?? '', subjectId: s.subjectId ?? '' });
+    setDraft({
+      topic: s.topic ?? '',
+      tagId: s.tagId ?? '',
+      subjectId: s.subjectId ?? '',
+      delayMinutes: s.delayMinutes != null ? String(s.delayMinutes) : '',
+    });
   };
   const saveEdit = () => {
     if (!editingId) return;
+    const delayNum = draft.delayMinutes.trim() === '' ? null : Math.max(0, Math.round(Number(draft.delayMinutes)));
     onUpdate(editingId, {
       topic: draft.topic.trim() || null,
       tagId: draft.tagId || null,
       subjectId: draft.subjectId || null,
+      delayMinutes: Number.isFinite(delayNum as number) ? delayNum : null,
     });
     setEditingId(null);
   };
