@@ -190,6 +190,7 @@ export type Database = {
       study_sessions: {
         Row: {
           created_at: string
+          delay_minutes: number | null
           duration_seconds: number
           ended_at: string
           id: string
@@ -204,6 +205,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          delay_minutes?: number | null
           duration_seconds?: number
           ended_at?: string
           id?: string
@@ -218,6 +220,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          delay_minutes?: number | null
           duration_seconds?: number
           ended_at?: string
           id?: string

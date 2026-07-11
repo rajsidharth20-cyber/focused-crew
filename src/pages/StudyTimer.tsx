@@ -25,7 +25,23 @@ const StudyTimer = () => {
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
+  const [scheduledTime, setScheduledTime] = useState<string>(''); // HH:MM
+  const [delayMinutes, setDelayMinutes] = useState<string>(''); // manual override
   const [downloadingReport, setDownloadingReport] = useState(false);
+
+  const computeDelay = (): number | null => {
+    if (delayMinutes.trim() !== '') {
+      const n = Number(delayMinutes);
+      return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
+    }
+    if (!scheduledTime) return null;
+    const [hh, mm] = scheduledTime.split(':').map(Number);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const now = new Date();
+    const sched = new Date(now); sched.setHours(hh, mm, 0, 0);
+    const diff = Math.round((now.getTime() - sched.getTime()) / 60000);
+    return diff > 0 ? diff : 0;
+  };
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
@@ -58,6 +74,7 @@ const StudyTimer = () => {
   const handlePomodoroComplete = (durationSec: number, plannedSec: number) => {
     const now = new Date();
     const start = new Date(now.getTime() - durationSec * 1000);
+    const delay = computeDelay();
     study.addSession({
       ...activeContext(),
       type: 'pomodoro',
@@ -65,19 +82,24 @@ const StudyTimer = () => {
       plannedSeconds: plannedSec,
       startedAt: start.toISOString(),
       endedAt: now.toISOString(),
+      delayMinutes: delay,
     });
-    toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m`);
+    setScheduledTime(''); setDelayMinutes('');
+    toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
   const handleStopwatchSave = (durationSec: number, startedAt: string, endedAt: string) => {
+    const delay = computeDelay();
     study.addSession({
       ...activeContext(),
       type: 'stopwatch',
       durationSeconds: durationSec,
       startedAt,
       endedAt,
+      delayMinutes: delay,
     });
-    toast.success(`Session saved · ${Math.round(durationSec / 60)}m`);
+    setScheduledTime(''); setDelayMinutes('');
+    toast.success(`Session saved · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
   return (
@@ -146,6 +168,38 @@ const StudyTimer = () => {
                   <option value="">— No subject —</option>
                   {planner.subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border/40">
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Scheduled start</label>
+                <input
+                  type="time"
+                  value={scheduledTime}
+                  onChange={e => setScheduledTime(e.target.value)}
+                  className="w-full mt-1 bg-background border border-border/60 rounded-md px-3 py-2 text-sm tabular-nums"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Delay (min)</label>
+                <input
+                  type="number"
+                  min={0}
+                  value={delayMinutes}
+                  onChange={e => setDelayMinutes(e.target.value)}
+                  placeholder="auto from schedule"
+                  className="w-full mt-1 bg-background border border-border/60 rounded-md px-3 py-2 text-sm tabular-nums"
+                />
+              </div>
+              <div className="flex items-end">
+                <p className="text-[11px] text-muted-foreground leading-snug">
+                  {(() => {
+                    const d = computeDelay();
+                    if (d === null) return 'Set a scheduled time or type a delay to track punctuality.';
+                    if (d === 0) return 'On time — nice.';
+                    return `Currently ${d} min late vs plan.`;
+                  })()}
+                </p>
               </div>
             </div>
           </div>

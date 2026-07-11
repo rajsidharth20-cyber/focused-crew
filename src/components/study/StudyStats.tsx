@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen, AlarmClock } from 'lucide-react';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -50,6 +50,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     const perTag = new Map<string, number>();
     const perType = { pomodoro: 0, stopwatch: 0, manual: 0 };
     const perTopic = new Map<string, number>();
+    let delaySumAll = 0, delayCountAll = 0;
+    let delaySum7 = 0, delayCount7 = 0;
+    const sevenDaysAgo = new Date(now); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     for (const s of sessions) {
       const start = new Date(s.startedAt);
@@ -68,7 +71,14 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       perType[s.type] = (perType[s.type] ?? 0) + dur;
       const topic = (s.topic ?? '').trim();
       if (topic) perTopic.set(topic, (perTopic.get(topic) ?? 0) + dur);
+      if (s.delayMinutes != null) {
+        delaySumAll += s.delayMinutes; delayCountAll += 1;
+        if (start >= sevenDaysAgo) { delaySum7 += s.delayMinutes; delayCount7 += 1; }
+      }
     }
+
+    const avgDelayAll = delayCountAll > 0 ? delaySumAll / delayCountAll : 0;
+    const avgDelay7 = delayCount7 > 0 ? delaySum7 / delayCount7 : 0;
 
     const daysWithStudy = perDay.size;
     const avgDaily = daysWithStudy > 0 ? total / daysWithStudy : 0;
@@ -84,6 +94,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
       avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
+      avgDelayAll, avgDelay7, delayCountAll, delayCount7,
     };
   }, [sessions, objectives, pastObjectives]);
 
@@ -153,6 +164,31 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
               />
             </div>
             <div className="text-xs text-muted-foreground">{plannedPct.toFixed(0)}% of planned time completed</div>
+          </div>
+        )}
+      </div>
+
+      <div className="glass-card p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <AlarmClock className="w-4 h-4 text-accent" />
+          <h3 className="font-display text-sm font-bold uppercase tracking-widest">Punctuality — average delay</h3>
+        </div>
+        {stats.delayCountAll === 0 ? (
+          <p className="text-xs text-muted-foreground">Log a scheduled start time or delay on your sessions to see how punctual you are.</p>
+        ) : (
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Last 7 days</div>
+              <div className="text-2xl font-bold tabular-nums">
+                {stats.delayCount7 > 0 ? `${stats.avgDelay7.toFixed(1)} min` : '—'}
+              </div>
+              <div className="text-[11px] text-muted-foreground">{stats.delayCount7} session{stats.delayCount7 === 1 ? '' : 's'}</div>
+            </div>
+            <div>
+              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">All time</div>
+              <div className="text-2xl font-bold tabular-nums">{stats.avgDelayAll.toFixed(1)} min</div>
+              <div className="text-[11px] text-muted-foreground">{stats.delayCountAll} session{stats.delayCountAll === 1 ? '' : 's'}</div>
+            </div>
           </div>
         )}
       </div>

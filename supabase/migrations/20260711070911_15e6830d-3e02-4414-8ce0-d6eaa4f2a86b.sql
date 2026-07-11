@@ -1,0 +1,1 @@
+ALTER TABLE public.study_sessions ADD COLUMN IF NOT EXISTS delay_minutes INTEGER;

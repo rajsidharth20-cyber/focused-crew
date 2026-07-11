@@ -9,7 +9,7 @@ interface Props {
   tags: StudyTag[];
   subjects: Subject[];
   onRemove: (id: string) => void;
-  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic'>>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'delayMinutes'>>) => void;
 }
 
 const fmtDur = (s: number) => {
@@ -25,18 +25,25 @@ const fmtWhen = (iso: string) => {
 export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Props) {
   const recent = sessions.slice(0, 30);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string }>({ topic: '', tagId: '', subjectId: '' });
+  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string; delayMinutes: string }>({ topic: '', tagId: '', subjectId: '', delayMinutes: '' });
 
   const startEdit = (s: StudySession) => {
     setEditingId(s.id);
-    setDraft({ topic: s.topic ?? '', tagId: s.tagId ?? '', subjectId: s.subjectId ?? '' });
+    setDraft({
+      topic: s.topic ?? '',
+      tagId: s.tagId ?? '',
+      subjectId: s.subjectId ?? '',
+      delayMinutes: s.delayMinutes != null ? String(s.delayMinutes) : '',
+    });
   };
   const saveEdit = () => {
     if (!editingId) return;
+    const delayNum = draft.delayMinutes.trim() === '' ? null : Math.max(0, Math.round(Number(draft.delayMinutes)));
     onUpdate(editingId, {
       topic: draft.topic.trim() || null,
       tagId: draft.tagId || null,
       subjectId: draft.subjectId || null,
+      delayMinutes: Number.isFinite(delayNum as number) ? delayNum : null,
     });
     setEditingId(null);
   };
@@ -91,6 +98,17 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                           {subjects.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                         </select>
                       </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Delay (min late)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={draft.delayMinutes}
+                          onChange={e => setDraft(d => ({ ...d, delayMinutes: e.target.value }))}
+                          placeholder="e.g. 15"
+                          className="w-full bg-background border border-border/60 rounded px-2 py-1.5 text-xs tabular-nums mt-1"
+                        />
+                      </div>
                       <div className="flex justify-end gap-2">
                         <button onClick={() => setEditingId(null)} className="text-xs px-2 py-1 rounded hover:bg-secondary text-muted-foreground inline-flex items-center gap-1">
                           <X className="w-3 h-3" />Cancel
@@ -110,6 +128,9 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                           <span>· {tag ? tag.name : 'no tag'}</span>
                           <span>· {subject ? subject.name : 'no subject'}</span>
                           <span>· {fmtWhen(s.startedAt)}</span>
+                          {s.delayMinutes != null && s.delayMinutes > 0 && (
+                            <span className="text-amber-400">· {s.delayMinutes}m late</span>
+                          )}
                         </div>
                       </div>
                       <div className="text-sm font-semibold tabular-nums text-primary inline-flex items-center gap-1">
