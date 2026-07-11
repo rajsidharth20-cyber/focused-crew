@@ -98,6 +98,17 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                           {subjects.map(sub => <option key={sub.id} value={sub.id}>{sub.name}</option>)}
                         </select>
                       </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Delay (min late)</label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={draft.delayMinutes}
+                          onChange={e => setDraft(d => ({ ...d, delayMinutes: e.target.value }))}
+                          placeholder="e.g. 15"
+                          className="w-full bg-background border border-border/60 rounded px-2 py-1.5 text-xs tabular-nums mt-1"
+                        />
+                      </div>
                       <div className="flex justify-end gap-2">
                         <button onClick={() => setEditingId(null)} className="text-xs px-2 py-1 rounded hover:bg-secondary text-muted-foreground inline-flex items-center gap-1">
                           <X className="w-3 h-3" />Cancel
