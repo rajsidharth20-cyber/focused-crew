@@ -25,7 +25,23 @@ const StudyTimer = () => {
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
+  const [scheduledTime, setScheduledTime] = useState<string>(''); // HH:MM
+  const [delayMinutes, setDelayMinutes] = useState<string>(''); // manual override
   const [downloadingReport, setDownloadingReport] = useState(false);
+
+  const computeDelay = (): number | null => {
+    if (delayMinutes.trim() !== '') {
+      const n = Number(delayMinutes);
+      return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
+    }
+    if (!scheduledTime) return null;
+    const [hh, mm] = scheduledTime.split(':').map(Number);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
+    const now = new Date();
+    const sched = new Date(now); sched.setHours(hh, mm, 0, 0);
+    const diff = Math.round((now.getTime() - sched.getTime()) / 60000);
+    return diff > 0 ? diff : 0;
+  };
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
