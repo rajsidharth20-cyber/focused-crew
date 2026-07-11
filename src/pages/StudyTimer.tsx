@@ -74,6 +74,7 @@ const StudyTimer = () => {
   const handlePomodoroComplete = (durationSec: number, plannedSec: number) => {
     const now = new Date();
     const start = new Date(now.getTime() - durationSec * 1000);
+    const delay = computeDelay();
     study.addSession({
       ...activeContext(),
       type: 'pomodoro',
@@ -81,19 +82,24 @@ const StudyTimer = () => {
       plannedSeconds: plannedSec,
       startedAt: start.toISOString(),
       endedAt: now.toISOString(),
+      delayMinutes: delay,
     });
-    toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m`);
+    setScheduledTime(''); setDelayMinutes('');
+    toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
   const handleStopwatchSave = (durationSec: number, startedAt: string, endedAt: string) => {
+    const delay = computeDelay();
     study.addSession({
       ...activeContext(),
       type: 'stopwatch',
       durationSeconds: durationSec,
       startedAt,
       endedAt,
+      delayMinutes: delay,
     });
-    toast.success(`Session saved · ${Math.round(durationSec / 60)}m`);
+    setScheduledTime(''); setDelayMinutes('');
+    toast.success(`Session saved · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
   return (
