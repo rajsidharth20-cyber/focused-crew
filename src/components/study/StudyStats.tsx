@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen } from 'lucide-react';
+import { Flame, TrendingUp, TrendingDown, Calendar, Timer, Target, BookOpen, AlarmClock } from 'lucide-react';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
