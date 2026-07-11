@@ -45,6 +45,7 @@ const mapSession = (r: any): StudySession => ({
   startedAt: r.started_at,
   endedAt: r.ended_at,
   notes: r.notes ?? null,
+  delayMinutes: r.delay_minutes ?? null,
 });
 
 export function useStudyStore() {
