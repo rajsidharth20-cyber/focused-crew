@@ -121,6 +121,7 @@ export function useStudyStore() {
     startedAt: string;
     endedAt: string;
     notes?: string | null;
+    delayMinutes?: number | null;
   }) => {
     if (isGuest) {
       const s: StudySession = {
@@ -134,6 +135,7 @@ export function useStudyStore() {
         startedAt: input.startedAt,
         endedAt: input.endedAt,
         notes: input.notes ?? null,
+        delayMinutes: input.delayMinutes ?? null,
       };
       setSessions(prev => { const u = [s, ...prev]; writeLS(GUEST_SESSIONS, u); return u; });
       return;
@@ -150,6 +152,7 @@ export function useStudyStore() {
       started_at: input.startedAt,
       ended_at: input.endedAt,
       notes: input.notes ?? null,
+      delay_minutes: input.delayMinutes ?? null,
     }).select().single();
     if (!error && data) setSessions(prev => [mapSession(data), ...prev]);
   }, [user, isGuest]);
