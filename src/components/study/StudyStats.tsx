@@ -94,6 +94,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
       avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
+      avgDelayAll, avgDelay7, delayCountAll, delayCount7,
     };
   }, [sessions, objectives, pastObjectives]);
 
