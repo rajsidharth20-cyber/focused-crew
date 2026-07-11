@@ -50,6 +50,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     const perTag = new Map<string, number>();
     const perType = { pomodoro: 0, stopwatch: 0, manual: 0 };
     const perTopic = new Map<string, number>();
+    let delaySumAll = 0, delayCountAll = 0;
+    let delaySum7 = 0, delayCount7 = 0;
+    const sevenDaysAgo = new Date(now); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     for (const s of sessions) {
       const start = new Date(s.startedAt);
@@ -68,7 +71,14 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       perType[s.type] = (perType[s.type] ?? 0) + dur;
       const topic = (s.topic ?? '').trim();
       if (topic) perTopic.set(topic, (perTopic.get(topic) ?? 0) + dur);
+      if (s.delayMinutes != null) {
+        delaySumAll += s.delayMinutes; delayCountAll += 1;
+        if (start >= sevenDaysAgo) { delaySum7 += s.delayMinutes; delayCount7 += 1; }
+      }
     }
+
+    const avgDelayAll = delayCountAll > 0 ? delaySumAll / delayCountAll : 0;
+    const avgDelay7 = delayCount7 > 0 ? delaySum7 / delayCount7 : 0;
 
     const daysWithStudy = perDay.size;
     const avgDaily = daysWithStudy > 0 ? total / daysWithStudy : 0;
