@@ -128,6 +128,9 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                           <span>· {tag ? tag.name : 'no tag'}</span>
                           <span>· {subject ? subject.name : 'no subject'}</span>
                           <span>· {fmtWhen(s.startedAt)}</span>
+                          {s.delayMinutes != null && s.delayMinutes > 0 && (
+                            <span className="text-amber-400">· {s.delayMinutes}m late</span>
+                          )}
                         </div>
                       </div>
                       <div className="text-sm font-semibold tabular-nums text-primary inline-flex items-center gap-1">
