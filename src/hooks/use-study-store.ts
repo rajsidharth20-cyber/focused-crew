@@ -157,7 +157,7 @@ export function useStudyStore() {
     if (!error && data) setSessions(prev => [mapSession(data), ...prev]);
   }, [user, isGuest]);
 
-  const updateSession = useCallback(async (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'notes'>>) => {
+  const updateSession = useCallback(async (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'notes' | 'delayMinutes'>>) => {
     setSessions(prev => {
       const u = prev.map(s => s.id === id ? { ...s, ...patch } : s);
       if (isGuest) writeLS(GUEST_SESSIONS, u);
@@ -169,6 +169,7 @@ export function useStudyStore() {
       if ('subjectId' in patch) dbPatch.subject_id = patch.subjectId ?? null;
       if ('topic' in patch) dbPatch.topic = patch.topic ?? null;
       if ('notes' in patch) dbPatch.notes = patch.notes ?? null;
+      if ('delayMinutes' in patch) dbPatch.delay_minutes = patch.delayMinutes ?? null;
       await db.from('study_sessions').update(dbPatch).eq('id', id);
     }
   }, [isGuest]);
