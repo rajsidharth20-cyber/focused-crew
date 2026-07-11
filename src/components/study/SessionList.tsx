@@ -9,7 +9,7 @@ interface Props {
   tags: StudyTag[];
   subjects: Subject[];
   onRemove: (id: string) => void;
-  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic'>>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'delayMinutes'>>) => void;
 }
 
 const fmtDur = (s: number) => {
