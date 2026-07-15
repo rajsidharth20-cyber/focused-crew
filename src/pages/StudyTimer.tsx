@@ -26,23 +26,7 @@ const StudyTimer = () => {
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
-  const [scheduledTime, setScheduledTime] = useState<string>(''); // HH:MM
-  const [delayMinutes, setDelayMinutes] = useState<string>(''); // manual override
   const [downloadingReport, setDownloadingReport] = useState(false);
-
-  const computeDelay = (): number | null => {
-    if (delayMinutes.trim() !== '') {
-      const n = Number(delayMinutes);
-      return Number.isFinite(n) ? Math.max(0, Math.round(n)) : null;
-    }
-    if (!scheduledTime) return null;
-    const [hh, mm] = scheduledTime.split(':').map(Number);
-    if (Number.isNaN(hh) || Number.isNaN(mm)) return null;
-    const now = new Date();
-    const sched = new Date(now); sched.setHours(hh, mm, 0, 0);
-    const diff = Math.round((now.getTime() - sched.getTime()) / 60000);
-    return diff > 0 ? diff : 0;
-  };
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
@@ -72,10 +56,9 @@ const StudyTimer = () => {
     topic: topic.trim() || null,
   });
 
-  const handlePomodoroComplete = (durationSec: number, plannedSec: number) => {
+  const handlePomodoroComplete = (durationSec: number, plannedSec: number, delay: number | null) => {
     const now = new Date();
     const start = new Date(now.getTime() - durationSec * 1000);
-    const delay = computeDelay();
     study.addSession({
       ...activeContext(),
       type: 'pomodoro',
@@ -85,12 +68,10 @@ const StudyTimer = () => {
       endedAt: now.toISOString(),
       delayMinutes: delay,
     });
-    setScheduledTime(''); setDelayMinutes('');
     toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
-  const handleStopwatchSave = (durationSec: number, startedAt: string, endedAt: string) => {
-    const delay = computeDelay();
+  const handleStopwatchSave = (durationSec: number, startedAt: string, endedAt: string, delay: number | null) => {
     study.addSession({
       ...activeContext(),
       type: 'stopwatch',
@@ -99,7 +80,6 @@ const StudyTimer = () => {
       endedAt,
       delayMinutes: delay,
     });
-    setScheduledTime(''); setDelayMinutes('');
     toast.success(`Session saved · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
   };
 
