@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
+import { promptDelay } from './DelayPromptDialog';
 
 type Phase = 'focus' | 'short' | 'long';
 
 interface Props {
-  onComplete: (durationSec: number, plannedSec: number) => void;
+  onComplete: (durationSec: number, plannedSec: number, delayMinutes: number | null) => void;
   focusMin?: number;
   shortMin?: number;
   longMin?: number;
@@ -34,6 +35,7 @@ export function PomodoroTimer({
   const [running, setRunning] = useState(false);
   const [cycles, setCycles] = useState(0);
   const phaseStartRef = useRef<number>(Date.now());
+  const delayRef = useRef<number | null>(null);
 
   const totalForPhase = phase === 'focus' ? focusMin * 60 : phase === 'short' ? shortMin * 60 : longMin * 60;
 
@@ -53,7 +55,8 @@ export function PomodoroTimer({
           setRunning(false);
           // completed one phase
           if (phase === 'focus') {
-            onComplete(focusMin * 60, focusMin * 60);
+            onComplete(focusMin * 60, focusMin * 60, delayRef.current);
+            delayRef.current = null;
             const nextCycles = cycles + 1;
             setCycles(nextCycles);
             const nextPhase: Phase = nextCycles % cyclesBeforeLong === 0 ? 'long' : 'short';
@@ -70,16 +73,24 @@ export function PomodoroTimer({
     return () => clearInterval(t);
   }, [running, phase, focusMin, cycles, cyclesBeforeLong, onComplete]);
 
-  const toggle = () => {
-    if (!running) phaseStartRef.current = Date.now() - (totalForPhase - remaining) * 1000;
+  const toggle = async () => {
+    if (!running) {
+      // Fresh start of a focus phase — ask for delay
+      if (phase === 'focus' && remaining === totalForPhase && delayRef.current === null) {
+        const d = await promptDelay();
+        delayRef.current = d;
+      }
+      phaseStartRef.current = Date.now() - (totalForPhase - remaining) * 1000;
+    }
     setRunning(r => !r);
   };
-  const reset = () => { setRunning(false); setRemaining(totalForPhase); };
+  const reset = () => { setRunning(false); setRemaining(totalForPhase); delayRef.current = null; };
   const skip = () => {
     if (running && phase === 'focus') {
       const elapsed = Math.min(totalForPhase, totalForPhase - remaining);
-      if (elapsed > 5) onComplete(elapsed, focusMin * 60);
+      if (elapsed > 5) onComplete(elapsed, focusMin * 60, delayRef.current);
     }
+    delayRef.current = null;
     setRunning(false);
     setPhase(p => p === 'focus' ? 'short' : 'focus');
   };

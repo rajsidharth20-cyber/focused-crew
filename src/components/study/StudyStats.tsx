@@ -19,6 +19,13 @@ const fmtHours = (sec: number) => {
   return `${Math.round(sec / 60)}m`;
 };
 
+const fmtDelayTotal = (min: number) => {
+  if (min < 60) return `${Math.round(min)} min`;
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+};
+
 const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 
 const startOfWeek = (d: Date) => {
@@ -52,6 +59,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     const perTopic = new Map<string, number>();
     let delaySumAll = 0, delayCountAll = 0;
     let delaySum7 = 0, delayCount7 = 0;
+    let delaySumToday = 0, delayCountToday = 0;
     const sevenDaysAgo = new Date(now); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     for (const s of sessions) {
@@ -74,11 +82,13 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       if (s.delayMinutes != null) {
         delaySumAll += s.delayMinutes; delayCountAll += 1;
         if (start >= sevenDaysAgo) { delaySum7 += s.delayMinutes; delayCount7 += 1; }
+        if (dk === todayStr) { delaySumToday += s.delayMinutes; delayCountToday += 1; }
       }
     }
 
     const avgDelayAll = delayCountAll > 0 ? delaySumAll / delayCountAll : 0;
     const avgDelay7 = delayCount7 > 0 ? delaySum7 / delayCount7 : 0;
+    const avgDelayToday = delayCountToday > 0 ? delaySumToday / delayCountToday : 0;
 
     const daysWithStudy = perDay.size;
     const avgDaily = daysWithStudy > 0 ? total / daysWithStudy : 0;
@@ -94,7 +104,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
       avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
-      avgDelayAll, avgDelay7, delayCountAll, delayCount7,
+      avgDelayAll, avgDelay7, avgDelayToday,
+      delaySumAll, delaySumToday,
+      delayCountAll, delayCount7, delayCountToday,
     };
   }, [sessions, objectives, pastObjectives]);
 
@@ -168,28 +180,25 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
         )}
       </div>
 
-      <div className="glass-card p-5 space-y-3">
+      <div className="glass-card p-5 space-y-4">
         <div className="flex items-center gap-2">
           <AlarmClock className="w-4 h-4 text-accent" />
-          <h3 className="font-display text-sm font-bold uppercase tracking-widest">Punctuality — average delay</h3>
+          <h3 className="font-display text-sm font-bold uppercase tracking-widest">Punctuality — delay tracking</h3>
         </div>
         {stats.delayCountAll === 0 ? (
-          <p className="text-xs text-muted-foreground">Log a scheduled start time or delay on your sessions to see how punctual you are.</p>
+          <p className="text-xs text-muted-foreground">When you press Start on the timer, log your delay to see how much time is slipping away.</p>
         ) : (
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Last 7 days</div>
-              <div className="text-2xl font-bold tabular-nums">
-                {stats.delayCount7 > 0 ? `${stats.avgDelay7.toFixed(1)} min` : '—'}
-              </div>
-              <div className="text-[11px] text-muted-foreground">{stats.delayCount7} session{stats.delayCount7 === 1 ? '' : 's'}</div>
+          <>
+            <div className="grid grid-cols-3 gap-3">
+              <DelayStat label="Today (avg)" value={stats.delayCountToday > 0 ? `${stats.avgDelayToday.toFixed(1)}m` : '—'} sub={`${stats.delayCountToday} session${stats.delayCountToday === 1 ? '' : 's'}`} />
+              <DelayStat label="7-day avg" value={stats.delayCount7 > 0 ? `${stats.avgDelay7.toFixed(1)}m` : '—'} sub={`${stats.delayCount7} session${stats.delayCount7 === 1 ? '' : 's'}`} />
+              <DelayStat label="All-time avg" value={`${stats.avgDelayAll.toFixed(1)}m`} sub={`${stats.delayCountAll} session${stats.delayCountAll === 1 ? '' : 's'}`} />
             </div>
-            <div>
-              <div className="text-[10px] uppercase tracking-widest text-muted-foreground">All time</div>
-              <div className="text-2xl font-bold tabular-nums">{stats.avgDelayAll.toFixed(1)} min</div>
-              <div className="text-[11px] text-muted-foreground">{stats.delayCountAll} session{stats.delayCountAll === 1 ? '' : 's'}</div>
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t border-border/40">
+              <DelayStat label="Wasted today" value={fmtDelayTotal(stats.delaySumToday)} sub="Total delay logged today" tone="warn" />
+              <DelayStat label="Wasted lifetime" value={fmtDelayTotal(stats.delaySumAll)} sub="Total delay across sessions" tone="warn" />
             </div>
-          </div>
+          </>
         )}
       </div>
 
@@ -271,6 +280,16 @@ function BreakdownCard({ title, icon: Icon, rows }: { title: string; icon: any; 
           ))}
         </div>
       )}
+    </div>
+  );
+}
+
+function DelayStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'warn' }) {
+  return (
+    <div className={`rounded-lg border p-3 ${tone === 'warn' ? 'border-destructive/30 bg-destructive/5' : 'border-border/60 bg-secondary/30'}`}>
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold tabular-nums ${tone === 'warn' ? 'text-destructive' : 'text-foreground'}`}>{value}</div>
+      {sub && <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</div>}
     </div>
   );
 }

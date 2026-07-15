@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { promptDelay } from './DelayPromptDialog';
 
 interface Props {
-  onSave: (durationSec: number, startedAt: string, endedAt: string) => void;
+  onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
 }
 
 const fmt = (s: number) => {
@@ -21,6 +22,7 @@ export function StopwatchTimer({ onSave }: Props) {
   const startRef = useRef<number | null>(null);
   const baseRef = useRef(0);
   const startedAtRef = useRef<string | null>(null);
+  const delayRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!running) return;
@@ -30,12 +32,17 @@ export function StopwatchTimer({ onSave }: Props) {
     return () => clearInterval(t);
   }, [running]);
 
-  const toggle = () => {
+  const toggle = async () => {
     if (running) {
       baseRef.current = elapsed;
       startRef.current = null;
       setRunning(false);
     } else {
+      // Fresh start (not resume) — ask about delay
+      if (elapsed === 0 && startedAtRef.current === null) {
+        const d = await promptDelay();
+        delayRef.current = d;
+      }
       startRef.current = Date.now();
       if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
       setRunning(true);
@@ -45,13 +52,12 @@ export function StopwatchTimer({ onSave }: Props) {
   const stop = () => {
     const finalSec = Math.floor(elapsed);
     if (finalSec < 5) {
-      // discard tiny sessions
       reset();
       return;
     }
     const startedAt = startedAtRef.current || new Date(Date.now() - finalSec * 1000).toISOString();
     const endedAt = new Date().toISOString();
-    onSave(finalSec, startedAt, endedAt);
+    onSave(finalSec, startedAt, endedAt, delayRef.current);
     reset();
   };
 
@@ -61,6 +67,7 @@ export function StopwatchTimer({ onSave }: Props) {
     baseRef.current = 0;
     startRef.current = null;
     startedAtRef.current = null;
+    delayRef.current = null;
   };
 
   return (
