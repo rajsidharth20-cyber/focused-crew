@@ -283,3 +283,13 @@ function BreakdownCard({ title, icon: Icon, rows }: { title: string; icon: any; 
     </div>
   );
 }
+
+function DelayStat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: 'warn' }) {
+  return (
+    <div className={`rounded-lg border p-3 ${tone === 'warn' ? 'border-destructive/30 bg-destructive/5' : 'border-border/60 bg-secondary/30'}`}>
+      <div className="text-[10px] uppercase tracking-widest text-muted-foreground">{label}</div>
+      <div className={`text-xl font-bold tabular-nums ${tone === 'warn' ? 'text-destructive' : 'text-foreground'}`}>{value}</div>
+      {sub && <div className="text-[10px] text-muted-foreground mt-0.5 truncate">{sub}</div>}
+    </div>
+  );
+}
