@@ -85,6 +85,7 @@ const StudyTimer = () => {
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
+      <DelayPromptHost />
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="aurora animate-float" style={{ width: 480, height: 480, background: 'hsl(var(--primary) / 0.28)', top: -140, left: -120 }} />
         <div className="aurora animate-float" style={{ width: 520, height: 520, background: 'hsl(var(--accent) / 0.25)', top: 120, right: -160, animationDelay: '1.5s' }} />
