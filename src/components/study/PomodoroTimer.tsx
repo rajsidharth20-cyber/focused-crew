@@ -2,11 +2,12 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
+import { promptDelay } from './DelayPromptDialog';
 
 type Phase = 'focus' | 'short' | 'long';
 
 interface Props {
-  onComplete: (durationSec: number, plannedSec: number) => void;
+  onComplete: (durationSec: number, plannedSec: number, delayMinutes: number | null) => void;
   focusMin?: number;
   shortMin?: number;
   longMin?: number;
