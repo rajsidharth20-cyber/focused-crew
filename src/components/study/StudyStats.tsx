@@ -19,6 +19,13 @@ const fmtHours = (sec: number) => {
   return `${Math.round(sec / 60)}m`;
 };
 
+const fmtDelayTotal = (min: number) => {
+  if (min < 60) return `${Math.round(min)} min`;
+  const h = Math.floor(min / 60);
+  const m = Math.round(min % 60);
+  return m === 0 ? `${h}h` : `${h}h ${m}m`;
+};
+
 const dayKey = (iso: string) => new Date(iso).toISOString().slice(0, 10);
 
 const startOfWeek = (d: Date) => {
