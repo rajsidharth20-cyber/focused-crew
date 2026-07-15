@@ -52,6 +52,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
     const perTopic = new Map<string, number>();
     let delaySumAll = 0, delayCountAll = 0;
     let delaySum7 = 0, delayCount7 = 0;
+    let delaySumToday = 0, delayCountToday = 0;
     const sevenDaysAgo = new Date(now); sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
     for (const s of sessions) {
@@ -74,11 +75,13 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       if (s.delayMinutes != null) {
         delaySumAll += s.delayMinutes; delayCountAll += 1;
         if (start >= sevenDaysAgo) { delaySum7 += s.delayMinutes; delayCount7 += 1; }
+        if (dk === todayStr) { delaySumToday += s.delayMinutes; delayCountToday += 1; }
       }
     }
 
     const avgDelayAll = delayCountAll > 0 ? delaySumAll / delayCountAll : 0;
     const avgDelay7 = delayCount7 > 0 ? delaySum7 / delayCount7 : 0;
+    const avgDelayToday = delayCountToday > 0 ? delaySumToday / delayCountToday : 0;
 
     const daysWithStudy = perDay.size;
     const avgDaily = daysWithStudy > 0 ? total / daysWithStudy : 0;
@@ -94,7 +97,9 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
       today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
       avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
-      avgDelayAll, avgDelay7, delayCountAll, delayCount7,
+      avgDelayAll, avgDelay7, avgDelayToday,
+      delaySumAll, delaySumToday,
+      delayCountAll, delayCount7, delayCountToday,
     };
   }, [sessions, objectives, pastObjectives]);
 
