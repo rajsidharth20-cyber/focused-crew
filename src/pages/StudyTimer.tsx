@@ -151,38 +151,9 @@ const StudyTimer = () => {
                 </select>
               </div>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border/40">
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Scheduled start</label>
-                <input
-                  type="time"
-                  value={scheduledTime}
-                  onChange={e => setScheduledTime(e.target.value)}
-                  className="w-full mt-1 bg-background border border-border/60 rounded-md px-3 py-2 text-sm tabular-nums"
-                />
-              </div>
-              <div>
-                <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Delay (min)</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={delayMinutes}
-                  onChange={e => setDelayMinutes(e.target.value)}
-                  placeholder="auto from schedule"
-                  className="w-full mt-1 bg-background border border-border/60 rounded-md px-3 py-2 text-sm tabular-nums"
-                />
-              </div>
-              <div className="flex items-end">
-                <p className="text-[11px] text-muted-foreground leading-snug">
-                  {(() => {
-                    const d = computeDelay();
-                    if (d === null) return 'Set a scheduled time or type a delay to track punctuality.';
-                    if (d === 0) return 'On time — nice.';
-                    return `Currently ${d} min late vs plan.`;
-                  })()}
-                </p>
-              </div>
-            </div>
+            <p className="text-[11px] text-muted-foreground pt-2 border-t border-border/40">
+              When you press <span className="font-semibold text-foreground">Start</span> below, you'll be asked how many minutes late you are so your punctuality can be tracked.
+            </p>
           </div>
         </motion.div>
 
