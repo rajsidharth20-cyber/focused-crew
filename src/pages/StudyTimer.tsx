@@ -12,6 +12,7 @@ import { ManualSessionDialog } from '@/components/study/ManualSessionDialog';
 import { StudyStats } from '@/components/study/StudyStats';
 import { SessionList } from '@/components/study/SessionList';
 import { StudyObjectivesPanel } from '@/components/study/StudyObjectivesPanel';
+import { DelayPromptHost } from '@/components/study/DelayPromptDialog';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 
