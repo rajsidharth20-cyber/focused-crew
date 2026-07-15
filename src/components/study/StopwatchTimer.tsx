@@ -1,9 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
+import { promptDelay } from './DelayPromptDialog';
 
 interface Props {
-  onSave: (durationSec: number, startedAt: string, endedAt: string) => void;
+  onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
 }
 
 const fmt = (s: number) => {
