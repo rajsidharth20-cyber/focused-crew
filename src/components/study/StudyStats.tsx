@@ -102,7 +102,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
 
     return {
       today, yesterdaySoFar, thisWeek, lastWeek, thisMonth, lastMonth, total,
-      avgDaily, longestDay, perSubject, perTag, perType, perTopic, perDay,
+      avgDaily, longestDay, perSubject, perTag, perType, perTopic,
       plannedTodaySec,
       avgDelayAll, avgDelay7, avgDelayToday,
       delaySumAll, delaySumToday,
@@ -139,8 +139,6 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
         <BigStat icon={Timer} tint="destructive" label="Longest day" value={fmtHours(stats.longestDay.sec)} sub={stats.longestDay.day !== '—' ? stats.longestDay.day : undefined} />
       </div>
 
-      <Last7DaysChart perDay={stats.perDay} />
-
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ComparisonCard
           title="This week vs last week"
@@ -157,7 +155,6 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
           delta={monthDelta}
         />
       </div>
-
 
       <div className="glass-card p-5 space-y-3">
         <div className="flex items-center gap-2">
@@ -283,54 +280,6 @@ function BreakdownCard({ title, icon: Icon, rows }: { title: string; icon: any; 
           ))}
         </div>
       )}
-    </div>
-  );
-}
-
-function Last7DaysChart({ perDay }: { perDay: Map<string, number> }) {
-  const days: { key: string; label: string; sec: number }[] = [];
-  const today = new Date();
-  for (let i = 6; i >= 0; i--) {
-    const d = new Date(today);
-    d.setDate(d.getDate() - i);
-    const key = d.toISOString().slice(0, 10);
-    days.push({
-      key,
-      label: d.toLocaleDateString(undefined, { weekday: 'short' }),
-      sec: perDay.get(key) ?? 0,
-    });
-  }
-  const max = Math.max(1, ...days.map(d => d.sec));
-  const totalWeek = days.reduce((a, b) => a + b.sec, 0);
-  return (
-    <div className="glass-card p-5 space-y-4">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Calendar className="w-4 h-4 text-primary" />
-          <h3 className="font-display text-sm font-bold uppercase tracking-widest">Last 7 days</h3>
-        </div>
-        <div className="text-xs text-muted-foreground">Total: <span className="font-semibold text-foreground tabular-nums">{fmtHours(totalWeek)}</span></div>
-      </div>
-      <div className="flex items-end gap-2 h-40 pt-2">
-        {days.map(d => {
-          const pct = (d.sec / max) * 100;
-          const isToday = d.key === today.toISOString().slice(0, 10);
-          return (
-            <div key={d.key} className="flex-1 flex flex-col items-center gap-1 min-w-0">
-              <div className="text-[9px] tabular-nums text-muted-foreground h-3">{d.sec > 0 ? fmtHours(d.sec) : ''}</div>
-              <div className="w-full flex-1 bg-secondary/40 rounded-md overflow-hidden flex items-end">
-                <motion.div
-                  initial={{ height: 0 }}
-                  animate={{ height: `${pct}%` }}
-                  transition={{ duration: 0.6, ease: 'easeOut' }}
-                  className={`w-full ${isToday ? 'bg-gradient-primary' : 'bg-primary/40'}`}
-                />
-              </div>
-              <div className={`text-[10px] ${isToday ? 'text-primary font-semibold' : 'text-muted-foreground'}`}>{d.label}</div>
-            </div>
-          );
-        })}
-      </div>
     </div>
   );
 }

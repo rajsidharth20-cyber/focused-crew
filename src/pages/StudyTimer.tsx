@@ -121,7 +121,7 @@ const StudyTimer = () => {
               subjects={planner.subjects}
               onSave={(input) => {
                 study.addSession({ ...input, type: 'manual', plannedSeconds: null });
-                toast.success(`Session added${input.delayMinutes ? ` · ${input.delayMinutes}m late` : ''}`);
+                toast.success('Session added');
               }}
             />
           </div>
