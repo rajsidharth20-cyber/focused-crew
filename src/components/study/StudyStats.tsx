@@ -139,6 +139,8 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
         <BigStat icon={Timer} tint="destructive" label="Longest day" value={fmtHours(stats.longestDay.sec)} sub={stats.longestDay.day !== '—' ? stats.longestDay.day : undefined} />
       </div>
 
+      <Last7DaysChart perDay={stats.perDay} />
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <ComparisonCard
           title="This week vs last week"
@@ -155,6 +157,7 @@ export function StudyStats({ sessions, tags, subjects, objectives, pastObjective
           delta={monthDelta}
         />
       </div>
+
 
       <div className="glass-card p-5 space-y-3">
         <div className="flex items-center gap-2">
