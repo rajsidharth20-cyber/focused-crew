@@ -100,8 +100,11 @@ export function ManualSessionDialog({ tags, subjects, onSave }: Props) {
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1" />
           </div>
         </div>
-        <DialogFooter>
-          <button onClick={submit} className="px-4 py-2 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-semibold">Save session</button>
+        <DialogFooter className="gap-2">
+          <button onClick={() => setOpen(false)} className="px-3 py-2 rounded-md border border-border/60 text-sm hover:bg-secondary transition">Cancel</button>
+          <button onClick={submit} className="px-5 py-2 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-semibold inline-flex items-center gap-1.5">
+            <Plus className="w-4 h-4" />Add
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
