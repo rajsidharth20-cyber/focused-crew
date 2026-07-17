@@ -21,6 +21,7 @@ const fmtWhen = (iso: string) => {
   const d = new Date(iso);
   return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
 };
+const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 
 export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Props) {
   const recent = sessions.slice(0, 30);
