@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
@@ -13,6 +13,27 @@ interface Props {
   longMin?: number;
   cyclesBeforeLong?: number;
 }
+
+const STORAGE_KEY = 'taskpilot_active_pomodoro_v1';
+
+interface Persisted {
+  phase: Phase;
+  phaseStartWall: string;       // ISO when phase actually started counting (adjusted for prior elapsed on pause/resume)
+  phaseStartMs: number | null;  // Date.now() reference; null if paused
+  elapsedBeforePause: number;   // seconds already counted in this phase before the current running segment
+  totalSec: number;             // duration of this phase in seconds
+  cycles: number;
+  focusMin: number; shortMin: number; longMin: number;
+  delayMinutes: number | null;
+}
+
+const readPersisted = (): Persisted | null => {
+  try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : null; } catch { return null; }
+};
+const writePersisted = (p: Persisted | null) => {
+  if (p === null) localStorage.removeItem(STORAGE_KEY);
+  else localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+};
 
 const fmt = (s: number) => {
   const m = Math.floor(s / 60).toString().padStart(2, '0');
@@ -34,65 +55,156 @@ export function PomodoroTimer({
   const [remaining, setRemaining] = useState(focusMin * 60);
   const [running, setRunning] = useState(false);
   const [cycles, setCycles] = useState(0);
-  const phaseStartRef = useRef<number>(Date.now());
-  const delayRef = useRef<number | null>(null);
+  const stateRef = useRef<Persisted | null>(null);
+  const onCompleteRef = useRef(onComplete);
+  useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
 
-  const totalForPhase = phase === 'focus' ? focusMin * 60 : phase === 'short' ? shortMin * 60 : longMin * 60;
+  const secForPhase = useCallback((ph: Phase, f: number, s: number, l: number) =>
+    (ph === 'focus' ? f : ph === 'short' ? s : l) * 60, []);
 
-  useEffect(() => {
-    if (!running) {
-      setRemaining(totalForPhase);
-      phaseStartRef.current = Date.now();
+  const totalForPhase = secForPhase(phase, focusMin, shortMin, longMin);
+
+  const computeRemaining = useCallback((p: Persisted): number => {
+    const elapsed = p.phaseStartMs != null
+      ? p.elapsedBeforePause + (Date.now() - p.phaseStartMs) / 1000
+      : p.elapsedBeforePause;
+    return Math.max(0, p.totalSec - elapsed);
+  }, []);
+
+  // Advance to next phase (called when a phase finishes)
+  const advancePhase = useCallback((finished: Persisted) => {
+    if (finished.phase === 'focus') {
+      onCompleteRef.current(finished.totalSec, finished.totalSec, finished.delayMinutes);
+      try { new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=').play(); } catch {}
+      const nextCycles = finished.cycles + 1;
+      const nextPhase: Phase = nextCycles % cyclesBeforeLong === 0 ? 'long' : 'short';
+      setCycles(nextCycles);
+      setPhase(nextPhase);
+      const nextTotal = secForPhase(nextPhase, finished.focusMin, finished.shortMin, finished.longMin);
+      setRemaining(nextTotal);
+      setRunning(false);
+      const nextP: Persisted = {
+        phase: nextPhase,
+        phaseStartWall: new Date().toISOString(),
+        phaseStartMs: null,
+        elapsedBeforePause: 0,
+        totalSec: nextTotal,
+        cycles: nextCycles,
+        focusMin: finished.focusMin, shortMin: finished.shortMin, longMin: finished.longMin,
+        delayMinutes: null,
+      };
+      stateRef.current = nextP;
+      writePersisted(nextP);
+    } else {
+      setPhase('focus');
+      const nextTotal = secForPhase('focus', finished.focusMin, finished.shortMin, finished.longMin);
+      setRemaining(nextTotal);
+      setRunning(false);
+      stateRef.current = null;
+      writePersisted(null);
     }
+  }, [cyclesBeforeLong, secForPhase]);
+
+  // Restore on mount
+  useEffect(() => {
+    const p = readPersisted();
+    if (!p) return;
+    setPhase(p.phase);
+    setCycles(p.cycles);
+    setFocusMin(p.focusMin); setShortMin(p.shortMin); setLongMin(p.longMin);
+    stateRef.current = p;
+    const rem = computeRemaining(p);
+    if (rem <= 0 && p.phaseStartMs != null) {
+      // Phase completed while we were away
+      advancePhase(p);
+    } else {
+      setRemaining(rem);
+      setRunning(p.phaseStartMs != null);
+    }
+  }, [computeRemaining, advancePhase]);
+
+  // When user changes settings while idle, keep display in sync
+  useEffect(() => {
+    if (running || stateRef.current) return;
+    setRemaining(totalForPhase);
   }, [focusMin, shortMin, longMin, phase, totalForPhase, running]);
 
+  // Tick from wall clock
   useEffect(() => {
     if (!running) return;
-    const t = setInterval(() => {
-      setRemaining(r => {
-        if (r <= 1) {
-          clearInterval(t);
-          setRunning(false);
-          // completed one phase
-          if (phase === 'focus') {
-            onComplete(focusMin * 60, focusMin * 60, delayRef.current);
-            delayRef.current = null;
-            const nextCycles = cycles + 1;
-            setCycles(nextCycles);
-            const nextPhase: Phase = nextCycles % cyclesBeforeLong === 0 ? 'long' : 'short';
-            setPhase(nextPhase);
-          } else {
-            setPhase('focus');
-          }
-          try { new Audio('data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQAAAAA=').play(); } catch {}
-          return 0;
-        }
-        return r - 1;
-      });
-    }, 1000);
-    return () => clearInterval(t);
-  }, [running, phase, focusMin, cycles, cyclesBeforeLong, onComplete]);
+    const tick = () => {
+      const p = stateRef.current;
+      if (!p) return;
+      const rem = computeRemaining(p);
+      if (rem <= 0) {
+        advancePhase(p);
+      } else {
+        setRemaining(rem);
+      }
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    const onVis = () => tick();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, [running, computeRemaining, advancePhase]);
 
   const toggle = async () => {
-    if (!running) {
-      // Fresh start of a focus phase — ask for delay
-      if (phase === 'focus' && remaining === totalForPhase && delayRef.current === null) {
-        const d = await promptDelay();
-        delayRef.current = d;
+    if (running) {
+      const p = stateRef.current;
+      if (p) {
+        const elapsed = p.elapsedBeforePause + (p.phaseStartMs ? (Date.now() - p.phaseStartMs) / 1000 : 0);
+        const updated: Persisted = { ...p, elapsedBeforePause: elapsed, phaseStartMs: null };
+        stateRef.current = updated;
+        writePersisted(updated);
       }
-      phaseStartRef.current = Date.now() - (totalForPhase - remaining) * 1000;
+      setRunning(false);
+      return;
     }
-    setRunning(r => !r);
+    let p = stateRef.current;
+    if (!p) {
+      let delay: number | null = null;
+      if (phase === 'focus') delay = await promptDelay();
+      p = {
+        phase,
+        phaseStartWall: new Date().toISOString(),
+        phaseStartMs: Date.now(),
+        elapsedBeforePause: 0,
+        totalSec: totalForPhase,
+        cycles,
+        focusMin, shortMin, longMin,
+        delayMinutes: delay,
+      };
+    } else {
+      p = { ...p, phaseStartMs: Date.now() };
+    }
+    stateRef.current = p;
+    writePersisted(p);
+    setRunning(true);
   };
-  const reset = () => { setRunning(false); setRemaining(totalForPhase); delayRef.current = null; };
-  const skip = () => {
-    if (running && phase === 'focus') {
-      const elapsed = Math.min(totalForPhase, totalForPhase - remaining);
-      if (elapsed > 5) onComplete(elapsed, focusMin * 60, delayRef.current);
-    }
-    delayRef.current = null;
+
+  const reset = () => {
+    stateRef.current = null;
+    writePersisted(null);
     setRunning(false);
-    setPhase(p => p === 'focus' ? 'short' : 'focus');
+    setRemaining(totalForPhase);
+  };
+
+  const skip = () => {
+    const p = stateRef.current;
+    if (p && phase === 'focus') {
+      const elapsed = p.elapsedBeforePause + (p.phaseStartMs ? (Date.now() - p.phaseStartMs) / 1000 : 0);
+      if (elapsed > 5) onCompleteRef.current(Math.floor(elapsed), p.totalSec, p.delayMinutes);
+    }
+    stateRef.current = null;
+    writePersisted(null);
+    setRunning(false);
+    setPhase(ph => ph === 'focus' ? 'short' : 'focus');
   };
 
   const pct = totalForPhase > 0 ? ((totalForPhase - remaining) / totalForPhase) * 100 : 0;
@@ -132,6 +244,10 @@ export function PomodoroTimer({
           <SkipForward className="w-4 h-4" />
         </button>
       </div>
+
+      <p className="text-[11px] text-muted-foreground text-center">
+        Timer keeps counting even if you close the tab or lock your phone.
+      </p>
 
       <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
         <NumField label="Focus" value={focusMin} setValue={setFocusMin} disabled={running} />

@@ -53,11 +53,16 @@ export function ManualSessionDialog({ tags, subjects, onSave }: Props) {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <button className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border border-border/60 hover:bg-secondary transition">
-          <Plus className="w-3.5 h-3.5" />Add missed session
+        <button
+          className="inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-lg bg-gradient-primary text-primary-foreground font-semibold shadow-md hover:opacity-90 transition"
+          aria-label="Add missed session"
+        >
+          <Plus className="w-3.5 h-3.5" />
+          <span className="hidden xs:inline sm:inline">Add session</span>
+          <span className="xs:hidden sm:hidden">Add</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="glass-card border-border/40">
+      <DialogContent className="glass-card border-border/40 max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Log a study session</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
@@ -95,8 +100,11 @@ export function ManualSessionDialog({ tags, subjects, onSave }: Props) {
             <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1" />
           </div>
         </div>
-        <DialogFooter>
-          <button onClick={submit} className="px-4 py-2 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-semibold">Save session</button>
+        <DialogFooter className="gap-2">
+          <button onClick={() => setOpen(false)} className="px-3 py-2 rounded-md border border-border/60 text-sm hover:bg-secondary transition">Cancel</button>
+          <button onClick={submit} className="px-5 py-2 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-semibold inline-flex items-center gap-1.5">
+            <Plus className="w-4 h-4" />Add
+          </button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

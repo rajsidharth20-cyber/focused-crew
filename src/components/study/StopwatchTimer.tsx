@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { promptDelay } from './DelayPromptDialog';
@@ -6,6 +6,26 @@ import { promptDelay } from './DelayPromptDialog';
 interface Props {
   onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
 }
+
+const STORAGE_KEY = 'taskpilot_active_stopwatch_v1';
+
+interface Persisted {
+  startedAtWall: string;      // when the whole session began
+  baseSeconds: number;         // elapsed accumulated before current run segment
+  segmentStart: number | null; // Date.now() when current running segment started, or null if paused
+  delayMinutes: number | null;
+}
+
+const readPersisted = (): Persisted | null => {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch { return null; }
+};
+const writePersisted = (p: Persisted | null) => {
+  if (p === null) localStorage.removeItem(STORAGE_KEY);
+  else localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+};
 
 const fmt = (s: number) => {
   const h = Math.floor(s / 3600);
@@ -19,55 +39,93 @@ const fmt = (s: number) => {
 export function StopwatchTimer({ onSave }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
-  const startRef = useRef<number | null>(null);
-  const baseRef = useRef(0);
-  const startedAtRef = useRef<string | null>(null);
-  const delayRef = useRef<number | null>(null);
+  const stateRef = useRef<Persisted | null>(null);
 
+  const computeElapsed = useCallback((p: Persisted): number => {
+    if (p.segmentStart != null) return p.baseSeconds + (Date.now() - p.segmentStart) / 1000;
+    return p.baseSeconds;
+  }, []);
+
+  // Restore on mount
+  useEffect(() => {
+    const p = readPersisted();
+    if (p) {
+      stateRef.current = p;
+      setElapsed(computeElapsed(p));
+      setRunning(p.segmentStart != null);
+    }
+  }, [computeElapsed]);
+
+  // Live tick — recomputes from wall clock so tab-throttling / device sleep is corrected on return
   useEffect(() => {
     if (!running) return;
-    const t = setInterval(() => {
-      if (startRef.current != null) setElapsed(baseRef.current + (Date.now() - startRef.current) / 1000);
-    }, 250);
-    return () => clearInterval(t);
-  }, [running]);
+    const tick = () => {
+      const p = stateRef.current;
+      if (p) setElapsed(computeElapsed(p));
+    };
+    tick();
+    const id = setInterval(tick, 500);
+    const onVis = () => tick();
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, [running, computeElapsed]);
 
   const toggle = async () => {
+    const now = Date.now();
     if (running) {
-      baseRef.current = elapsed;
-      startRef.current = null;
+      // Pause
+      const p = stateRef.current;
+      if (p) {
+        const newBase = computeElapsed(p);
+        const updated: Persisted = { ...p, baseSeconds: newBase, segmentStart: null };
+        stateRef.current = updated;
+        writePersisted(updated);
+        setElapsed(newBase);
+      }
       setRunning(false);
     } else {
-      // Fresh start (not resume) — ask about delay
-      if (elapsed === 0 && startedAtRef.current === null) {
+      let p = stateRef.current;
+      if (!p) {
+        // Fresh session — ask about delay
         const d = await promptDelay();
-        delayRef.current = d;
+        p = {
+          startedAtWall: new Date(now).toISOString(),
+          baseSeconds: 0,
+          segmentStart: now,
+          delayMinutes: d,
+        };
+      } else {
+        p = { ...p, segmentStart: now };
       }
-      startRef.current = Date.now();
-      if (!startedAtRef.current) startedAtRef.current = new Date().toISOString();
+      stateRef.current = p;
+      writePersisted(p);
       setRunning(true);
     }
   };
 
   const stop = () => {
-    const finalSec = Math.floor(elapsed);
+    const p = stateRef.current;
+    if (!p) { reset(); return; }
+    const finalSec = Math.floor(computeElapsed(p));
     if (finalSec < 5) {
       reset();
       return;
     }
-    const startedAt = startedAtRef.current || new Date(Date.now() - finalSec * 1000).toISOString();
     const endedAt = new Date().toISOString();
-    onSave(finalSec, startedAt, endedAt, delayRef.current);
+    onSave(finalSec, p.startedAtWall, endedAt, p.delayMinutes);
     reset();
   };
 
   const reset = () => {
+    stateRef.current = null;
+    writePersisted(null);
     setRunning(false);
     setElapsed(0);
-    baseRef.current = 0;
-    startRef.current = null;
-    startedAtRef.current = null;
-    delayRef.current = null;
   };
 
   return (
@@ -78,7 +136,7 @@ export function StopwatchTimer({ onSave }: Props) {
           <div className="text-lg font-bold">Open Focus</div>
         </div>
         <div className={`text-xs tabular-nums ${running ? 'text-primary animate-pulse' : 'text-muted-foreground'}`}>
-          {running ? '● Recording' : '○ Idle'}
+          {running ? '● Recording' : elapsed > 0 ? '⏸ Paused' : '○ Idle'}
         </div>
       </div>
 
@@ -91,7 +149,11 @@ export function StopwatchTimer({ onSave }: Props) {
         >
           {fmt(elapsed)}
         </motion.div>
-        <div className="text-xs text-muted-foreground">Free-form study session</div>
+        <div className="text-[11px] text-muted-foreground">
+          {stateRef.current?.startedAtWall
+            ? `Started ${new Date(stateRef.current.startedAtWall).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}`
+            : 'Free-form study session — keeps ticking even if you close the tab'}
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-3">
