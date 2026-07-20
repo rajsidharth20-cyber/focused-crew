@@ -14,6 +14,7 @@ import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
+import { DailyNote } from '@/components/DailyNote';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { ProgressRing } from '@/components/ProgressRing';
 import { StreakCard } from '@/components/StreakCard';
