@@ -3,6 +3,9 @@ import { Radar, Send, Loader2, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import type { PlannerState } from '@/hooks/use-planner-store';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { getEffectiveToday } from '@/lib/day-boundary';
 
 interface AIAdvisorProps {
   state: PlannerState;
@@ -10,7 +13,7 @@ interface AIAdvisorProps {
 
 type Mode = 'next' | 'summary';
 
-function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string): string {
+function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string, dailyNote?: string): string {
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
@@ -30,6 +33,12 @@ function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string): str
     .map(c => `- ${c.startTime}-${c.endTime}: ${c.title} (${c.type})`)
     .join('\n');
 
+  const noteBlock = dailyNote && dailyNote.trim()
+    ? `\n\n## User's Daily Note (their own reflection)\n${dailyNote.trim()}`
+    : '';
+
+
+
   const base = `Current time: ${timeStr}
 
 ## Weekly Targets
@@ -39,10 +48,10 @@ ${weeklyLines || 'None set'}
 ${dailyLines || 'None set'}
 
 ## Today's Commitments
-${commitmentLines || 'None'}`;
+${commitmentLines || 'None'}${noteBlock}`;
 
   if (mode === 'next') {
-    return `You are a productivity coach. Based on the user's schedule, objectives, progress, and commitments below, suggest what they should do NEXT. Be specific, actionable, and consider time gaps between commitments. If the user has shared additional context, factor that in.
+    return `You are a productivity coach. Based on the user's schedule, objectives, progress, commitments, and their own daily note below, suggest what they should do NEXT. Be specific, actionable, and consider time gaps between commitments. If the user has shared additional context, factor that in.
 
 ${base}
 
@@ -51,7 +60,7 @@ ${userMessage ? `User's message: "${userMessage}"` : ''}
 Give a concise, actionable recommendation. Use markdown formatting. Be encouraging but direct.`;
   }
 
-  return `You are a productivity coach. Summarize the user's day progress based on the data below. Highlight what was accomplished, what's remaining, and suggest improvements for tomorrow. Be honest but supportive.
+  return `You are a productivity coach. Summarize the user's day progress based on the data below, including their own daily note reflection. Highlight what was accomplished, what's remaining, and suggest improvements for tomorrow. Be honest but supportive.
 
 ${base}
 
@@ -61,17 +70,37 @@ Give a clear day summary with markdown formatting. Include a brief analysis of t
 }
 
 export function AIAdvisor({ state }: AIAdvisorProps) {
+  const { user, isGuest } = useAuth();
   const [mode, setMode] = useState<Mode>('next');
   const [userMessage, setUserMessage] = useState('');
   const [response, setResponse] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const fetchTodayNote = async (): Promise<string> => {
+    const today = getEffectiveToday();
+    try {
+      if (isGuest || !user) {
+        const raw = localStorage.getItem('taskpilot_daily_notes');
+        const all = raw ? JSON.parse(raw) : {};
+        return all[today] || '';
+      }
+      const { data } = await supabase
+        .from('daily_notes')
+        .select('content')
+        .eq('user_id', user.id)
+        .eq('date', today)
+        .maybeSingle();
+      return data?.content || '';
+    } catch { return ''; }
+  };
 
   const handleAsk = async () => {
     if (loading) return;
     setLoading(true);
     setResponse('');
 
-    const prompt = buildPrompt(state, mode, userMessage);
+    const dailyNote = await fetchTodayNote();
+    const prompt = buildPrompt(state, mode, userMessage, dailyNote);
 
     try {
       const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-advisor`;

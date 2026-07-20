@@ -14,6 +14,7 @@ import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { FlightProtocols } from '@/components/FlightProtocols';
 import { AIAdvisor } from '@/components/AIAdvisor';
+import { DailyNote } from '@/components/DailyNote';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { ProgressRing } from '@/components/ProgressRing';
 import { StreakCard } from '@/components/StreakCard';
@@ -233,6 +234,12 @@ const Index = () => {
             <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
               <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
             </motion.div>
+
+            {/* Daily Note */}
+            <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
+              <DailyNote />
+            </motion.div>
+
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
