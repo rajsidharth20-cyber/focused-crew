@@ -33,20 +33,11 @@ function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string, dail
     .map(c => `- ${c.startTime}-${c.endTime}: ${c.title} (${c.type})`)
     .join('\n');
 
-  const base = `Current time: ${timeStr}
-
-## Weekly Targets
-${weeklyLines || 'None set'}
-
-## Today's Objectives
-${dailyLines || 'None set'}
-
-## Today's Commitments
-${commitmentLines || 'None'}`;
-
   const noteBlock = dailyNote && dailyNote.trim()
     ? `\n\n## User's Daily Note (their own reflection)\n${dailyNote.trim()}`
     : '';
+
+
 
   const base = `Current time: ${timeStr}
 
