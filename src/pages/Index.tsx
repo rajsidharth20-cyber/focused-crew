@@ -235,6 +235,12 @@ const Index = () => {
               <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
             </motion.div>
 
+            {/* Daily Note */}
+            <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
+              <DailyNote />
+            </motion.div>
+
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="space-y-6">
                 <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
