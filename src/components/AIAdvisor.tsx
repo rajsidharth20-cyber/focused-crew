@@ -3,6 +3,9 @@ import { Radar, Send, Loader2, BarChart3 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import type { PlannerState } from '@/hooks/use-planner-store';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { getEffectiveToday } from '@/lib/day-boundary';
 
 interface AIAdvisorProps {
   state: PlannerState;
@@ -10,7 +13,7 @@ interface AIAdvisorProps {
 
 type Mode = 'next' | 'summary';
 
-function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string): string {
+function buildPrompt(state: PlannerState, mode: Mode, userMessage?: string, dailyNote?: string): string {
   const now = new Date();
   const timeStr = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
