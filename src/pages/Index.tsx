@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { SettingsDialog } from '@/components/SettingsDialog';
+import { ShareAppButton } from '@/components/ShareAppButton';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
 import { SubjectManager } from '@/components/SubjectManager';
@@ -131,6 +132,7 @@ const Index = () => {
             </Link>
             <ProfileDialog />
             <SettingsDialog />
+            <ShareAppButton />
             <button
               onClick={handleDownloadSummary}
               disabled={downloadingPdf}
