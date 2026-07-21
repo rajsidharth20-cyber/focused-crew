@@ -132,6 +132,7 @@ const Index = () => {
             </Link>
             <ProfileDialog />
             <SettingsDialog />
+            <ShareAppButton />
             <button
               onClick={handleDownloadSummary}
               disabled={downloadingPdf}
