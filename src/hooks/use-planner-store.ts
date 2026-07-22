@@ -363,23 +363,24 @@ export function usePlannerStore() {
     }
   }, [dailyObjectives, pastObjectives, today, isGuest, getGuestData, saveGuestData]);
 
-  const addCommitment = useCallback(async (title: string, startTime: string, endTime: string, type: Commitment['type']) => {
+  const addCommitment = useCallback(async (title: string, startTime: string, endTime: string, type: Commitment['type'], recurringDays?: number[]) => {
+    const rec = recurringDays && recurringDays.length ? recurringDays : null;
+    const todayDow = new Date(today + 'T00:00:00').getDay();
+    const appliesToday = !rec || rec.includes(todayDow);
     if (isGuest) {
-      const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: today };
-      setCommitments(prev => {
-        const updated = [...prev, newC];
-        const data = getGuestData(); data.commitments = [...(data.commitments || []), newC]; saveGuestData(data);
-        return updated;
-      });
+      const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: rec ? null : today, recurringDays: rec };
+      const data = getGuestData(); data.commitments = [...(data.commitments || []), newC]; saveGuestData(data);
+      if (appliesToday) setCommitments(prev => [...prev, newC]);
       return;
     }
     if (!user) return;
     const { data, error } = await supabase.from('commitments')
-      .insert({ title, start_time: startTime, end_time: endTime, type, user_id: user.id, date: today })
+      .insert({ title, start_time: startTime, end_time: endTime, type, user_id: user.id, date: rec ? null : today, recurring_days: rec })
       .select().single();
-    if (!error && data) setCommitments(prev => [...prev, {
+    if (!error && data && appliesToday) setCommitments(prev => [...prev, {
       id: data.id, title: data.title, startTime: data.start_time,
       endTime: data.end_time, type: data.type as Commitment['type'],
+      recurringDays: data.recurring_days ?? null,
     }]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
