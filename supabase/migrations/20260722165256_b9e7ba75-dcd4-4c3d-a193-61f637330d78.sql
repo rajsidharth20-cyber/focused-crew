@@ -1,0 +1,1 @@
+ALTER TABLE public.commitments ALTER COLUMN date DROP NOT NULL;

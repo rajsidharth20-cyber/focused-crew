@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal } from 'lucide-react';
+import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
 
 interface CommitmentsProps {
   commitments: Commitment[];
-  onAdd: (title: string, startTime: string, endTime: string, type: Commitment['type']) => void;
+  onAdd: (title: string, startTime: string, endTime: string, type: Commitment['type'], recurringDays?: number[]) => void;
   onRemove: (id: string) => void;
 }
 
@@ -23,18 +23,38 @@ const typeColors: Record<string, string> = {
   other: 'text-muted-foreground',
 };
 
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatRecurring(days: number[]) {
+  const sorted = [...days].sort();
+  if (sorted.length === 7) return 'Every day';
+  if (sorted.length === 5 && sorted.every((d, i) => d === i + 1)) return 'Weekdays';
+  if (sorted.length === 2 && sorted[0] === 0 && sorted[1] === 6) return 'Weekends';
+  return sorted.map(d => DAY_NAMES[d]).join(', ');
+}
+
 export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) {
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
   const [type, setType] = useState<Commitment['type']>('class');
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+
+  const toggleDay = (d: number) => {
+    setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  };
 
   const handleAdd = () => {
     if (title.trim() && startTime && endTime) {
-      onAdd(title.trim(), startTime, endTime, type);
+      if (isRecurring && selectedDays.length === 0) return;
+      onAdd(title.trim(), startTime, endTime, type, isRecurring ? selectedDays : undefined);
       setTitle('');
       setStartTime('');
       setEndTime('');
+      setSelectedDays([]);
+      setIsRecurring(false);
     }
   };
 
@@ -49,7 +69,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         </h3>
       </div>
 
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-2 mb-3 flex-wrap">
         <select
           value={type}
           onChange={e => setType(e.target.value as Commitment['type'])}
@@ -83,6 +103,38 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         </button>
       </div>
 
+      <div className="mb-4 space-y-2">
+        <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer">
+          <input
+            type="checkbox"
+            checked={isRecurring}
+            onChange={e => { setIsRecurring(e.target.checked); if (!e.target.checked) setSelectedDays([]); }}
+            className="accent-primary"
+          />
+          <Repeat className="w-3 h-3" />
+          Repeats on specific days
+        </label>
+        {isRecurring && (
+          <div className="flex gap-1 flex-wrap">
+            {DAY_LABELS.map((lbl, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => toggleDay(i)}
+                className={`w-8 h-8 rounded-md text-xs font-medium transition-colors ${
+                  selectedDays.includes(i)
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                }`}
+                title={DAY_NAMES[i]}
+              >
+                {lbl}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="space-y-2">
         <AnimatePresence>
           {sorted.map(c => {
@@ -98,6 +150,12 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
                 <Icon className={`w-4 h-4 flex-shrink-0 ${typeColors[c.type]}`} />
                 <div className="flex-1 min-w-0">
                   <span className="text-sm text-foreground">{c.title}</span>
+                  {c.recurringDays && c.recurringDays.length > 0 && (
+                    <div className="flex items-center gap-1 text-[10px] text-primary/80 mt-0.5">
+                      <Repeat className="w-2.5 h-2.5" />
+                      {formatRecurring(c.recurringDays)}
+                    </div>
+                  )}
                 </div>
                 <span className="text-xs text-muted-foreground font-display whitespace-nowrap">
                   {c.startTime} – {c.endTime}

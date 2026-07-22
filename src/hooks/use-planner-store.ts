@@ -36,15 +36,17 @@ export interface Commitment {
   startTime: string;
   endTime: string;
   type: 'class' | 'visit' | 'meeting' | 'other';
+  recurringDays: number[] | null;
 }
 
 export interface PlannerEvent {
   id: string;
   title: string;
-  eventDate: string;
+  eventDate: string | null;
   startTime: string | null;
   endTime: string | null;
   description: string | null;
+  recurringDays: number[] | null;
 }
 
 export interface PlannerState {
@@ -92,7 +94,10 @@ export function usePlannerStore() {
       const allDO = data.dailyObjectives || [];
       setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
-      setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      const todayDow = new Date(today + 'T00:00:00').getDay();
+      setCommitments((data.commitments || []).filter((c: any) =>
+        (c.recurringDays && c.recurringDays.includes(todayDow)) || c.date === today || (!c.date && !c.recurringDays)
+      ));
       setEvents(data.events || []);
       setProtocols(data.protocols || []);
       setLoading(false);
@@ -108,10 +113,12 @@ export function usePlannerStore() {
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today),
-        supabase.from('commitments').select('*').eq('user_id', user.id).eq('date', today),
+        supabase.from('commitments').select('*').eq('user_id', user.id)
+          .or(`date.eq.${today},recurring_days.cs.{${new Date(today + 'T00:00:00').getDay()}}`),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
-        supabase.from('events').select('*').eq('user_id', user.id).gte('event_date', today).order('event_date', { ascending: true }),
+        supabase.from('events').select('*').eq('user_id', user.id)
+          .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
       ]);
 
       setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
@@ -134,11 +141,13 @@ export function usePlannerStore() {
       setCommitments((cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
+        recurringDays: c.recurring_days ?? null,
       })));
 
       setEvents((evRes.data ?? []).map((e: any) => ({
         id: e.id, title: e.title, eventDate: e.event_date,
         startTime: e.start_time, endTime: e.end_time, description: e.description,
+        recurringDays: e.recurring_days ?? null,
       })));
       setLoading(false);
     };
@@ -354,23 +363,24 @@ export function usePlannerStore() {
     }
   }, [dailyObjectives, pastObjectives, today, isGuest, getGuestData, saveGuestData]);
 
-  const addCommitment = useCallback(async (title: string, startTime: string, endTime: string, type: Commitment['type']) => {
+  const addCommitment = useCallback(async (title: string, startTime: string, endTime: string, type: Commitment['type'], recurringDays?: number[]) => {
+    const rec = recurringDays && recurringDays.length ? recurringDays : null;
+    const todayDow = new Date(today + 'T00:00:00').getDay();
+    const appliesToday = !rec || rec.includes(todayDow);
     if (isGuest) {
-      const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: today };
-      setCommitments(prev => {
-        const updated = [...prev, newC];
-        const data = getGuestData(); data.commitments = [...(data.commitments || []), newC]; saveGuestData(data);
-        return updated;
-      });
+      const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: rec ? null : today, recurringDays: rec };
+      const data = getGuestData(); data.commitments = [...(data.commitments || []), newC]; saveGuestData(data);
+      if (appliesToday) setCommitments(prev => [...prev, newC]);
       return;
     }
     if (!user) return;
     const { data, error } = await supabase.from('commitments')
-      .insert({ title, start_time: startTime, end_time: endTime, type, user_id: user.id, date: today })
+      .insert({ title, start_time: startTime, end_time: endTime, type, user_id: user.id, date: rec ? null : today, recurring_days: rec })
       .select().single();
-    if (!error && data) setCommitments(prev => [...prev, {
+    if (!error && data && appliesToday) setCommitments(prev => [...prev, {
       id: data.id, title: data.title, startTime: data.start_time,
       endTime: data.end_time, type: data.type as Commitment['type'],
+      recurringDays: data.recurring_days ?? null,
     }]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
@@ -437,11 +447,14 @@ export function usePlannerStore() {
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
-  const addEvent = useCallback(async (title: string, eventDate: string, startTime?: string, endTime?: string, description?: string) => {
+  const addEvent = useCallback(async (title: string, eventDate: string | null, startTime?: string, endTime?: string, description?: string, recurringDays?: number[]) => {
+    const rec = recurringDays && recurringDays.length ? recurringDays : null;
+    const finalDate = rec ? null : eventDate;
+    const sortEvents = (arr: PlannerEvent[]) => [...arr].sort((a, b) => (a.eventDate || '9999').localeCompare(b.eventDate || '9999'));
     if (isGuest) {
-      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate, startTime: startTime || null, endTime: endTime || null, description: description || null };
+      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate: finalDate, startTime: startTime || null, endTime: endTime || null, description: description || null, recurringDays: rec };
       setEvents(prev => {
-        const updated = [...prev, newE].sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+        const updated = sortEvents([...prev, newE]);
         const data = getGuestData(); data.events = [...(data.events || []), newE]; saveGuestData(data);
         return updated;
       });
@@ -449,12 +462,13 @@ export function usePlannerStore() {
     }
     if (!user) return;
     const { data, error } = await supabase.from('events')
-      .insert({ title, event_date: eventDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id })
+      .insert({ title, event_date: finalDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id, recurring_days: rec })
       .select().single();
-    if (!error && data) setEvents(prev => [...prev, {
+    if (!error && data) setEvents(prev => sortEvents([...prev, {
       id: data.id, title: data.title, eventDate: data.event_date,
       startTime: data.start_time, endTime: data.end_time, description: data.description,
-    }].sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
+      recurringDays: data.recurring_days ?? null,
+    }]));
   }, [user, isGuest, getGuestData, saveGuestData]);
 
   const removeEvent = useCallback(async (id: string) => {

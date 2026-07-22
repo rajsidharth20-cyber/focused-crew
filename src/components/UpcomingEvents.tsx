@@ -1,13 +1,24 @@
 import { useState } from 'react';
-import { Plus, X, CalendarDays, Clock } from 'lucide-react';
+import { Plus, X, CalendarDays, Clock, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import type { PlannerEvent } from '@/hooks/use-planner-store';
 
 interface UpcomingEventsProps {
   events: PlannerEvent[];
-  onAdd: (title: string, eventDate: string, startTime?: string, endTime?: string, description?: string) => void;
+  onAdd: (title: string, eventDate: string | null, startTime?: string, endTime?: string, description?: string, recurringDays?: number[]) => void;
   onRemove: (id: string) => void;
+}
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+function formatRecurring(days: number[]) {
+  const sorted = [...days].sort();
+  if (sorted.length === 7) return 'Every day';
+  if (sorted.length === 5 && sorted.every((d, i) => d === i + 1)) return 'Weekdays';
+  if (sorted.length === 2 && sorted[0] === 0 && sorted[1] === 6) return 'Weekends';
+  return sorted.map(d => DAY_NAMES[d]).join(', ');
 }
 
 function formatEventDate(dateStr: string) {
@@ -24,17 +35,24 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
   const [endTime, setEndTime] = useState('');
   const [description, setDescription] = useState('');
   const [showForm, setShowForm] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+
+  const toggleDay = (d: number) => {
+    setSelectedDays(prev => prev.includes(d) ? prev.filter(x => x !== d) : [...prev, d]);
+  };
 
   const handleAdd = () => {
-    if (title.trim() && eventDate) {
+    if (!title.trim()) return;
+    if (isRecurring) {
+      if (selectedDays.length === 0) return;
+      onAdd(title.trim(), null, startTime || undefined, endTime || undefined, description.trim() || undefined, selectedDays);
+    } else {
+      if (!eventDate) return;
       onAdd(title.trim(), eventDate, startTime || undefined, endTime || undefined, description.trim() || undefined);
-      setTitle('');
-      setEventDate('');
-      setStartTime('');
-      setEndTime('');
-      setDescription('');
-      setShowForm(false);
     }
+    setTitle(''); setEventDate(''); setStartTime(''); setEndTime(''); setDescription('');
+    setSelectedDays([]); setIsRecurring(false); setShowForm(false);
   };
 
   return (
@@ -70,26 +88,54 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
                 placeholder="Event title"
                 className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
               />
-              <div className="flex gap-2 flex-wrap">
+              <label className="flex items-center gap-2 text-xs text-muted-foreground cursor-pointer pt-1">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={e => { setIsRecurring(e.target.checked); if (!e.target.checked) setSelectedDays([]); else setEventDate(''); }}
+                  className="accent-primary"
+                />
+                <Repeat className="w-3 h-3" />
+                Repeats on specific days
+              </label>
+              {isRecurring ? (
+                <div className="flex gap-1 flex-wrap">
+                  {DAY_LABELS.map((lbl, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleDay(i)}
+                      className={`w-8 h-8 rounded-md text-xs font-medium transition-colors ${
+                        selectedDays.includes(i)
+                          ? 'bg-primary text-primary-foreground'
+                          : 'bg-secondary/50 text-muted-foreground hover:bg-secondary'
+                      }`}
+                      title={DAY_NAMES[i]}
+                    >
+                      {lbl}
+                    </button>
+                  ))}
+                </div>
+              ) : (
                 <input
                   value={eventDate}
                   onChange={e => setEventDate(e.target.value)}
                   type="date"
-                  className="flex-1 min-w-[140px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
+              )}
+              <div className="flex gap-2">
                 <input
                   value={startTime}
                   onChange={e => setStartTime(e.target.value)}
                   type="time"
-                  placeholder="Start"
-                  className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
                 <input
                   value={endTime}
                   onChange={e => setEndTime(e.target.value)}
                   type="time"
-                  placeholder="End"
-                  className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 />
               </div>
               <input
@@ -127,9 +173,16 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
                 )}
               </div>
               <div className="text-right flex-shrink-0">
-                <span className="text-xs font-display text-primary">{formatEventDate(event.eventDate)}</span>
+                {event.recurringDays && event.recurringDays.length > 0 ? (
+                  <span className="text-xs font-display text-primary flex items-center gap-1 justify-end">
+                    <Repeat className="w-3 h-3" />
+                    {formatRecurring(event.recurringDays)}
+                  </span>
+                ) : event.eventDate ? (
+                  <span className="text-xs font-display text-primary">{formatEventDate(event.eventDate)}</span>
+                ) : null}
                 {(event.startTime || event.endTime) && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 justify-end">
                     <Clock className="w-3 h-3" />
                     {event.startTime}{event.endTime ? ` – ${event.endTime}` : ''}
                   </div>
