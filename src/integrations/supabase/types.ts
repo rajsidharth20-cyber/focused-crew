@@ -17,7 +17,7 @@ export type Database = {
       commitments: {
         Row: {
           created_at: string
-          date: string
+          date: string | null
           end_time: string
           id: string
           recurring_days: number[] | null
@@ -28,7 +28,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          date?: string
+          date?: string | null
           end_time: string
           id?: string
           recurring_days?: number[] | null
@@ -39,7 +39,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          date?: string
+          date?: string | null
           end_time?: string
           id?: string
           recurring_days?: number[] | null
