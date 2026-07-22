@@ -184,7 +184,7 @@ export async function generateDailySummaryPDF(input: SummaryInput): Promise<void
   if (events.length > 0) {
     sectionHeader('Upcoming');
     for (const e of events.slice(0, 6)) {
-      writeParagraph(`• ${e.eventDate}  ${e.title}`, { size: 11 });
+      writeParagraph(`• ${e.eventDate ?? 'Recurring'}  ${e.title}`, { size: 11 });
     }
   }
 
