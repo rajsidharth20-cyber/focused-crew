@@ -36,15 +36,17 @@ export interface Commitment {
   startTime: string;
   endTime: string;
   type: 'class' | 'visit' | 'meeting' | 'other';
+  recurringDays: number[] | null;
 }
 
 export interface PlannerEvent {
   id: string;
   title: string;
-  eventDate: string;
+  eventDate: string | null;
   startTime: string | null;
   endTime: string | null;
   description: string | null;
+  recurringDays: number[] | null;
 }
 
 export interface PlannerState {
