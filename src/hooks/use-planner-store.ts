@@ -141,11 +141,13 @@ export function usePlannerStore() {
       setCommitments((cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
+        recurringDays: c.recurring_days ?? null,
       })));
 
       setEvents((evRes.data ?? []).map((e: any) => ({
         id: e.id, title: e.title, eventDate: e.event_date,
         startTime: e.start_time, endTime: e.end_time, description: e.description,
+        recurringDays: e.recurring_days ?? null,
       })));
       setLoading(false);
     };
