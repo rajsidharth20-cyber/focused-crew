@@ -447,11 +447,14 @@ export function usePlannerStore() {
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
-  const addEvent = useCallback(async (title: string, eventDate: string, startTime?: string, endTime?: string, description?: string) => {
+  const addEvent = useCallback(async (title: string, eventDate: string | null, startTime?: string, endTime?: string, description?: string, recurringDays?: number[]) => {
+    const rec = recurringDays && recurringDays.length ? recurringDays : null;
+    const finalDate = rec ? null : eventDate;
+    const sortEvents = (arr: PlannerEvent[]) => [...arr].sort((a, b) => (a.eventDate || '9999').localeCompare(b.eventDate || '9999'));
     if (isGuest) {
-      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate, startTime: startTime || null, endTime: endTime || null, description: description || null };
+      const newE: PlannerEvent = { id: crypto.randomUUID(), title, eventDate: finalDate, startTime: startTime || null, endTime: endTime || null, description: description || null, recurringDays: rec };
       setEvents(prev => {
-        const updated = [...prev, newE].sort((a, b) => a.eventDate.localeCompare(b.eventDate));
+        const updated = sortEvents([...prev, newE]);
         const data = getGuestData(); data.events = [...(data.events || []), newE]; saveGuestData(data);
         return updated;
       });
@@ -459,12 +462,13 @@ export function usePlannerStore() {
     }
     if (!user) return;
     const { data, error } = await supabase.from('events')
-      .insert({ title, event_date: eventDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id })
+      .insert({ title, event_date: finalDate, start_time: startTime || null, end_time: endTime || null, description: description || null, user_id: user.id, recurring_days: rec })
       .select().single();
-    if (!error && data) setEvents(prev => [...prev, {
+    if (!error && data) setEvents(prev => sortEvents([...prev, {
       id: data.id, title: data.title, eventDate: data.event_date,
       startTime: data.start_time, endTime: data.end_time, description: data.description,
-    }].sort((a, b) => a.eventDate.localeCompare(b.eventDate)));
+      recurringDays: data.recurring_days ?? null,
+    }]));
   }, [user, isGuest, getGuestData, saveGuestData]);
 
   const removeEvent = useCallback(async (id: string) => {
