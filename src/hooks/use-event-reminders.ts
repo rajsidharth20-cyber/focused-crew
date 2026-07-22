@@ -45,7 +45,7 @@ export function useEventReminders(events: PlannerEvent[]) {
           eventTime.setHours(h, m, 0, 0);
 
           const diffMin = (eventTime.getTime() - now.getTime()) / 60000;
-          const key = `${event.id}-${event.eventDate}`;
+          const key = `${event.id}-${todayStr}`;
 
           if (diffMin <= 30 && diffMin > 15 && !notifiedRef.current.has(key + '-30')) {
             notifiedRef.current.add(key + '-30');
