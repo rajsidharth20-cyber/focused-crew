@@ -113,10 +113,12 @@ export function usePlannerStore() {
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today),
-        supabase.from('commitments').select('*').eq('user_id', user.id).eq('date', today),
+        supabase.from('commitments').select('*').eq('user_id', user.id)
+          .or(`date.eq.${today},recurring_days.cs.{${new Date(today + 'T00:00:00').getDay()}}`),
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
-        supabase.from('events').select('*').eq('user_id', user.id).gte('event_date', today).order('event_date', { ascending: true }),
+        supabase.from('events').select('*').eq('user_id', user.id)
+          .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
       ]);
 
       setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
