@@ -31,9 +31,12 @@ export function useEventReminders(events: PlannerEvent[]) {
 
         const now = new Date();
         const todayStr = now.toISOString().split('T')[0];
+        const todayDow = now.getDay();
 
         currentEvents.forEach(event => {
-          if (event.eventDate !== todayStr || !event.startTime) return;
+          const matchesToday = event.eventDate === todayStr
+            || (event.recurringDays && event.recurringDays.includes(todayDow));
+          if (!matchesToday || !event.startTime) return;
 
           const [h, m] = event.startTime.split(':').map(Number);
           if (isNaN(h) || isNaN(m)) return;
