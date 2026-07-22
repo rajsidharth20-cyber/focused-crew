@@ -94,7 +94,10 @@ export function usePlannerStore() {
       const allDO = data.dailyObjectives || [];
       setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
-      setCommitments((data.commitments || []).filter((c: any) => c.date === today || !c.date));
+      const todayDow = new Date(today + 'T00:00:00').getDay();
+      setCommitments((data.commitments || []).filter((c: any) =>
+        (c.recurringDays && c.recurringDays.includes(todayDow)) || c.date === today || (!c.date && !c.recurringDays)
+      ));
       setEvents(data.events || []);
       setProtocols(data.protocols || []);
       setLoading(false);
