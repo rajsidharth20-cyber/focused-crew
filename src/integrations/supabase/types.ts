@@ -20,6 +20,7 @@ export type Database = {
           date: string
           end_time: string
           id: string
+          recurring_days: number[] | null
           start_time: string
           title: string
           type: string
@@ -30,6 +31,7 @@ export type Database = {
           date?: string
           end_time: string
           id?: string
+          recurring_days?: number[] | null
           start_time: string
           title: string
           type?: string
@@ -40,6 +42,7 @@ export type Database = {
           date?: string
           end_time?: string
           id?: string
+          recurring_days?: number[] | null
           start_time?: string
           title?: string
           type?: string
@@ -129,9 +132,10 @@ export type Database = {
           created_at: string
           description: string | null
           end_time: string | null
-          event_date: string
+          event_date: string | null
           id: string
           notified_at: Json | null
+          recurring_days: number[] | null
           start_time: string | null
           title: string
           user_id: string
@@ -140,9 +144,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string | null
-          event_date: string
+          event_date?: string | null
           id?: string
           notified_at?: Json | null
+          recurring_days?: number[] | null
           start_time?: string | null
           title: string
           user_id: string
@@ -151,9 +156,10 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_time?: string | null
-          event_date?: string
+          event_date?: string | null
           id?: string
           notified_at?: Json | null
+          recurring_days?: number[] | null
           start_time?: string | null
           title?: string
           user_id?: string
