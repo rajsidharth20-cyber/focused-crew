@@ -67,7 +67,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Scheduled Stops
+          {t.commitments}
         </h3>
       </div>
 
