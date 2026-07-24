@@ -73,7 +73,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
       <div className="flex items-center gap-2 mb-4">
         <Map className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Flight Plan
+          {t.weekly}
         </h3>
       </div>
       {subjects.length > 0 && (
