@@ -337,7 +337,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             onChange={e => setSubjectId(e.target.value)}
             className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
-            <option value="">Route</option>
+            <option value="">{t.subject}</option>
             {subjects.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
