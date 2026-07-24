@@ -26,9 +26,9 @@ export function FlightProtocols({ protocols, onAdd, onRemove }: FlightProtocolsP
       <CardHeader className="pb-3">
         <CardTitle className="text-sm font-semibold flex items-center gap-2 text-foreground">
           <ShieldCheck className="w-4 h-4 text-primary" />
-          Flight Protocols
+          {t.protocols}
         </CardTitle>
-        <p className="text-xs text-muted-foreground">Rules to follow throughout the day</p>
+        <p className="text-xs text-muted-foreground">{t.protocolsHint}</p>
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex gap-2">
