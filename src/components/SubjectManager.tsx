@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Navigation } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface SubjectManagerProps {
   subjects: Subject[];
@@ -10,6 +11,7 @@ interface SubjectManagerProps {
 }
 
 export function SubjectManager({ subjects, onAdd, onRemove }: SubjectManagerProps) {
+  const t = useTerms();
   const [input, setInput] = useState('');
 
   const handleAdd = () => {
@@ -24,7 +26,7 @@ export function SubjectManager({ subjects, onAdd, onRemove }: SubjectManagerProp
       <div className="flex items-center gap-2 mb-4">
         <Navigation className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Routes
+          {t.subjects}
         </h3>
       </div>
       <div className="flex gap-2 mb-3">
@@ -32,7 +34,7 @@ export function SubjectManager({ subjects, onAdd, onRemove }: SubjectManagerProp
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAdd()}
-          placeholder="Add a route..."
+          placeholder={t.subjectPlaceholder}
           className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
         <button
