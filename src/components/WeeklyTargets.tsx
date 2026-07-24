@@ -92,7 +92,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Set a waypoint..."
+            placeholder={t.weeklyPlaceholder}
             className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <input
