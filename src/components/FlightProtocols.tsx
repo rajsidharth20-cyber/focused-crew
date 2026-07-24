@@ -3,6 +3,7 @@ import { ShieldCheck, Plus, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { useTerms } from '@/lib/terms';
 
 interface FlightProtocolsProps {
   protocols: string[];
@@ -11,6 +12,7 @@ interface FlightProtocolsProps {
 }
 
 export function FlightProtocols({ protocols, onAdd, onRemove }: FlightProtocolsProps) {
+  const t = useTerms();
   const [input, setInput] = useState('');
 
   const handleAdd = () => {
