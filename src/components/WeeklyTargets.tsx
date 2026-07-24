@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Check, Map, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, WeeklyTarget } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface WeeklyTargetsProps {
   subjects: Subject[];
@@ -13,6 +14,7 @@ interface WeeklyTargetsProps {
 }
 
 export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle, onRemove }: WeeklyTargetsProps) {
+  const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [input, setInput] = useState('');
   const [deadline, setDeadline] = useState('');
