@@ -311,12 +311,12 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         <div className="flex items-center gap-2">
           <Compass className="w-4 h-4 text-primary" />
           <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-            Today's Flight
+            {t.daily}
           </h3>
         </div>
         {objectives.length > 0 && (
           <span className="text-xs text-muted-foreground font-display">
-            {completedCount}/{objectives.length} landed · {completedMinutes}/{totalMinutes}min
+            {completedCount}/{objectives.length} {t.doneStat} · {completedMinutes}/{totalMinutes}min
           </span>
         )}
       </div>
