@@ -36,6 +36,7 @@ function formatRecurring(days: number[]) {
 }
 
 export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) {
+  const t = useTerms();
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
