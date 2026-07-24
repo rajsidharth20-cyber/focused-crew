@@ -71,6 +71,7 @@ Give a clear day summary with markdown formatting. Include a brief analysis of t
 }
 
 export function AIAdvisor({ state }: AIAdvisorProps) {
+  const t = useTerms();
   const { user, isGuest } = useAuth();
   const [mode, setMode] = useState<Mode>('next');
   const [userMessage, setUserMessage] = useState('');
