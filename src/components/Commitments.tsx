@@ -170,7 +170,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
           })}
         </AnimatePresence>
         {commitments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No scheduled stops today.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t.commitmentsEmpty}</p>
         )}
       </div>
     </div>
