@@ -428,7 +428,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            Flight Log ({pastObjectives.length})
+            {t.history} ({pastObjectives.length})
           </button>
           <AnimatePresence>
             {showPast && (
