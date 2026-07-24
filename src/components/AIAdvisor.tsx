@@ -6,6 +6,7 @@ import type { PlannerState } from '@/hooks/use-planner-store';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
+import { useTerms } from '@/lib/terms';
 
 interface AIAdvisorProps {
   state: PlannerState;
