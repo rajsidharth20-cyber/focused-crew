@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock, Flag, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective, Priority } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface DailyObjectivesProps {
   subjects: Subject[];
