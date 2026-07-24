@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface CommitmentsProps {
   commitments: Commitment[];
