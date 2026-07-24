@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface CommitmentsProps {
   commitments: Commitment[];
@@ -35,6 +36,7 @@ function formatRecurring(days: number[]) {
 }
 
 export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) {
+  const t = useTerms();
   const [title, setTitle] = useState('');
   const [startTime, setStartTime] = useState('');
   const [endTime, setEndTime] = useState('');
@@ -65,7 +67,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
       <div className="flex items-center gap-2 mb-4">
         <Clock className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Scheduled Stops
+          {t.commitments}
         </h3>
       </div>
 
@@ -168,7 +170,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
           })}
         </AnimatePresence>
         {commitments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No scheduled stops today.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t.commitmentsEmpty}</p>
         )}
       </div>
     </div>

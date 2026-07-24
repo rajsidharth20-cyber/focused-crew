@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock, Flag, Pencil, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective, Priority } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface DailyObjectivesProps {
   subjects: Subject[];
@@ -46,6 +47,7 @@ const formatTimestamp = (iso: string) => {
 };
 
 export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward }: DailyObjectivesProps) {
+  const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
   const [minutes, setMinutes] = useState('30');
@@ -309,12 +311,12 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         <div className="flex items-center gap-2">
           <Compass className="w-4 h-4 text-primary" />
           <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-            Today's Flight
+            {t.daily}
           </h3>
         </div>
         {objectives.length > 0 && (
           <span className="text-xs text-muted-foreground font-display">
-            {completedCount}/{objectives.length} landed · {completedMinutes}/{totalMinutes}min
+            {completedCount}/{objectives.length} {t.doneStat} · {completedMinutes}/{totalMinutes}min
           </span>
         )}
       </div>
@@ -335,7 +337,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             onChange={e => setSubjectId(e.target.value)}
             className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
-            <option value="">Route</option>
+            <option value="">{t.subject}</option>
             {subjects.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -344,7 +346,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             value={task}
             onChange={e => setTask(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Next destination..."
+            placeholder={t.dailyPlaceholder}
             className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <input
@@ -392,7 +394,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       {inFlight.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            In Flight
+            {t.inProgress}
           </h4>
           <div className="space-y-2">
             <AnimatePresence>
@@ -405,7 +407,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       {landed.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Landed
+            {t.done}
           </h4>
           <div className="space-y-2">
             <AnimatePresence>
@@ -416,7 +418,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       )}
 
       {objectives.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">No flights scheduled for today yet.</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t.dailyEmpty}</p>
       )}
 
       {pastObjectives.length > 0 && (
@@ -426,7 +428,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            Flight Log ({pastObjectives.length})
+            {t.history} ({pastObjectives.length})
           </button>
           <AnimatePresence>
             {showPast && (

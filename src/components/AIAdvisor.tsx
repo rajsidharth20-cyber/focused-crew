@@ -6,6 +6,7 @@ import type { PlannerState } from '@/hooks/use-planner-store';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
+import { useTerms } from '@/lib/terms';
 
 interface AIAdvisorProps {
   state: PlannerState;
@@ -70,6 +71,7 @@ Give a clear day summary with markdown formatting. Include a brief analysis of t
 }
 
 export function AIAdvisor({ state }: AIAdvisorProps) {
+  const t = useTerms();
   const { user, isGuest } = useAuth();
   const [mode, setMode] = useState<Mode>('next');
   const [userMessage, setUserMessage] = useState('');
@@ -183,7 +185,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
         <div className="flex items-center gap-2">
           <Radar className="w-4 h-4 text-primary" />
           <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-gradient">
-            Control Tower
+            {t.ai}
           </h3>
         </div>
         <div className="flex gap-1 bg-secondary/50 rounded-md p-0.5">
@@ -193,7 +195,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
               mode === 'next' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
-            Next Heading
+            {t.aiNext}
           </button>
           <button
             onClick={() => setMode('summary')}
@@ -202,7 +204,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
             }`}
           >
             <BarChart3 className="w-3 h-3" />
-            Debrief
+            {t.aiSummary}
           </button>
         </div>
       </div>
@@ -212,7 +214,7 @@ export function AIAdvisor({ state }: AIAdvisorProps) {
           value={userMessage}
           onChange={e => setUserMessage(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && handleAsk()}
-          placeholder={mode === 'next' ? "Status update? (e.g. 'Just finished chapter 3')" : "Any notes about your flight today?"}
+          placeholder={mode === 'next' ? t.aiInputNext : t.aiInputSummary}
           className="flex-1 bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
         />
         <button

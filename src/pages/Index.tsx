@@ -1,13 +1,14 @@
 import { motion } from 'framer-motion';
-import { Plane, Trash2, LogOut, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer } from 'lucide-react';
+import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
+import { useTerms } from '@/lib/terms';
 import { SubjectManager } from '@/components/SubjectManager';
 import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { DailyObjectives } from '@/components/DailyObjectives';
@@ -25,18 +26,13 @@ import { useStudyStore } from '@/hooks/use-study-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
 import { QuoteCard } from '@/components/QuoteCard';
-
-const getGreeting = (theme: string) => {
-  const hour = new Date().getHours();
-  if (theme === 'war') {
-    if (hour < 12) return 'Morning briefing';
-    if (hour < 17) return 'Afternoon ops';
-    return 'Night watch';
-  }
-  if (hour < 12) return 'Good morning';
-  if (hour < 17) return 'Good afternoon';
-  return 'Good evening';
-};
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 import type { Variants } from 'framer-motion';
 const fadeUp: Variants = {
@@ -53,13 +49,17 @@ const Index = () => {
   const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
+  const t = useTerms();
   useEventReminders(store.events);
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
+  const dailyRef = useRef<HTMLDivElement>(null);
+  const advisorRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadSummary = async () => {
     setDownloadingPdf(true);
-    const t = toast.loading('Preparing your daily summary…');
+    const toastId = toast.loading('Preparing your daily summary…');
     try {
       await generateDailySummaryPDF({
         username,
@@ -69,12 +69,13 @@ const Index = () => {
         commitments: store.commitments,
         events: store.events,
       });
-      toast.success('Summary downloaded', { id: t });
+      toast.success('Summary downloaded', { id: toastId });
     } catch (e) {
       console.error(e);
-      toast.error('Could not generate PDF', { id: t });
+      toast.error('Could not generate PDF', { id: toastId });
     } finally {
       setDownloadingPdf(false);
+      setMoreOpen(false);
     }
   };
 
@@ -86,112 +87,83 @@ const Index = () => {
 
   const ThemeIcon = theme === 'war' ? Swords : Plane;
 
-  // Live stats for hero
   const totalDaily = store.dailyObjectives.length;
   const doneDaily = store.dailyObjectives.filter(o => o.completed).length;
   const pctDaily = totalDaily > 0 ? (doneDaily / totalDaily) * 100 : 0;
   const totalWeekly = store.weeklyTargets.length;
-  const doneWeekly = store.weeklyTargets.filter(t => t.completed).length;
+  const doneWeekly = store.weeklyTargets.filter(x => x.completed).length;
   const upcomingCount = store.events.length;
   const highPriority = store.dailyObjectives.filter(o => !o.completed && o.priority === 'high').length;
 
+  const scrollTop = () => window.scrollTo({ top: 0, behavior: 'smooth' });
+  const scrollToDaily = () => dailyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollToAdvisor = () => advisorRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
   return (
-    <div className="relative min-h-screen overflow-x-hidden">
+    <div
+      className="relative min-h-screen overflow-x-hidden pb-[calc(72px+env(safe-area-inset-bottom))]"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
       {/* Ambient auroras */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-        <div className="aurora animate-float" style={{ width: 480, height: 480, background: 'hsl(var(--primary) / 0.35)', top: -140, left: -120 }} />
-        <div className="aurora animate-float" style={{ width: 520, height: 520, background: 'hsl(var(--accent) / 0.3)', top: 120, right: -160, animationDelay: '1.5s' }} />
+        <div className="aurora animate-float" style={{ width: 360, height: 360, background: 'hsl(var(--primary) / 0.28)', top: -120, left: -100 }} />
+        <div className="aurora animate-float" style={{ width: 400, height: 400, background: 'hsl(var(--accent) / 0.22)', top: 200, right: -140, animationDelay: '1.5s' }} />
       </div>
 
       {username === null && <UsernamePrompt />}
 
-      {/* Header */}
-      <header className="sticky top-0 z-20 backdrop-blur-xl bg-background/60 border-b border-border/40">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3.5 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-3 min-w-0">
-            <div className="relative w-10 h-10 rounded-xl bg-gradient-primary flex items-center justify-center shadow-lg shrink-0">
-              <ThemeIcon className="w-5 h-5 text-primary-foreground" />
-              <span className="absolute -inset-0.5 rounded-xl bg-gradient-primary opacity-40 blur-md -z-10" />
+      {/* App top bar */}
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/75 border-b border-border/40">
+        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <button onClick={scrollTop} className="flex items-center gap-2.5 min-w-0 active:scale-[0.98] transition-transform">
+            <div className="relative w-9 h-9 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-md shrink-0">
+              <ThemeIcon className="w-4 h-4 text-primary-foreground" />
+              <span className="absolute -inset-0.5 rounded-2xl bg-gradient-primary opacity-40 blur-md -z-10" />
             </div>
-            <div className="min-w-0">
-              <h1 className="font-display text-base sm:text-lg font-bold tracking-tight truncate">
-                Task Pilot
-              </h1>
-              <p className="text-[11px] text-muted-foreground truncate">{today}</p>
+            <div className="min-w-0 text-left">
+              <h1 className="font-display text-[15px] font-bold tracking-tight leading-none truncate">Task Pilot</h1>
+              <p className="text-[10.5px] text-muted-foreground truncate mt-0.5">{today}</p>
             </div>
-          </div>
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          </button>
+          <div className="flex items-center gap-1">
             <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
-            <Link
-              to="/study"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-gradient-primary text-primary-foreground shadow-md hover:opacity-90 transition"
-              aria-label="Open Study Timer"
-            >
-              <Timer className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Study Timer</span>
-            </Link>
             <ProfileDialog />
             <SettingsDialog />
-            <ShareAppButton />
-            <button
-              onClick={handleDownloadSummary}
-              disabled={downloadingPdf}
-              className="inline-flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 transition-colors px-2.5 py-1.5 rounded-md hover:bg-primary/10 disabled:opacity-50"
-              aria-label="Download daily summary as PDF"
-            >
-              {downloadingPdf ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
-              <span className="hidden sm:inline">Summary PDF</span>
-            </button>
-            <button
-              onClick={store.clearDay}
-              className="hidden sm:inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors px-2.5 py-1.5 rounded-md hover:bg-destructive/10"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              {theme === 'war' ? 'Clear Field' : 'Clear Runway'}
-            </button>
-            <button
-              onClick={signOut}
-              className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2.5 py-1.5 rounded-md hover:bg-secondary"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">{theme === 'war' ? 'Retreat' : 'Disembark'}</span>
-            </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        {/* QUOTE */}
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
         <QuoteCard />
+
         {/* HERO */}
         <motion.section
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
           className="glass-card glow-sky p-5 sm:p-8 overflow-hidden relative"
         >
           <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
             <div className="flex-1 min-w-0 text-center md:text-left">
               <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest font-display text-primary bg-primary/10 px-2.5 py-1 rounded-full mb-3">
                 <Sparkles className="w-3 h-3" />
-                {theme === 'war' ? 'Ops Briefing' : 'Flight Deck'}
+                {t.heroBadge}
               </div>
               <h2 className="text-2xl sm:text-4xl font-bold tracking-tight leading-tight">
-                {getGreeting(theme)}
+                {t.greeting(new Date().getHours())}
                 {username ? <>, <span className="text-gradient">{username}</span></> : ''}
               </h2>
               <p className="text-sm sm:text-base text-muted-foreground mt-2 max-w-md mx-auto md:mx-0">
                 {totalDaily === 0
-                  ? 'A clear runway. Add your first objective and take off.'
+                  ? 'Nothing planned yet. Add your first task to get started.'
                   : doneDaily === totalDaily
-                    ? "Every objective landed. You're cleared for touchdown."
-                    : `${doneDaily} of ${totalDaily} objectives complete. Keep the altitude.`}
+                    ? "Everything done. Nice work."
+                    : `${doneDaily} of ${totalDaily} tasks complete. Keep going.`}
               </p>
 
-              {/* Quick stats */}
               <div className="grid grid-cols-3 gap-2 sm:gap-3 mt-5 max-w-md mx-auto md:mx-0">
-                <StatChip icon={CheckCircle2} label="Landed" value={`${doneDaily}/${totalDaily || 0}`} tint="primary" />
-                <StatChip icon={Flame} label="High-Prio" value={String(highPriority)} tint="destructive" />
+                <StatChip icon={CheckCircle2} label={t.done} value={`${doneDaily}/${totalDaily || 0}`} tint="primary" />
+                <StatChip icon={Flame} label="High" value={String(highPriority)} tint="destructive" />
                 <StatChip icon={TrendingUp} label="Weekly" value={`${doneWeekly}/${totalWeekly || 0}`} tint="accent" />
               </div>
             </div>
@@ -200,19 +172,17 @@ const Index = () => {
               <ProgressRing
                 value={pctDaily}
                 size={148}
-                label={theme === 'war' ? 'Mission' : "Today"}
+                label={t.ringLabel}
                 sub={upcomingCount > 0 ? `${upcomingCount} upcoming` : undefined}
               />
             </div>
           </div>
         </motion.section>
 
-        {/* Streak */}
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
           <StreakCard sessions={studyStore.sessions} />
         </motion.div>
 
-        {/* Focus mode */}
         {focusMode && (
           <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
             <JustTellMeMode
@@ -227,24 +197,20 @@ const Index = () => {
 
         {!focusMode && (
           <>
-            {/* Protocols */}
             <motion.div custom={0} initial="hidden" animate="show" variants={fadeUp}>
               <FlightProtocols protocols={store.protocols} onAdd={store.addProtocol} onRemove={store.removeProtocol} />
             </motion.div>
 
-            {/* AI */}
-            <motion.div custom={1} initial="hidden" animate="show" variants={fadeUp}>
+            <motion.div ref={advisorRef} custom={1} initial="hidden" animate="show" variants={fadeUp}>
               <AIAdvisor state={{ subjects: store.subjects, weeklyTargets: store.weeklyTargets, dailyObjectives: store.dailyObjectives, commitments: store.commitments, protocols: store.protocols, events: store.events }} />
             </motion.div>
 
-            {/* Daily Note */}
             <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
               <DailyNote />
             </motion.div>
 
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              <div className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+              <div className="space-y-5">
                 <motion.div custom={2} initial="hidden" animate="show" variants={fadeUp}>
                   <SubjectManager subjects={store.subjects} onAdd={store.addSubject} onRemove={store.removeSubject} />
                 </motion.div>
@@ -260,8 +226,8 @@ const Index = () => {
                 </motion.div>
               </div>
 
-              <div className="space-y-6">
-                <motion.div custom={4} initial="hidden" animate="show" variants={fadeUp}>
+              <div className="space-y-5">
+                <motion.div ref={dailyRef} custom={4} initial="hidden" animate="show" variants={fadeUp}>
                   <DailyObjectives
                     subjects={store.subjects}
                     objectives={store.dailyObjectives}
@@ -285,18 +251,44 @@ const Index = () => {
             </div>
           </>
         )}
-
-        {/* Mobile-only Clear */}
-        <div className="sm:hidden pt-2">
-          <button
-            onClick={store.clearDay}
-            className="w-full inline-flex items-center justify-center gap-2 text-xs text-muted-foreground hover:text-destructive transition-colors px-3 py-2.5 rounded-lg border border-border/50 hover:border-destructive/50 hover:bg-destructive/5"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-            {theme === 'war' ? 'Clear Field' : 'Clear Runway'}
-          </button>
-        </div>
       </main>
+
+      {/* Bottom app tab bar */}
+      <nav
+        className="fixed bottom-0 inset-x-0 z-30 border-t border-border/50 bg-background/85 backdrop-blur-xl"
+        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      >
+        <div className="max-w-6xl mx-auto grid grid-cols-5 h-[64px]">
+          <TabButton icon={Home} label="Home" onClick={scrollTop} />
+          <TabButton icon={Timer} label="Timer" to="/study" />
+          <CenterAdd onClick={scrollToDaily} />
+          <TabButton icon={Bot} label={t.ai.split(' ')[0]} onClick={scrollToAdvisor} />
+          <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
+            <SheetTrigger asChild>
+              <button className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground active:scale-95 transition">
+                <MoreHorizontal className="w-5 h-5" />
+                <span className="text-[10px] font-medium">More</span>
+              </button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-3xl border-border/60 bg-background/95 backdrop-blur-xl">
+              <SheetHeader>
+                <SheetTitle className="text-left">Quick actions</SheetTitle>
+              </SheetHeader>
+              <div className="mt-4 grid grid-cols-1 gap-1.5">
+                <SheetAction icon={FileDown} label="Download summary PDF" onClick={handleDownloadSummary} disabled={downloadingPdf} loading={downloadingPdf} />
+                <div className="px-3 py-2 flex items-center justify-between gap-3 rounded-xl hover:bg-secondary/60">
+                  <div className="flex items-center gap-3 text-sm text-foreground">
+                    <ShareAppButton />
+                    <span>Share app link</span>
+                  </div>
+                </div>
+                <SheetAction icon={Trash2} label={t.clear} onClick={() => { store.clearDay(); setMoreOpen(false); }} destructive />
+                <SheetAction icon={LogOut} label={t.logout} onClick={() => { signOut(); setMoreOpen(false); }} />
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </nav>
     </div>
   );
 };
@@ -314,6 +306,52 @@ function StatChip({ icon: Icon, label, value, tint }: StatChipProps) {
         <div className="text-sm font-bold tabular-nums mt-0.5 text-foreground">{value}</div>
       </div>
     </div>
+  );
+}
+
+type TabProps = { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; to?: string };
+function TabButton({ icon: Icon, label, onClick, to }: TabProps) {
+  const cls = 'flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary active:scale-95 transition';
+  if (to) {
+    return (
+      <Link to={to} className={cls}>
+        <Icon className="w-5 h-5" />
+        <span className="text-[10px] font-medium">{label}</span>
+      </Link>
+    );
+  }
+  return (
+    <button onClick={onClick} className={cls}>
+      <Icon className="w-5 h-5" />
+      <span className="text-[10px] font-medium">{label}</span>
+    </button>
+  );
+}
+
+function CenterAdd({ onClick }: { onClick: () => void }) {
+  return (
+    <div className="flex items-center justify-center">
+      <button
+        onClick={onClick}
+        aria-label="Add task"
+        className="-mt-6 w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition"
+      >
+        <PlusCircle className="w-6 h-6" />
+      </button>
+    </div>
+  );
+}
+
+function SheetAction({ icon: Icon, label, onClick, destructive, disabled, loading }: { icon: React.ComponentType<{ className?: string }>; label: string; onClick: () => void; destructive?: boolean; disabled?: boolean; loading?: boolean }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`flex items-center gap-3 rounded-xl px-3 py-3 text-sm text-left transition-colors hover:bg-secondary/60 disabled:opacity-50 ${destructive ? 'text-destructive' : 'text-foreground'}`}
+    >
+      {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Icon className="w-4 h-4" />}
+      <span className="flex-1">{label}</span>
+    </button>
   );
 }
 

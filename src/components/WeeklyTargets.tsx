@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Plus, X, Check, Map, History } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, WeeklyTarget } from '@/hooks/use-planner-store';
+import { useTerms } from '@/lib/terms';
 
 interface WeeklyTargetsProps {
   subjects: Subject[];
@@ -13,6 +14,7 @@ interface WeeklyTargetsProps {
 }
 
 export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle, onRemove }: WeeklyTargetsProps) {
+  const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [input, setInput] = useState('');
   const [deadline, setDeadline] = useState('');
@@ -71,7 +73,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
       <div className="flex items-center gap-2 mb-4">
         <Map className="w-4 h-4 text-primary" />
         <h3 className="font-display text-sm font-semibold tracking-wide uppercase text-primary">
-          Flight Plan
+          {t.weekly}
         </h3>
       </div>
       {subjects.length > 0 && (
@@ -81,7 +83,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
             onChange={e => setSubjectId(e.target.value)}
             className="bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           >
-            <option value="">Route</option>
+            <option value="">{t.subject}</option>
             {subjects.map(s => (
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
@@ -90,7 +92,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
             value={input}
             onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && handleAdd()}
-            placeholder="Set a waypoint..."
+            placeholder={t.weeklyPlaceholder}
             className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
           <input
@@ -109,7 +111,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
           {targets.map(t => renderTarget(t))}
         </AnimatePresence>
         {targets.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No flight plan yet. Add routes first, then set waypoints.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t.weeklyEmpty}</p>
         )}
       </div>
 
@@ -120,7 +122,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            Flight Log ({pastTargets.length})
+            {t.history} ({pastTargets.length})
           </button>
           <AnimatePresence>
             {showPast && (
