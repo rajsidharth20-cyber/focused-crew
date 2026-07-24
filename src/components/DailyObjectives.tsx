@@ -418,7 +418,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       )}
 
       {objectives.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">No flights scheduled for today yet.</p>
+        <p className="text-sm text-muted-foreground text-center py-4">{t.dailyEmpty}</p>
       )}
 
       {pastObjectives.length > 0 && (
