@@ -47,6 +47,7 @@ const formatTimestamp = (iso: string) => {
 };
 
 export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward }: DailyObjectivesProps) {
+  const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
   const [minutes, setMinutes] = useState('30');
