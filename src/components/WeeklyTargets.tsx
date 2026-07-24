@@ -122,7 +122,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            Flight Log ({pastTargets.length})
+            {t.history} ({pastTargets.length})
           </button>
           <AnimatePresence>
             {showPast && (
