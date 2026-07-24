@@ -407,7 +407,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
       {landed.length > 0 && (
         <div className="mb-4">
           <h4 className="text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-            Landed
+            {t.done}
           </h4>
           <div className="space-y-2">
             <AnimatePresence>
