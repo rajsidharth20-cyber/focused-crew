@@ -111,7 +111,7 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
           {targets.map(t => renderTarget(t))}
         </AnimatePresence>
         {targets.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No flight plan yet. Add routes first, then set waypoints.</p>
+          <p className="text-sm text-muted-foreground text-center py-4">{t.weeklyEmpty}</p>
         )}
       </div>
 
