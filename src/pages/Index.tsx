@@ -104,8 +104,12 @@ const Index = () => {
 
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden pb-[calc(72px+env(safe-area-inset-bottom))]"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      className="relative min-h-screen overflow-x-hidden pb-[calc(80px+env(safe-area-inset-bottom))]"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
     >
       {/* Ambient auroras */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
