@@ -158,17 +158,37 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         <AnimatePresence>
           {sorted.map(c => {
             const Icon = typeIcons[c.type];
+            const isCurrent = c.id === currentId;
+            const isNext = c.id === nextId;
+            const stateClass = isCurrent
+              ? 'bg-primary/15 ring-1 ring-primary/50 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.6)]'
+              : isNext
+                ? 'bg-accent/10 ring-1 ring-accent/40'
+                : 'bg-secondary/30';
             return (
               <motion.div
                 key={c.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="flex items-center gap-3 bg-secondary/30 rounded-md px-3 py-2.5"
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors ${stateClass}`}
               >
                 <Icon className={`w-4 h-4 flex-shrink-0 ${typeColors[c.type]}`} />
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm text-foreground">{c.title}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm text-foreground">{c.title}</span>
+                    {isCurrent && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        Now
+                      </span>
+                    )}
+                    {isNext && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-accent bg-accent/15 px-1.5 py-0.5 rounded-full">
+                        Next
+                      </span>
+                    )}
+                  </div>
                   {c.recurringDays && c.recurringDays.length > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-primary/80 mt-0.5">
                       <Repeat className="w-2.5 h-2.5" />
@@ -176,7 +196,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground font-display whitespace-nowrap">
+                <span className="text-xs text-muted-foreground font-display whitespace-nowrap tabular-nums">
                   {c.startTime} – {c.endTime}
                 </span>
                 <button onClick={() => onRemove(c.id)} className="text-muted-foreground hover:text-destructive transition-colors">
