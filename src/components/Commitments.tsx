@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
+import { useNow, toMinutes } from '@/hooks/use-now';
 
 interface CommitmentsProps {
   commitments: Commitment[];
