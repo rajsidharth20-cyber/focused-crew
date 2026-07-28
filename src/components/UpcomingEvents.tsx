@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, X, CalendarDays, Clock, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import type { PlannerEvent } from '@/hooks/use-planner-store';
+import { useNow, toMinutes } from '@/hooks/use-now';
 
 interface UpcomingEventsProps {
   events: PlannerEvent[];
