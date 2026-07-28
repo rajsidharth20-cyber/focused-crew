@@ -129,10 +129,7 @@ const Index = () => {
             </div>
           </button>
           <div className="flex items-center gap-1">
-            <div className="hidden xs:flex items-center px-2 py-1 rounded-full bg-secondary/60 border border-border/40 mr-1">
-              <span className="text-[11px] font-display font-semibold tabular-nums text-foreground">{clock}</span>
-            </div>
-            <div className="flex xs:hidden items-center px-2 py-1 rounded-full bg-secondary/60 border border-border/40 mr-1">
+            <div className="flex items-center px-2 py-1 rounded-full bg-secondary/60 border border-border/40 mr-1">
               <span className="text-[11px] font-display font-semibold tabular-nums text-foreground">{clock}</span>
             </div>
             <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
