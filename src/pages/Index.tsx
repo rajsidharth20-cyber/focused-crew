@@ -52,6 +52,8 @@ const Index = () => {
   const { theme } = useTheme();
   const t = useTerms();
   useEventReminders(store.events);
+  const now = useNow(30_000);
+  const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
