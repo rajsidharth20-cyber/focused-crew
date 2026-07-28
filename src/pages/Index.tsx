@@ -25,6 +25,7 @@ import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
+import { useNow } from '@/hooks/use-now';
 import { QuoteCard } from '@/components/QuoteCard';
 import {
   Sheet,
