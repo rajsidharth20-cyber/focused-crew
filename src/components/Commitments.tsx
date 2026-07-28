@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, X, Clock, GraduationCap, MapPin, Users, MoreHorizontal, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
+import { useNow, toMinutes } from '@/hooks/use-now';
 
 interface CommitmentsProps {
   commitments: Commitment[];
@@ -61,6 +62,22 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
   };
 
   const sorted = [...commitments].sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+  const now = useNow(30_000);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const { currentId, nextId } = useMemo(() => {
+    let currentId: string | null = null;
+    let nextId: string | null = null;
+    let nextStart = Infinity;
+    for (const c of sorted) {
+      const s = toMinutes(c.startTime);
+      const e = toMinutes(c.endTime);
+      if (s == null) continue;
+      if (e != null && nowMin >= s && nowMin < e) currentId = c.id;
+      else if (s > nowMin && s < nextStart) { nextStart = s; nextId = c.id; }
+    }
+    return { currentId, nextId };
+  }, [sorted, nowMin]);
 
   return (
     <div className="glass-card p-5">
@@ -141,17 +158,37 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         <AnimatePresence>
           {sorted.map(c => {
             const Icon = typeIcons[c.type];
+            const isCurrent = c.id === currentId;
+            const isNext = c.id === nextId;
+            const stateClass = isCurrent
+              ? 'bg-primary/15 ring-1 ring-primary/50 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.6)]'
+              : isNext
+                ? 'bg-accent/10 ring-1 ring-accent/40'
+                : 'bg-secondary/30';
             return (
               <motion.div
                 key={c.id}
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 10 }}
-                className="flex items-center gap-3 bg-secondary/30 rounded-md px-3 py-2.5"
+                className={`flex items-center gap-3 rounded-md px-3 py-2.5 transition-colors ${stateClass}`}
               >
                 <Icon className={`w-4 h-4 flex-shrink-0 ${typeColors[c.type]}`} />
                 <div className="flex-1 min-w-0">
-                  <span className="text-sm text-foreground">{c.title}</span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-sm text-foreground">{c.title}</span>
+                    {isCurrent && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                        Now
+                      </span>
+                    )}
+                    {isNext && (
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-accent bg-accent/15 px-1.5 py-0.5 rounded-full">
+                        Next
+                      </span>
+                    )}
+                  </div>
                   {c.recurringDays && c.recurringDays.length > 0 && (
                     <div className="flex items-center gap-1 text-[10px] text-primary/80 mt-0.5">
                       <Repeat className="w-2.5 h-2.5" />
@@ -159,7 +196,7 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
                     </div>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground font-display whitespace-nowrap">
+                <span className="text-xs text-muted-foreground font-display whitespace-nowrap tabular-nums">
                   {c.startTime} – {c.endTime}
                 </span>
                 <button onClick={() => onRemove(c.id)} className="text-muted-foreground hover:text-destructive transition-colors">

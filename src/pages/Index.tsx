@@ -25,6 +25,7 @@ import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
+import { useNow } from '@/hooks/use-now';
 import { QuoteCard } from '@/components/QuoteCard';
 import {
   Sheet,
@@ -51,6 +52,8 @@ const Index = () => {
   const { theme } = useTheme();
   const t = useTerms();
   useEventReminders(store.events);
+  const now = useNow(30_000);
+  const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
@@ -101,8 +104,12 @@ const Index = () => {
 
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden pb-[calc(72px+env(safe-area-inset-bottom))]"
-      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+      className="relative min-h-screen overflow-x-hidden pb-[calc(80px+env(safe-area-inset-bottom))]"
+      style={{
+        paddingTop: 'env(safe-area-inset-top)',
+        paddingLeft: 'env(safe-area-inset-left)',
+        paddingRight: 'env(safe-area-inset-right)',
+      }}
     >
       {/* Ambient auroras */}
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
@@ -126,6 +133,9 @@ const Index = () => {
             </div>
           </button>
           <div className="flex items-center gap-1">
+            <div className="flex items-center px-2 py-1 rounded-full bg-secondary/60 border border-border/40 mr-1">
+              <span className="text-[11px] font-display font-semibold tabular-nums text-foreground">{clock}</span>
+            </div>
             <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
             <ProfileDialog />
             <SettingsDialog />

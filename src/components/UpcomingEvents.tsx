@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, X, CalendarDays, Clock, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import type { PlannerEvent } from '@/hooks/use-planner-store';
+import { useNow, toMinutes } from '@/hooks/use-now';
 
 interface UpcomingEventsProps {
   events: PlannerEvent[];
@@ -155,19 +156,84 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
         )}
       </AnimatePresence>
 
-      <div className="space-y-2">
-        <AnimatePresence>
-          {events.map(event => (
+      <EventsList events={events} onRemove={onRemove} />
+    </div>
+  );
+}
+
+function EventsList({ events, onRemove }: { events: PlannerEvent[]; onRemove: (id: string) => void }) {
+  const now = useNow(30_000);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const todayDow = now.getDay();
+  const todayISO = now.toISOString().slice(0, 10);
+
+  const { sorted, currentId, nextId } = useMemo(() => {
+    const isTodayEvent = (e: PlannerEvent) =>
+      (e.recurringDays && e.recurringDays.includes(todayDow)) ||
+      (e.eventDate && e.eventDate === todayISO);
+
+    const sortKey = (e: PlannerEvent) => {
+      const start = toMinutes(e.startTime ?? null) ?? 0;
+      if (isTodayEvent(e)) return now.getTime() + start * 60_000 - now.getHours() * 3_600_000 - now.getMinutes() * 60_000;
+      if (e.eventDate) return parseISO(e.eventDate).getTime() + start * 60_000;
+      // recurring, not today: sort to end
+      return Number.MAX_SAFE_INTEGER;
+    };
+    const sorted = [...events].sort((a, b) => sortKey(a) - sortKey(b));
+
+    let currentId: string | null = null;
+    let nextId: string | null = null;
+    let nextStart = Infinity;
+    for (const e of sorted) {
+      if (!isTodayEvent(e)) continue;
+      const s = toMinutes(e.startTime ?? null);
+      const en = toMinutes(e.endTime ?? null);
+      if (s == null) continue;
+      if (en != null && nowMin >= s && nowMin < en) currentId = e.id;
+      else if (s > nowMin && s < nextStart) { nextStart = s; nextId = e.id; }
+    }
+    return { sorted, currentId, nextId };
+  }, [events, nowMin, todayDow, todayISO]);
+
+  if (events.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>;
+  }
+
+  return (
+    <div className="space-y-2">
+      <AnimatePresence>
+        {sorted.map(event => {
+          const isCurrent = event.id === currentId;
+          const isNext = event.id === nextId;
+          const stateClass = isCurrent
+            ? 'bg-primary/15 ring-1 ring-primary/50 shadow-[0_0_20px_-8px_hsl(var(--primary)/0.6)]'
+            : isNext
+              ? 'bg-accent/10 ring-1 ring-accent/40'
+              : 'bg-secondary/30';
+          return (
             <motion.div
               key={event.id}
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 10 }}
-              className="flex items-start gap-3 bg-secondary/30 rounded-md px-3 py-2.5"
+              className={`flex items-start gap-3 rounded-md px-3 py-2.5 transition-colors ${stateClass}`}
             >
               <CalendarDays className="w-4 h-4 flex-shrink-0 text-primary mt-0.5" />
               <div className="flex-1 min-w-0">
-                <span className="text-sm text-foreground font-medium">{event.title}</span>
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-sm text-foreground font-medium">{event.title}</span>
+                  {isCurrent && (
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-primary bg-primary/15 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse" />
+                      Now
+                    </span>
+                  )}
+                  {isNext && (
+                    <span className="text-[9px] font-semibold uppercase tracking-wider text-accent bg-accent/15 px-1.5 py-0.5 rounded-full">
+                      Next
+                    </span>
+                  )}
+                </div>
                 {event.description && (
                   <p className="text-xs text-muted-foreground mt-0.5">{event.description}</p>
                 )}
@@ -182,7 +248,7 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
                   <span className="text-xs font-display text-primary">{formatEventDate(event.eventDate)}</span>
                 ) : null}
                 {(event.startTime || event.endTime) && (
-                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 justify-end">
+                  <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5 justify-end tabular-nums">
                     <Clock className="w-3 h-3" />
                     {event.startTime}{event.endTime ? ` – ${event.endTime}` : ''}
                   </div>
@@ -192,12 +258,9 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
                 <X className="w-3.5 h-3.5" />
               </button>
             </motion.div>
-          ))}
-        </AnimatePresence>
-        {events.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>
-        )}
-      </div>
+          );
+        })}
+      </AnimatePresence>
     </div>
   );
 }
