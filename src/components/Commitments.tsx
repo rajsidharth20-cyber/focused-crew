@@ -63,6 +63,22 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
 
   const sorted = [...commitments].sort((a, b) => a.startTime.localeCompare(b.startTime));
 
+  const now = useNow(30_000);
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const { currentId, nextId } = useMemo(() => {
+    let currentId: string | null = null;
+    let nextId: string | null = null;
+    let nextStart = Infinity;
+    for (const c of sorted) {
+      const s = toMinutes(c.startTime);
+      const e = toMinutes(c.endTime);
+      if (s == null) continue;
+      if (e != null && nowMin >= s && nowMin < e) currentId = c.id;
+      else if (s > nowMin && s < nextStart) { nextStart = s; nextId = c.id; }
+    }
+    return { currentId, nextId };
+  }, [sorted, nowMin]);
+
   return (
     <div className="glass-card p-5">
       <div className="flex items-center gap-2 mb-4">
