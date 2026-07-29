@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 
-export type AppTheme = 'flight' | 'war' | 'premium';
+export type AppTheme = 'cirrus' | 'flight' | 'war' | 'premium';
 
 export function useTheme() {
   const [theme, setThemeState] = useState<AppTheme>(() => {
-    return (localStorage.getItem('task-pilot-theme') as AppTheme) || 'flight';
+    const stored = localStorage.getItem('task-pilot-theme') as AppTheme | null;
+    return stored ?? 'cirrus';
   });
 
   useEffect(() => {
@@ -12,7 +13,6 @@ export function useTheme() {
     localStorage.setItem('task-pilot-theme', theme);
   }, [theme]);
 
-  // Apply on mount
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, []);

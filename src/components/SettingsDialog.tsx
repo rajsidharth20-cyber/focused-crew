@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Swords, Plane, Sparkles, Instagram, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -46,23 +46,24 @@ export function SettingsDialog() {
         <div className="space-y-6 pt-2">
           <div>
             <Label className="text-sm font-medium text-muted-foreground mb-3 block">Theme</Label>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               {[
+                { key: 'cirrus', Icon: Cloud, name: 'Cirrus', desc: 'Soft white & lavender' },
                 { key: 'flight', Icon: Plane, name: 'Flight', desc: 'Sky blue cockpit' },
                 { key: 'war', Icon: Swords, name: 'War', desc: 'Tactical fire ops' },
-                { key: 'premium', Icon: Sparkles, name: 'Premium', desc: 'Light & elegant' },
+                { key: 'premium', Icon: Sparkles, name: 'Premium', desc: 'Light indigo' },
               ].map(({ key, Icon, name, desc }) => (
                 <button
                   key={key}
                   onClick={() => setTheme(key as any)}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-lg border-2 transition-all ${
+                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
                     theme === key
                       ? 'border-primary bg-primary/10 text-foreground'
                       : 'border-border bg-card text-muted-foreground hover:border-muted-foreground'
                   }`}
                 >
                   <Icon className="w-6 h-6" />
-                  <span className="text-sm font-display font-semibold">{name}</span>
+                  <span className="text-sm font-semibold">{name}</span>
                   <span className="text-[10px] text-muted-foreground text-center">{desc}</span>
                 </button>
               ))}

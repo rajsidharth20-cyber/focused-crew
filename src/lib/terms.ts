@@ -144,5 +144,5 @@ export function useTerms(): TermSet {
   const { theme } = useTheme();
   if (theme === 'flight') return flight;
   if (theme === 'war') return war;
-  return plain;
+  return plain; // cirrus + premium use plain vocabulary
 }
