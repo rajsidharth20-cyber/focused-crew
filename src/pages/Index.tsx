@@ -270,9 +270,9 @@ const Index = () => {
       >
         <div className="max-w-6xl mx-auto grid grid-cols-5 h-[64px]">
           <TabButton icon={Home} label="Home" onClick={scrollTop} />
-          <TabButton icon={Timer} label="Timer" to="/study" />
+          <TabButton icon={CalendarDays} label="Planner" to="/planner" />
           <CenterAdd onClick={scrollToDaily} />
-          <TabButton icon={Bot} label={t.ai.split(' ')[0]} onClick={scrollToAdvisor} />
+          <TabButton icon={Timer} label="Timer" to="/study" />
           <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
             <SheetTrigger asChild>
               <button className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground active:scale-95 transition">
