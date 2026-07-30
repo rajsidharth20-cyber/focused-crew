@@ -320,14 +320,20 @@ function StatChip({ icon: Icon, label, value, tint }: StatChipProps) {
   );
 }
 
-type TabProps = { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; to?: string };
-function TabButton({ icon: Icon, label, onClick, to }: TabProps) {
-  const cls = 'flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary active:scale-95 transition';
+type TabProps = { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; to?: string; badge?: number };
+function TabButton({ icon: Icon, label, onClick, to, badge }: TabProps) {
+  const cls = 'relative flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary active:scale-95 transition';
+  const badgeEl = badge && badge > 0 ? (
+    <span className="absolute top-1.5 right-[22%] min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold grid place-items-center">
+      {badge > 9 ? '9+' : badge}
+    </span>
+  ) : null;
   if (to) {
     return (
       <Link to={to} className={cls}>
         <Icon className="w-5 h-5" />
         <span className="text-[10px] font-medium">{label}</span>
+        {badgeEl}
       </Link>
     );
   }
