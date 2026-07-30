@@ -44,6 +44,8 @@ const App = () => (
             <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
+            <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
+            <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
