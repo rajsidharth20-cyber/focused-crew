@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays } from 'lucide-react';
+import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
