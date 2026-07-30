@@ -268,11 +268,12 @@ const Index = () => {
         className="fixed bottom-0 inset-x-0 z-30 border-t border-border/50 bg-background/85 backdrop-blur-xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-6xl mx-auto grid grid-cols-5 h-[64px]">
+        <div className="max-w-6xl mx-auto grid grid-cols-6 h-[64px]">
           <TabButton icon={Home} label="Home" onClick={scrollTop} />
           <TabButton icon={CalendarDays} label="Planner" to="/planner" />
           <CenterAdd onClick={scrollToDaily} />
           <TabButton icon={Timer} label="Timer" to="/study" />
+          <TabButton icon={MessagesSquare} label="Chats" to="/chat" badge={unreadTotal} />
           <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
             <SheetTrigger asChild>
               <button className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground active:scale-95 transition">
