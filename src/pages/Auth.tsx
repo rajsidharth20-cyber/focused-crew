@@ -13,7 +13,9 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [existingEmail, setExistingEmail] = useState(false);
   const isLogin = mode === 'login';
+
 
   if (loading) {
     return (
@@ -70,17 +72,32 @@ export default function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        // Supabase returns a user with an empty identities array when the email
+        // is already registered — no confirmation email is sent in that case.
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setExistingEmail(true);
+          setMode('login');
+          toast.info('This email is already registered — sign in instead.');
+          return;
+        }
         if (data.user) {
           await supabase.from('profiles').upsert({ id: data.user.id, username: username.trim() });
         }
         toast.success('Check your email to confirm your boarding pass.');
       }
     } catch (err: any) {
-      toast.error(err.message);
+      if (/already registered|already exists/i.test(err.message ?? '')) {
+        setExistingEmail(true);
+        setMode('login');
+        toast.info('This email is already registered — sign in instead.');
+      } else {
+        toast.error(err.message);
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
@@ -94,7 +111,25 @@ export default function Auth() {
           </h1>
         </div>
 
+        {existingEmail && (
+          <div className="mb-4 rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+            <p className="font-medium">This email already has an account.</p>
+            <p className="text-muted-foreground mt-1">
+              Sign in below, or{' '}
+              <button
+                type="button"
+                onClick={() => { setExistingEmail(false); setMode('forgot'); }}
+                className="text-primary hover:underline font-medium"
+              >
+                reset your password
+              </button>
+              .
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {mode === 'signup' && (
             <div>
               <label className="text-xs text-muted-foreground font-medium block mb-1.5">Call Sign</label>
