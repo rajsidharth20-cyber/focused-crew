@@ -57,6 +57,7 @@ const Index = () => {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const { total: unreadTotal } = useUnreadMessages();
   const dailyRef = useRef<HTMLDivElement>(null);
   const advisorRef = useRef<HTMLDivElement>(null);
 
