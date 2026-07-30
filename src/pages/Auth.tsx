@@ -13,7 +13,9 @@ export default function Auth() {
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [existingEmail, setExistingEmail] = useState(false);
   const isLogin = mode === 'login';
+
 
   if (loading) {
     return (
