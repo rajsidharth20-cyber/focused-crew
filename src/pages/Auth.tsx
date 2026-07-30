@@ -70,17 +70,32 @@ export default function Auth() {
           options: { emailRedirectTo: window.location.origin },
         });
         if (error) throw error;
+        // Supabase returns a user with an empty identities array when the email
+        // is already registered — no confirmation email is sent in that case.
+        if (data.user && (data.user.identities?.length ?? 0) === 0) {
+          setExistingEmail(true);
+          setMode('login');
+          toast.info('This email is already registered — sign in instead.');
+          return;
+        }
         if (data.user) {
           await supabase.from('profiles').upsert({ id: data.user.id, username: username.trim() });
         }
         toast.success('Check your email to confirm your boarding pass.');
       }
     } catch (err: any) {
-      toast.error(err.message);
+      if (/already registered|already exists/i.test(err.message ?? '')) {
+        setExistingEmail(true);
+        setMode('login');
+        toast.info('This email is already registered — sign in instead.');
+      } else {
+        toast.error(err.message);
+      }
     } finally {
       setSubmitting(false);
     }
   };
+
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center px-4">
