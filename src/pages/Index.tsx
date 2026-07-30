@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays } from 'lucide-react';
+import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { useState, useRef } from 'react';
 import { toast } from 'sonner';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
@@ -57,6 +58,7 @@ const Index = () => {
   const [downloadingPdf, setDownloadingPdf] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [moreOpen, setMoreOpen] = useState(false);
+  const { total: unreadTotal } = useUnreadMessages();
   const dailyRef = useRef<HTMLDivElement>(null);
   const advisorRef = useRef<HTMLDivElement>(null);
 
@@ -268,11 +270,12 @@ const Index = () => {
         className="fixed bottom-0 inset-x-0 z-30 border-t border-border/50 bg-background/85 backdrop-blur-xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-6xl mx-auto grid grid-cols-5 h-[64px]">
+        <div className="max-w-6xl mx-auto grid grid-cols-6 h-[64px]">
           <TabButton icon={Home} label="Home" onClick={scrollTop} />
           <TabButton icon={CalendarDays} label="Planner" to="/planner" />
           <CenterAdd onClick={scrollToDaily} />
           <TabButton icon={Timer} label="Timer" to="/study" />
+          <TabButton icon={MessagesSquare} label="Chats" to="/chat" badge={unreadTotal} />
           <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
             <SheetTrigger asChild>
               <button className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground active:scale-95 transition">
@@ -319,14 +322,20 @@ function StatChip({ icon: Icon, label, value, tint }: StatChipProps) {
   );
 }
 
-type TabProps = { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; to?: string };
-function TabButton({ icon: Icon, label, onClick, to }: TabProps) {
-  const cls = 'flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary active:scale-95 transition';
+type TabProps = { icon: React.ComponentType<{ className?: string }>; label: string; onClick?: () => void; to?: string; badge?: number };
+function TabButton({ icon: Icon, label, onClick, to, badge }: TabProps) {
+  const cls = 'relative flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-primary active:scale-95 transition';
+  const badgeEl = badge && badge > 0 ? (
+    <span className="absolute top-1.5 right-[22%] min-w-[16px] h-4 px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold grid place-items-center">
+      {badge > 9 ? '9+' : badge}
+    </span>
+  ) : null;
   if (to) {
     return (
       <Link to={to} className={cls}>
         <Icon className="w-5 h-5" />
         <span className="text-[10px] font-medium">{label}</span>
+        {badgeEl}
       </Link>
     );
   }
