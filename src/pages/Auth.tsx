@@ -111,7 +111,25 @@ export default function Auth() {
           </h1>
         </div>
 
+        {existingEmail && (
+          <div className="mb-4 rounded-md border border-primary/30 bg-primary/10 p-3 text-xs text-foreground">
+            <p className="font-medium">This email already has an account.</p>
+            <p className="text-muted-foreground mt-1">
+              Sign in below, or{' '}
+              <button
+                type="button"
+                onClick={() => { setExistingEmail(false); setMode('forgot'); }}
+                className="text-primary hover:underline font-medium"
+              >
+                reset your password
+              </button>
+              .
+            </p>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-4">
+
           {mode === 'signup' && (
             <div>
               <label className="text-xs text-muted-foreground font-medium block mb-1.5">Call Sign</label>
