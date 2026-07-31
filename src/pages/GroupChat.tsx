@@ -5,9 +5,17 @@ import { useAuth } from '@/hooks/useAuth';
 import { fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/UserAvatar';
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from '@/components/ui/context-menu';
+import { useHiddenMessages } from '@/hooks/use-hidden-messages';
+import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, X } from 'lucide-react';
+import { ArrowLeft, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface GroupMessage {
@@ -55,6 +63,8 @@ export default function GroupChat() {
   const [uploading, setUploading] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const { isHidden, hide } = useHiddenMessages('group');
+  const { isUserLive } = useLiveStudy(Object.keys(profiles));
 
   const load = useCallback(async () => {
     if (!groupId) return;
@@ -142,7 +152,8 @@ export default function GroupChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  const pinned = useMemo(() => messages.filter(m => m.pinned), [messages]);
+  const visibleMessages = useMemo(() => messages.filter(m => !isHidden(m.id)), [messages, isHidden]);
+  const pinned = useMemo(() => messages.filter(m => m.pinned && !isHidden(m.id)), [messages, isHidden]);
   const byId = useMemo(() => {
     const map: Record<string, GroupMessage> = {};
     messages.forEach(m => {
@@ -237,26 +248,29 @@ export default function GroupChat() {
           <div className="flex justify-center py-8">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : visibleMessages.length === 0 ? (
           <p className="text-sm text-muted-foreground text-center py-8">
             No messages yet. Say hello 👋
           </p>
         ) : (
-          messages.map(m => {
+          visibleMessages.map(m => {
             const mine = m.user_id === user.id;
             const parent = m.reply_to_id ? byId[m.reply_to_id] : null;
             return (
               <div key={m.id} className={`flex gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
                 {!mine && (
-                  <Avatar className="w-7 h-7 mt-auto">
-                    <AvatarImage src={profiles[m.user_id]?.avatar_url ?? undefined} alt="" />
-                    <AvatarFallback className="text-[10px]">
-                      {memberName(profiles[m.user_id]).charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+                  <UserAvatar
+                    src={profiles[m.user_id]?.avatar_url}
+                    name={memberName(profiles[m.user_id])}
+                    className="w-7 h-7 mt-auto"
+                    fallbackClassName="text-[10px]"
+                    live={isUserLive(m.user_id)}
+                  />
                 )}
+                <ContextMenu>
+                  <ContextMenuTrigger asChild>
                 <div
-                  className={`group max-w-[78%] rounded-2xl px-3 py-2 ${
+                  className={`group max-w-[78%] select-none rounded-2xl px-3 py-2 ${
                     mine
                       ? 'bg-primary text-primary-foreground rounded-br-md'
                       : 'bg-card border border-border/60 rounded-bl-md'
@@ -299,6 +313,13 @@ export default function GroupChat() {
                     </button>
                   </div>
                 </div>
+                  </ContextMenuTrigger>
+                  <ContextMenuContent>
+                    <ContextMenuItem onSelect={() => hide(m.id)} className="text-destructive">
+                      <Trash2 className="w-4 h-4 mr-2" /> Delete for me
+                    </ContextMenuItem>
+                  </ContextMenuContent>
+                </ContextMenu>
               </div>
             );
           })
