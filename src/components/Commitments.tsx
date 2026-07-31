@@ -102,6 +102,10 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
         </h3>
       </div>
 
+      <ScheduleFilterChips value={range} onChange={setRange} className="mb-3" />
+
+
+
       <div className="flex gap-2 mb-3 flex-wrap">
         <select
           value={type}
@@ -225,6 +229,8 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
             {commitments.length === 0 ? t.commitmentsEmpty : 'Nothing in this range.'}
           </p>
         )}
-
+      </div>
+    </div>
   );
 }
+
