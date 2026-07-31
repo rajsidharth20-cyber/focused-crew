@@ -288,7 +288,9 @@ const Index = () => {
                 <SheetTitle className="text-left">Quick actions</SheetTitle>
               </SheetHeader>
               <div className="mt-4 grid grid-cols-1 gap-1.5">
+                <SheetAction icon={Users} label="Study groups" onClick={() => { setMoreOpen(false); window.location.assign('/groups'); }} />
                 <SheetAction icon={FileDown} label="Download summary PDF" onClick={handleDownloadSummary} disabled={downloadingPdf} loading={downloadingPdf} />
+
                 <div className="px-3 py-2 flex items-center justify-between gap-3 rounded-xl hover:bg-secondary/60">
                   <div className="flex items-center gap-3 text-sm text-foreground">
                     <ShareAppButton />
