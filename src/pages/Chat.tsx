@@ -284,6 +284,9 @@ export function ChatThread() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isHidden, hide } = useHiddenMessages("dm");
+  const { isUserLive } = useLiveStudy(userId ? [userId] : []);
+  const otherLive = userId ? isUserLive(userId) : false;
 
   const markRead = useCallback(async () => {
     if (!user || !userId) return;
@@ -355,6 +358,11 @@ export function ChatThread() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !isHidden(m.id)),
+    [messages, isHidden]
+  );
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
@@ -413,12 +421,12 @@ export function ChatThread() {
           <div className="flex justify-center py-10">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : visibleMessages.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-10">
             No messages yet — say hello.
           </p>
         ) : (
-          messages.map((m) => {
+          visibleMessages.map((m) => {
             const mine = m.sender_id === user.id;
             const day = dayLabel(m.created_at);
             const showDay = day !== lastDay;
@@ -433,9 +441,11 @@ export function ChatThread() {
                   </div>
                 )}
                 <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
                   <div
                     className={cn(
-                      "max-w-[78%] rounded-2xl px-3 py-2 shadow-sm",
+                      "max-w-[78%] rounded-2xl px-3 py-2 shadow-sm select-none",
                       mine
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-card text-card-foreground border border-border/50 rounded-bl-sm"
@@ -457,6 +467,13 @@ export function ChatThread() {
                         ))}
                     </div>
                   </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onSelect={() => hide(m.id)} className="text-destructive">
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete for me
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </div>
               </div>
             );
