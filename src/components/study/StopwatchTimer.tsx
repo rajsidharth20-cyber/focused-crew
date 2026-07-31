@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { promptDelay } from './DelayPromptDialog';
+import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
 
 interface Props {
   onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
@@ -40,6 +41,8 @@ export function StopwatchTimer({ onSave }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const stateRef = useRef<Persisted | null>(null);
+
+  useBroadcastStudyPresence(running, 'stopwatch', null, stateRef.current?.startedAtWall ?? null);
 
   const computeElapsed = useCallback((p: Persisted): number => {
     if (p.segmentStart != null) return p.baseSeconds + (Date.now() - p.segmentStart) / 1000;

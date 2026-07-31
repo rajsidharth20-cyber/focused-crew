@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
 import { promptDelay } from './DelayPromptDialog';
+import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
 
 type Phase = 'focus' | 'short' | 'long';
 
@@ -54,6 +55,7 @@ export function PomodoroTimer({
   const [phase, setPhase] = useState<Phase>('focus');
   const [remaining, setRemaining] = useState(focusMin * 60);
   const [running, setRunning] = useState(false);
+  useBroadcastStudyPresence(running, 'pomodoro');
   const [cycles, setCycles] = useState(0);
   const stateRef = useRef<Persisted | null>(null);
   const onCompleteRef = useRef(onComplete);
