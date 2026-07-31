@@ -1,0 +1,264 @@
+import { useCallback, useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import {
+  createGroup,
+  findGroupByCode,
+  joinGroup,
+  searchPublicGroups,
+  useMyGroups,
+  type StudyGroup,
+} from '@/hooks/use-study-groups';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { ArrowLeft, Globe, Loader2, Lock, Plus, Search, Users } from 'lucide-react';
+import { toast } from 'sonner';
+
+export default function StudyGroups() {
+  const { user, isGuest } = useAuth();
+  const navigate = useNavigate();
+  const { groups, loading, refresh } = useMyGroups();
+
+  const [term, setTerm] = useState('');
+  const [results, setResults] = useState<StudyGroup[]>([]);
+  const [searching, setSearching] = useState(false);
+  const [code, setCode] = useState('');
+
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const runSearch = useCallback(async (value: string) => {
+    setSearching(true);
+    setResults(await searchPublicGroups(value));
+    setSearching(false);
+  }, []);
+
+  useEffect(() => {
+    if (!user) return;
+    const id = setTimeout(() => runSearch(term), 250);
+    return () => clearTimeout(id);
+  }, [term, user, runSearch]);
+
+  const handleCreate = async () => {
+    if (!user || !name.trim()) return;
+    setSaving(true);
+    const { data, error } = await createGroup(user.id, name.trim(), description, isPublic);
+    setSaving(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    setOpen(false);
+    setName('');
+    setDescription('');
+    await refresh();
+    toast.success('Group created');
+    if (data) navigate(`/groups/${data.id}`);
+  };
+
+  const handleJoin = async (group: StudyGroup) => {
+    if (!user) return;
+    const { error } = await joinGroup(group.id, user.id);
+    if (error) {
+      toast.error(error.message.includes('duplicate') ? 'You are already a member' : error.message);
+      return;
+    }
+    await refresh();
+    toast.success(`Joined ${group.name}`);
+    navigate(`/groups/${group.id}`);
+  };
+
+  const handleJoinByCode = async () => {
+    if (!code.trim()) return;
+    const group = await findGroupByCode(code);
+    if (!group) {
+      toast.error('No group found with that code');
+      return;
+    }
+    setCode('');
+    handleJoin(group);
+  };
+
+  if (isGuest || !user) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4 p-6 text-center">
+        <Users className="w-10 h-10 text-muted-foreground" />
+        <p className="text-muted-foreground">Sign in with an account to use study groups.</p>
+        <Button onClick={() => navigate('/auth')}>Sign in</Button>
+      </div>
+    );
+  }
+
+  const myIds = new Set(groups.map(g => g.id));
+
+  return (
+    <div
+      className="min-h-screen bg-background flex flex-col"
+      style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)' }}
+    >
+      <header className="flex items-center gap-2 px-3 py-3 border-b border-border/60 sticky top-0 bg-background/90 backdrop-blur z-10">
+        <Button variant="ghost" size="icon" onClick={() => navigate('/')} aria-label="Back">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-lg font-semibold flex-1">Study Groups</h1>
+        <Dialog open={open} onOpenChange={setOpen}>
+          <DialogTrigger asChild>
+            <Button size="sm" className="rounded-full">
+              <Plus className="w-4 h-4 mr-1" /> New
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader>
+              <DialogTitle>Create a study group</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-3">
+              <Input value={name} onChange={e => setName(e.target.value)} placeholder="Group name" />
+              <Textarea
+                value={description}
+                onChange={e => setDescription(e.target.value)}
+                placeholder="What is this group about?"
+                rows={3}
+              />
+              <div className="flex items-center justify-between rounded-xl border border-border px-3 py-2.5">
+                <Label htmlFor="is-public" className="text-sm">
+                  Public group
+                  <span className="block text-xs text-muted-foreground font-normal">
+                    Anyone can find and join it
+                  </span>
+                </Label>
+                <Switch id="is-public" checked={isPublic} onCheckedChange={setIsPublic} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={handleCreate} disabled={saving || !name.trim()} className="w-full">
+                {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create group'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </header>
+
+      <div className="flex-1 overflow-y-auto p-4 space-y-6">
+        <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+            My groups
+          </h2>
+          {loading ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : groups.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              You have not joined any group yet.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {groups.map(g => (
+                <li key={g.id}>
+                  <Link
+                    to={`/groups/${g.id}`}
+                    className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3 hover:bg-muted/60 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary grid place-items-center shrink-0">
+                      <Users className="w-5 h-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium truncate">{g.name}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {g.description || (g.is_public ? 'Public group' : 'Private group')}
+                      </p>
+                    </div>
+                    {g.is_public ? (
+                      <Globe className="w-4 h-4 text-muted-foreground" />
+                    ) : (
+                      <Lock className="w-4 h-4 text-muted-foreground" />
+                    )}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+            Join with a code
+          </h2>
+          <div className="flex gap-2">
+            <Input
+              value={code}
+              onChange={e => setCode(e.target.value.toUpperCase())}
+              placeholder="e.g. 4F9A2B"
+              className="uppercase tracking-widest"
+            />
+            <Button variant="secondary" onClick={handleJoinByCode} disabled={!code.trim()}>
+              Join
+            </Button>
+          </div>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">
+            Discover public groups
+          </h2>
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={term}
+              onChange={e => setTerm(e.target.value)}
+              placeholder="Search groups"
+              className="pl-9"
+            />
+          </div>
+          {searching ? (
+            <div className="flex justify-center py-6">
+              <Loader2 className="w-5 h-5 animate-spin text-primary" />
+            </div>
+          ) : results.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No public groups found.</p>
+          ) : (
+            <ul className="space-y-2">
+              {results.map(g => (
+                <li
+                  key={g.id}
+                  className="flex items-center gap-3 rounded-2xl border border-border/60 bg-card px-3 py-3"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{g.name}</p>
+                    <p className="text-xs text-muted-foreground truncate">
+                      {g.description || 'Public group'}
+                    </p>
+                  </div>
+                  {myIds.has(g.id) ? (
+                    <Button size="sm" variant="secondary" onClick={() => navigate(`/groups/${g.id}`)}>
+                      Open
+                    </Button>
+                  ) : (
+                    <Button size="sm" onClick={() => handleJoin(g)}>
+                      Join
+                    </Button>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}

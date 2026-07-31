@@ -11,6 +11,10 @@ import StudyTimer from "./pages/StudyTimer";
 import Planner from "./pages/Planner";
 import Chat, { ChatThread } from "./pages/Chat";
 import UserProfile from "./pages/UserProfile";
+import StudyGroups from "./pages/StudyGroups";
+import GroupDashboard from "./pages/GroupDashboard";
+import GroupChat from "./pages/GroupChat";
+
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
@@ -46,6 +50,10 @@ const App = () => (
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
+            <Route path="/groups" element={<ProtectedRoute><StudyGroups /></ProtectedRoute>} />
+            <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDashboard /></ProtectedRoute>} />
+            <Route path="/groups/:groupId/chat" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
+
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>

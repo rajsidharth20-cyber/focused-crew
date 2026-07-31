@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import type { PlannerEvent } from '@/hooks/use-planner-store';
 import { useNow, toMinutes } from '@/hooks/use-now';
+import { ScheduleFilterChips } from '@/components/ScheduleFilterChips';
+import { matchesRange, type RangeKey } from '@/lib/schedule-filter';
+
 
 interface UpcomingEventsProps {
   events: PlannerEvent[];
@@ -157,15 +160,22 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
       </AnimatePresence>
 
       <EventsList events={events} onRemove={onRemove} />
+
     </div>
   );
 }
 
-function EventsList({ events, onRemove }: { events: PlannerEvent[]; onRemove: (id: string) => void }) {
+function EventsList({ events: allEvents, onRemove }: { events: PlannerEvent[]; onRemove: (id: string) => void }) {
   const now = useNow(30_000);
+  const [range, setRange] = useState<RangeKey>('all');
+  const events = useMemo(
+    () => allEvents.filter(e => matchesRange({ eventDate: e.eventDate, recurringDays: e.recurringDays }, range, now)),
+    [allEvents, range, now]
+  );
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const todayDow = now.getDay();
   const todayISO = now.toISOString().slice(0, 10);
+
 
   const { sorted, currentId, nextId } = useMemo(() => {
     const isTodayEvent = (e: PlannerEvent) =>
@@ -195,13 +205,16 @@ function EventsList({ events, onRemove }: { events: PlannerEvent[]; onRemove: (i
     return { sorted, currentId, nextId };
   }, [events, nowMin, todayDow, todayISO]);
 
-  if (events.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>;
-  }
-
   return (
     <div className="space-y-2">
+      <ScheduleFilterChips value={range} onChange={setRange} />
+      {events.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          {allEvents.length === 0 ? 'No upcoming events.' : 'Nothing in this range.'}
+        </p>
+      )}
       <AnimatePresence>
+
         {sorted.map(event => {
           const isCurrent = event.id === currentId;
           const isNext = event.id === nextId;

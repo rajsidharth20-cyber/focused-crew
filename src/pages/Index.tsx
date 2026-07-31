@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare } from 'lucide-react';
+import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare, Users } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { useState, useRef } from 'react';
@@ -288,7 +288,9 @@ const Index = () => {
                 <SheetTitle className="text-left">Quick actions</SheetTitle>
               </SheetHeader>
               <div className="mt-4 grid grid-cols-1 gap-1.5">
+                <SheetAction icon={Users} label="Study groups" onClick={() => { setMoreOpen(false); window.location.assign('/groups'); }} />
                 <SheetAction icon={FileDown} label="Download summary PDF" onClick={handleDownloadSummary} disabled={downloadingPdf} loading={downloadingPdf} />
+
                 <div className="px-3 py-2 flex items-center justify-between gap-3 rounded-xl hover:bg-secondary/60">
                   <div className="flex items-center gap-3 text-sm text-foreground">
                     <ShareAppButton />

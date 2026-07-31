@@ -1,0 +1,381 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { ArrowLeft, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, X } from 'lucide-react';
+import { toast } from 'sonner';
+
+interface GroupMessage {
+  id: string;
+  group_id: string;
+  user_id: string;
+  content: string | null;
+  image_url: string | null;
+  reply_to_id: string | null;
+  pinned: boolean;
+  created_at: string;
+}
+
+const EMOJIS = ['😀','😂','🥲','😍','🤔','😴','😭','🔥','💪','🎯','✅','📚','⏰','☕','🚀','🫡','👍','👏','🙏','💯'];
+
+function ChatImage({ path }: { path: string }) {
+  const [url, setUrl] = useState<string | null>(null);
+  useEffect(() => {
+    let active = true;
+    supabase.storage
+      .from('group-images')
+      .createSignedUrl(path, 3600)
+      .then(({ data }) => {
+        if (active) setUrl(data?.signedUrl ?? null);
+      });
+    return () => {
+      active = false;
+    };
+  }, [path]);
+  if (!url) return <div className="w-40 h-40 rounded-xl bg-muted animate-pulse" />;
+  return <img src={url} alt="Shared in group chat" loading="lazy" className="rounded-xl max-w-[220px]" />;
+}
+
+export default function GroupChat() {
+  const { groupId } = useParams<{ groupId: string }>();
+  const { user, isGuest } = useAuth();
+  const navigate = useNavigate();
+
+  const [groupName, setGroupName] = useState('');
+  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
+  const [text, setText] = useState('');
+  const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const bottomRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const load = useCallback(async () => {
+    if (!groupId) return;
+    const [{ data: g }, { data: msgs }] = await Promise.all([
+      supabase.from('study_groups').select('name').eq('id', groupId).maybeSingle(),
+      supabase
+        .from('group_messages')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true })
+        .limit(300),
+    ]);
+    setGroupName(g?.name ?? 'Group chat');
+    const list = (msgs ?? []) as GroupMessage[];
+    setMessages(list);
+    setProfiles(await fetchProfiles([...new Set(list.map(m => m.user_id))]));
+    setLoading(false);
+  }, [groupId]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  useEffect(() => {
+    if (!groupId || !user) return;
+    const channel = supabase
+      .channel(`group-chat-${groupId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'group_messages', filter: `group_id=eq.${groupId}` },
+        async payload => {
+          const msg = payload.new as GroupMessage;
+          setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
+          if (!profilesHas(msg.user_id)) {
+            const p = await fetchProfiles([msg.user_id]);
+            setProfiles(prev => ({ ...prev, ...p }));
+          }
+          if (msg.user_id !== user.id && document.visibilityState !== 'visible') {
+            notify(groupNameRef.current, msg.content ?? 'Sent an image');
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'group_messages', filter: `group_id=eq.${groupId}` },
+        payload => {
+          const msg = payload.new as GroupMessage;
+          setMessages(prev => prev.map(m => (m.id === msg.id ? msg : m)));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'group_messages', filter: `group_id=eq.${groupId}` },
+        payload => {
+          setMessages(prev => prev.filter(m => m.id !== (payload.old as GroupMessage).id));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groupId, user]);
+
+  const profilesRef = useRef(profiles);
+  profilesRef.current = profiles;
+  const profilesHas = (id: string) => Boolean(profilesRef.current[id]);
+  const groupNameRef = useRef(groupName);
+  groupNameRef.current = groupName;
+
+  const notify = (title: string, body: string) => {
+    toast(title, { description: body });
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification(title, { body });
+    }
+  };
+
+  useEffect(() => {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission().catch(() => undefined);
+    }
+  }, []);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages.length]);
+
+  const pinned = useMemo(() => messages.filter(m => m.pinned), [messages]);
+  const byId = useMemo(() => {
+    const map: Record<string, GroupMessage> = {};
+    messages.forEach(m => {
+      map[m.id] = m;
+    });
+    return map;
+  }, [messages]);
+
+  const send = async () => {
+    if (!groupId || !user || !text.trim()) return;
+    const content = text.trim();
+    setText('');
+    const replyId = replyTo?.id ?? null;
+    setReplyTo(null);
+    const { error } = await supabase.from('group_messages').insert({
+      group_id: groupId,
+      user_id: user.id,
+      content,
+      reply_to_id: replyId,
+    });
+    if (error) {
+      toast.error(error.message);
+      setText(content);
+    }
+  };
+
+  const sendImage = async (file: File) => {
+    if (!groupId || !user) return;
+    setUploading(true);
+    const path = `${groupId}/${user.id}-${Date.now()}-${file.name.replace(/[^\w.-]/g, '')}`;
+    const { error: upErr } = await supabase.storage.from('group-images').upload(path, file);
+    if (upErr) {
+      setUploading(false);
+      toast.error(upErr.message);
+      return;
+    }
+    const { error } = await supabase.from('group_messages').insert({
+      group_id: groupId,
+      user_id: user.id,
+      image_url: path,
+      reply_to_id: replyTo?.id ?? null,
+    });
+    setUploading(false);
+    setReplyTo(null);
+    if (error) toast.error(error.message);
+  };
+
+  const togglePin = async (m: GroupMessage) => {
+    const { error } = await supabase
+      .from('group_messages')
+      .update({ pinned: !m.pinned })
+      .eq('id', m.id);
+    if (error) toast.error('Only group admins can pin messages');
+  };
+
+  if (isGuest || !user) {
+    return (
+      <div className="min-h-screen bg-background grid place-items-center p-6">
+        <Button onClick={() => navigate('/auth')}>Sign in to chat</Button>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="h-[100dvh] bg-background flex flex-col"
+      style={{ paddingTop: 'env(safe-area-inset-top)' }}
+    >
+      <header className="flex items-center gap-2 px-3 py-3 border-b border-border/60 shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => navigate(`/groups/${groupId}`)} aria-label="Back">
+          <ArrowLeft className="w-5 h-5" />
+        </Button>
+        <h1 className="text-base font-semibold truncate flex-1">{groupName}</h1>
+      </header>
+
+      {pinned.length > 0 && (
+        <div className="px-3 py-2 border-b border-border/60 bg-muted/40 shrink-0 space-y-1">
+          {pinned.slice(-2).map(m => (
+            <div key={m.id} className="flex items-center gap-2 text-xs">
+              <Pin className="w-3.5 h-3.5 text-primary shrink-0" />
+              <span className="truncate flex-1">{m.content ?? 'Image'}</span>
+              <button onClick={() => togglePin(m)} aria-label="Unpin message">
+                <PinOff className="w-3.5 h-3.5 text-muted-foreground" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+        {loading ? (
+          <div className="flex justify-center py-8">
+            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+          </div>
+        ) : messages.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-8">
+            No messages yet. Say hello 👋
+          </p>
+        ) : (
+          messages.map(m => {
+            const mine = m.user_id === user.id;
+            const parent = m.reply_to_id ? byId[m.reply_to_id] : null;
+            return (
+              <div key={m.id} className={`flex gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
+                {!mine && (
+                  <Avatar className="w-7 h-7 mt-auto">
+                    <AvatarImage src={profiles[m.user_id]?.avatar_url ?? undefined} alt="" />
+                    <AvatarFallback className="text-[10px]">
+                      {memberName(profiles[m.user_id]).charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                )}
+                <div
+                  className={`group max-w-[78%] rounded-2xl px-3 py-2 ${
+                    mine
+                      ? 'bg-primary text-primary-foreground rounded-br-md'
+                      : 'bg-card border border-border/60 rounded-bl-md'
+                  }`}
+                >
+                  {!mine && (
+                    <p className="text-[11px] font-medium opacity-80 mb-0.5">
+                      {memberName(profiles[m.user_id])}
+                    </p>
+                  )}
+                  {parent && (
+                    <div className="text-[11px] opacity-70 border-l-2 border-current/40 pl-2 mb-1 truncate">
+                      {parent.content ?? 'Image'}
+                    </div>
+                  )}
+                  {m.image_url && <ChatImage path={m.image_url} />}
+                  {m.content && (
+                    <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
+                  )}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] opacity-70 tabular-nums">
+                      {new Date(m.created_at).toLocaleTimeString([], {
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                    </span>
+                    <button
+                      className="opacity-60 hover:opacity-100"
+                      onClick={() => setReplyTo(m)}
+                      aria-label="Reply"
+                    >
+                      <Reply className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      className="opacity-60 hover:opacity-100"
+                      onClick={() => togglePin(m)}
+                      aria-label={m.pinned ? 'Unpin' : 'Pin'}
+                    >
+                      <Pin className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        )}
+        <div ref={bottomRef} />
+      </div>
+
+      {replyTo && (
+        <div className="flex items-center gap-2 px-3 py-2 border-t border-border/60 bg-muted/40 text-xs">
+          <Reply className="w-3.5 h-3.5 text-primary" />
+          <span className="truncate flex-1">{replyTo.content ?? 'Image'}</span>
+          <button onClick={() => setReplyTo(null)} aria-label="Cancel reply">
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      )}
+
+      <div
+        className="flex items-end gap-1.5 p-2 border-t border-border/60 shrink-0"
+        style={{ paddingBottom: 'calc(0.5rem + env(safe-area-inset-bottom))' }}
+      >
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="icon" aria-label="Emoji">
+              <Smile className="w-5 h-5" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-2">
+            <div className="grid grid-cols-7 gap-1">
+              {EMOJIS.map(e => (
+                <button
+                  key={e}
+                  className="text-xl rounded hover:bg-muted p-1"
+                  onClick={() => setText(t => t + e)}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          </PopoverContent>
+        </Popover>
+        <Button
+          variant="ghost"
+          size="icon"
+          aria-label="Send image"
+          onClick={() => fileRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+        </Button>
+        <input
+          ref={fileRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={e => {
+            const f = e.target.files?.[0];
+            if (f) sendImage(f);
+            e.target.value = '';
+          }}
+        />
+        <Input
+          value={text}
+          onChange={e => setText(e.target.value)}
+          onKeyDown={e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              send();
+            }
+          }}
+          placeholder="Message"
+          className="flex-1 rounded-full"
+        />
+        <Button size="icon" className="rounded-full" onClick={send} disabled={!text.trim()} aria-label="Send">
+          <Send className="w-4 h-4" />
+        </Button>
+      </div>
+    </div>
+  );
+}
