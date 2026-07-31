@@ -165,11 +165,17 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
   );
 }
 
-function EventsList({ events, onRemove }: { events: PlannerEvent[]; onRemove: (id: string) => void }) {
+function EventsList({ events: allEvents, onRemove }: { events: PlannerEvent[]; onRemove: (id: string) => void }) {
   const now = useNow(30_000);
+  const [range, setRange] = useState<RangeKey>('all');
+  const events = useMemo(
+    () => allEvents.filter(e => matchesRange({ eventDate: e.eventDate, recurringDays: e.recurringDays }, range, now)),
+    [allEvents, range, now]
+  );
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const todayDow = now.getDay();
   const todayISO = now.toISOString().slice(0, 10);
+
 
   const { sorted, currentId, nextId } = useMemo(() => {
     const isTodayEvent = (e: PlannerEvent) =>
