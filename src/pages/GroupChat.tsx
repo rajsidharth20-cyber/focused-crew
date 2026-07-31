@@ -88,9 +88,6 @@ export default function GroupChat() {
         async payload => {
           const msg = payload.new as GroupMessage;
           setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
-          setProfiles(prev =>
-            prev[msg.user_id] ? prev : { ...prev, ...({} as Record<string, MemberProfile>) }
-          );
           if (!profilesHas(msg.user_id)) {
             const p = await fetchProfiles([msg.user_id]);
             setProfiles(prev => ({ ...prev, ...p }));
