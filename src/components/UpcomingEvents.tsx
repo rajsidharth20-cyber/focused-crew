@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, isToday, isTomorrow, parseISO } from 'date-fns';
 import type { PlannerEvent } from '@/hooks/use-planner-store';
 import { useNow, toMinutes } from '@/hooks/use-now';
+import { ScheduleFilterChips } from '@/components/ScheduleFilterChips';
+import { matchesRange, type RangeKey } from '@/lib/schedule-filter';
+
 
 interface UpcomingEventsProps {
   events: PlannerEvent[];
