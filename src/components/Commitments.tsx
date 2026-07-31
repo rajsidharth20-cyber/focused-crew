@@ -4,6 +4,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import type { Commitment } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
 import { useNow, toMinutes } from '@/hooks/use-now';
+import { ScheduleFilterChips } from '@/components/ScheduleFilterChips';
+import { matchesRange, type RangeKey } from '@/lib/schedule-filter';
+
 
 interface CommitmentsProps {
   commitments: Commitment[];
