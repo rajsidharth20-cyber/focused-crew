@@ -64,10 +64,21 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
     }
   };
 
-  const sorted = [...commitments].sort((a, b) => a.startTime.localeCompare(b.startTime));
-
+  const [range, setRange] = useState<RangeKey>('today');
   const now = useNow(30_000);
+
+  const visible = useMemo(
+    () => commitments.filter(c => matchesRange({ recurringDays: c.recurringDays }, range, now)),
+    [commitments, range, now]
+  );
+
+  const sorted = useMemo(
+    () => [...visible].sort((a, b) => a.startTime.localeCompare(b.startTime)),
+    [visible]
+  );
+
   const nowMin = now.getHours() * 60 + now.getMinutes();
+
   const { currentId, nextId } = useMemo(() => {
     let currentId: string | null = null;
     let nextId: string | null = null;
@@ -209,10 +220,11 @@ export function Commitments({ commitments, onAdd, onRemove }: CommitmentsProps) 
             );
           })}
         </AnimatePresence>
-        {commitments.length === 0 && (
-          <p className="text-sm text-muted-foreground text-center py-4">{t.commitmentsEmpty}</p>
+        {sorted.length === 0 && (
+          <p className="text-sm text-muted-foreground text-center py-4">
+            {commitments.length === 0 ? t.commitmentsEmpty : 'Nothing in this range.'}
+          </p>
         )}
-      </div>
-    </div>
+
   );
 }
