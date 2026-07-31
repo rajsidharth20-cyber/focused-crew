@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UsernameField } from '@/components/UsernameField';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -153,8 +154,11 @@ export function ProfileDialog() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs">Call sign</Label>
-              <Input value={callSign} onChange={e => setCallSign(e.target.value)} placeholder="Your call sign" />
+              <Label className="text-xs">Username (call sign)</Label>
+              <UsernameField value={callSign} onChange={setCallSign} local={isGuest} placeholder="Your call sign" />
+              <p className="text-[11px] text-muted-foreground">
+                Others can find you only by this exact username, or through a shared public group.
+              </p>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs">Full name</Label>

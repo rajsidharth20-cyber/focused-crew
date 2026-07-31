@@ -90,7 +90,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
     if (!user) return;
-    await supabase.from('profiles').upsert({ id: user.id, username: name });
+    const { error } = await supabase.from('profiles').upsert({ id: user.id, username: name });
+    if (error) {
+      throw new Error(
+        error.code === '23505' ? 'That username is already taken.' : error.message
+      );
+    }
     setUsernameState(name);
   };
 

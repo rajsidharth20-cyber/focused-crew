@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Plane, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { UsernameField } from '@/components/UsernameField';
 
 export function UsernamePrompt() {
-  const { setUsername } = useAuth();
+  const { setUsername, isGuest } = useAuth();
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -15,8 +16,8 @@ export function UsernamePrompt() {
     try {
       await setUsername(name.trim());
       toast.success(`Welcome aboard, ${name.trim()}!`);
-    } catch {
-      toast.error('Failed to save call sign.');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Failed to save call sign.');
     } finally {
       setSaving(false);
     }
@@ -33,15 +34,7 @@ export function UsernamePrompt() {
         <h2 className="font-display text-lg font-bold text-foreground text-center mb-1">What's your call sign?</h2>
         <p className="text-xs text-muted-foreground text-center mb-5">We'll use this to greet you before each flight.</p>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="text"
-            value={name}
-            onChange={e => setName(e.target.value)}
-            required
-            autoFocus
-            className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
-            placeholder="Your name"
-          />
+          <UsernameField value={name} onChange={setName} local={isGuest} autoFocus placeholder="Your call sign" />
           <button
             type="submit"
             disabled={saving || !name.trim()}
