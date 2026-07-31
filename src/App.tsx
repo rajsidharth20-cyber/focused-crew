@@ -11,6 +11,10 @@ import StudyTimer from "./pages/StudyTimer";
 import Planner from "./pages/Planner";
 import Chat, { ChatThread } from "./pages/Chat";
 import UserProfile from "./pages/UserProfile";
+import StudyGroups from "./pages/StudyGroups";
+import GroupDashboard from "./pages/GroupDashboard";
+import GroupChat from "./pages/GroupChat";
+
 import ResetPassword from "./pages/ResetPassword";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
