@@ -205,13 +205,16 @@ function EventsList({ events: allEvents, onRemove }: { events: PlannerEvent[]; o
     return { sorted, currentId, nextId };
   }, [events, nowMin, todayDow, todayISO]);
 
-  if (events.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-4">No upcoming events.</p>;
-  }
-
   return (
     <div className="space-y-2">
+      <ScheduleFilterChips value={range} onChange={setRange} />
+      {events.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-4">
+          {allEvents.length === 0 ? 'No upcoming events.' : 'Nothing in this range.'}
+        </p>
+      )}
       <AnimatePresence>
+
         {sorted.map(event => {
           const isCurrent = event.id === currentId;
           const isNext = event.id === nextId;
