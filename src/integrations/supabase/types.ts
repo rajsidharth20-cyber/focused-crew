@@ -602,20 +602,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      gen_join_code: { Args: never; Returns: string }
-      has_group_invite: {
-        Args: { _group_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_group_admin: {
-        Args: { _group_id: string; _user_id: string }
-        Returns: boolean
-      }
-      is_group_member: {
-        Args: { _group_id: string; _user_id: string }
-        Returns: boolean
-      }
-      shares_group_with: { Args: { _a: string; _b: string }; Returns: boolean }
+      [_ in never]: never
     }
     Enums: {
       [_ in never]: never
