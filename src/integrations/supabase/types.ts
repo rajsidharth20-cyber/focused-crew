@@ -313,6 +313,30 @@ export type Database = {
           },
         ]
       }
+      hidden_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message_id: string
+          scope: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message_id: string
+          scope?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message_id?: string
+          scope?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           created_at: string
@@ -424,6 +448,33 @@ export type Database = {
           name?: string
           owner_id?: string
           updated_at?: string
+        }
+        Relationships: []
+      }
+      study_presence: {
+        Row: {
+          is_studying: boolean
+          mode: string | null
+          started_at: string | null
+          topic: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          is_studying?: boolean
+          mode?: string | null
+          started_at?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          is_studying?: boolean
+          mode?: string | null
+          started_at?: string | null
+          topic?: string | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -602,7 +653,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      search_profiles_by_username: {
+        Args: { _term: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          username: string
+        }[]
+      }
+      suggest_usernames: {
+        Args: { _base?: string }
+        Returns: {
+          username: string
+        }[]
+      }
+      username_available: { Args: { _username: string }; Returns: boolean }
     }
     Enums: {
       [_ in never]: never
