@@ -13,7 +13,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserAvatar } from '@/components/UserAvatar';
+import { useLiveStudy } from '@/hooks/use-live-study';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,7 @@ import {
   Trophy,
   UserPlus,
   Users,
+  Radio,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -71,6 +73,8 @@ export default function GroupDashboard() {
   const [draft, setDraft] = useState('');
   const [inviteTerm, setInviteTerm] = useState('');
   const [invitePeople, setInvitePeople] = useState<MemberProfile[]>([]);
+
+  const { presence, isUserLive } = useLiveStudy(members.map(m => m.user_id));
 
   const myRole = members.find(m => m.user_id === user?.id)?.role;
   const isAdmin = myRole === 'owner' || myRole === 'admin';
@@ -145,6 +149,12 @@ export default function GroupDashboard() {
     [members, weekSeconds]
   );
 
+  const liveMembers = useMemo(
+    () => members.filter(m => isUserLive(m.user_id)),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [members, presence]
+  );
+
   const groupToday = useMemo(
     () => Object.values(todaySeconds).reduce((a, b) => a + b, 0),
     [todaySeconds]
@@ -152,11 +162,11 @@ export default function GroupDashboard() {
 
   const searchPeople = useCallback(
     async (value: string) => {
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .ilike('username', `%${value}%`)
-        .limit(15);
+      if (value.trim().length < 3) {
+        setInvitePeople([]);
+        return;
+      }
+      const { data } = await supabase.rpc('search_profiles_by_username', { _term: value.trim() });
       const memberIds = new Set(members.map(m => m.user_id));
       setInvitePeople(((data ?? []) as MemberProfile[]).filter(p => !memberIds.has(p.id)));
     },
@@ -268,6 +278,46 @@ export default function GroupDashboard() {
         </section>
 
         <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
+            <Radio className="w-3.5 h-3.5 text-emerald-500" /> Studying now
+          </h2>
+          {liveMembers.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Nobody is studying right now.</p>
+          ) : (
+            <ul className="rounded-2xl border border-border/60 bg-card divide-y divide-border/50">
+              {liveMembers.map(m => {
+                const p = presence[m.user_id];
+                const since = p?.started_at ? new Date(p.started_at) : null;
+                const mins = since ? Math.max(0, Math.floor((Date.now() - since.getTime()) / 60000)) : 0;
+                return (
+                  <li key={m.id} className="flex items-center gap-3 px-3 py-2.5">
+                    <UserAvatar
+                      src={profiles[m.user_id]?.avatar_url}
+                      name={memberName(profiles[m.user_id])}
+                      className="w-8 h-8"
+                      live
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm truncate">
+                        {memberName(profiles[m.user_id])}
+                        {m.user_id === user.id && <span className="text-[10px] text-primary ml-1">you</span>}
+                      </p>
+                      <p className="text-[11px] text-emerald-600 truncate">
+                        {p?.topic ? `${p.topic} · ` : ''}{p?.mode === 'pomodoro' ? 'Pomodoro' : 'Stopwatch'} · {mins}m in
+                      </p>
+                    </div>
+                    <span className="relative flex h-2.5 w-2.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+
+        <section className="space-y-2">
           <div className="flex items-center justify-between">
             <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
               <Trophy className="w-3.5 h-3.5" /> Weekly ranking
@@ -279,12 +329,12 @@ export default function GroupDashboard() {
                 <span className="w-5 text-sm font-bold tabular-nums text-muted-foreground">
                   {i + 1}
                 </span>
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={profiles[m.user_id]?.avatar_url ?? undefined} alt="" />
-                  <AvatarFallback>
-                    {memberName(profiles[m.user_id]).charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={profiles[m.user_id]?.avatar_url}
+                  name={memberName(profiles[m.user_id])}
+                  className="w-8 h-8"
+                  live={isUserLive(m.user_id)}
+                />
                 <span className="flex-1 min-w-0 truncate text-sm">
                   {memberName(profiles[m.user_id])}
                   {m.user_id === user.id && (
@@ -369,15 +419,12 @@ export default function GroupDashboard() {
                 <Input
                   value={inviteTerm}
                   onChange={e => setInviteTerm(e.target.value)}
-                  placeholder="Search people by username"
+                  placeholder="Search by exact username"
                 />
                 <ul className="max-h-64 overflow-y-auto divide-y divide-border/50">
                   {invitePeople.map(p => (
                     <li key={p.id} className="flex items-center gap-3 py-2">
-                      <Avatar className="w-8 h-8">
-                        <AvatarImage src={p.avatar_url ?? undefined} alt="" />
-                        <AvatarFallback>{memberName(p).charAt(0).toUpperCase()}</AvatarFallback>
-                      </Avatar>
+                      <UserAvatar src={p.avatar_url} name={memberName(p)} className="w-8 h-8" />
                       <span className="flex-1 min-w-0 truncate text-sm">{memberName(p)}</span>
                       <Button size="sm" variant="secondary" onClick={() => invite(p.id)}>
                         Invite
@@ -385,7 +432,11 @@ export default function GroupDashboard() {
                     </li>
                   ))}
                   {invitePeople.length === 0 && (
-                    <li className="py-3 text-sm text-muted-foreground">No people found.</li>
+                    <li className="py-3 text-sm text-muted-foreground">
+                      {inviteTerm.trim().length < 3
+                        ? 'Type at least 3 characters of a username.'
+                        : 'No people found.'}
+                    </li>
                   )}
                 </ul>
               </DialogContent>
@@ -394,12 +445,12 @@ export default function GroupDashboard() {
           <ul className="rounded-2xl border border-border/60 bg-card divide-y divide-border/50">
             {members.map(m => (
               <li key={m.id} className="flex items-center gap-3 px-3 py-2.5">
-                <Avatar className="w-8 h-8">
-                  <AvatarImage src={profiles[m.user_id]?.avatar_url ?? undefined} alt="" />
-                  <AvatarFallback>
-                    {memberName(profiles[m.user_id]).charAt(0).toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
+                <UserAvatar
+                  src={profiles[m.user_id]?.avatar_url}
+                  name={memberName(profiles[m.user_id])}
+                  className="w-8 h-8"
+                  live={isUserLive(m.user_id)}
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm truncate">{memberName(profiles[m.user_id])}</p>
                   <p className="text-[11px] text-muted-foreground capitalize">{m.role}</p>

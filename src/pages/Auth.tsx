@@ -81,7 +81,12 @@ export default function Auth() {
           return;
         }
         if (data.user) {
-          await supabase.from('profiles').upsert({ id: data.user.id, username: username.trim() });
+          const { error: profileError } = await supabase
+            .from('profiles')
+            .upsert({ id: data.user.id, username: username.trim() });
+          if (profileError?.code === '23505') {
+            toast.warning('That username is taken — pick another one in your profile.');
+          }
         }
         toast.success('Check your email to confirm your boarding pass.');
       }

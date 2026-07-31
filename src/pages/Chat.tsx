@@ -5,8 +5,33 @@ import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, Loader2, Send, MessagesSquare, Check, CheckCheck } from "lucide-react";
+import { UserAvatar } from "@/components/UserAvatar";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  ContextMenu,
+  ContextMenuContent,
+  ContextMenuItem,
+  ContextMenuTrigger,
+} from "@/components/ui/context-menu";
+import { useHiddenMessages } from "@/hooks/use-hidden-messages";
+import { useLiveStudy } from "@/hooks/use-live-study";
+import {
+  ArrowLeft,
+  Loader2,
+  Send,
+  MessagesSquare,
+  Check,
+  CheckCheck,
+  Search,
+  Trash2,
+  BookOpen,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface Profile {
@@ -48,6 +73,70 @@ function GuestGate() {
       <p className="text-muted-foreground">Sign in with an account to use chats.</p>
       <Button onClick={() => navigate("/auth")}>Sign in</Button>
     </div>
+  );
+}
+
+/* ---------------------------- Find people by username ---------------------------- */
+
+function FindPeopleDialog() {
+  const [term, setTerm] = useState("");
+  const [results, setResults] = useState<Profile[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    const value = term.trim();
+    if (value.length < 3) {
+      setResults([]);
+      return;
+    }
+    setSearching(true);
+    const id = setTimeout(async () => {
+      const { data } = await supabase.rpc("search_profiles_by_username", { _term: value });
+      setResults((data as Profile[]) ?? []);
+      setSearching(false);
+    }, 300);
+    return () => clearTimeout(id);
+  }, [term]);
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>
+        <Button variant="ghost" size="icon" aria-label="Find people by username">
+          <Search className="w-5 h-5" />
+        </Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Find people</DialogTitle>
+        </DialogHeader>
+        <Input
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Search by exact username"
+          aria-label="Username"
+        />
+        <p className="text-[11px] text-muted-foreground">
+          People are only discoverable through their username or a shared public group.
+        </p>
+        <ul className="max-h-64 overflow-y-auto divide-y divide-border/50">
+          {searching && <li className="py-3 text-sm text-muted-foreground">Searching…</li>}
+          {!searching && term.trim().length >= 3 && results.length === 0 && (
+            <li className="py-3 text-sm text-muted-foreground">No one found with that username.</li>
+          )}
+          {results.map((p) => (
+            <li key={p.id}>
+              <Link to={`/chat/${p.id}`} className="flex items-center gap-3 py-2.5">
+                <UserAvatar src={p.avatar_url} name={displayName(p)} className="w-9 h-9" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm truncate">{displayName(p)}</p>
+                  <p className="text-[11px] text-muted-foreground truncate">@{p.username}</p>
+                </div>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -96,6 +185,8 @@ export default function Chat() {
     };
   }, [user, load]);
 
+  const { isUserLive } = useLiveStudy(people.map((p) => p.id));
+
   const sorted = useMemo(() => {
     return [...people].sort((a, b) => {
       const ta = lastMessages[a.id]?.created_at ?? "";
@@ -118,7 +209,8 @@ export default function Chat() {
         <Button variant="ghost" size="icon" onClick={() => navigate("/")} aria-label="Back">
           <ArrowLeft className="w-5 h-5" />
         </Button>
-        <h1 className="text-lg font-semibold">Chats</h1>
+        <h1 className="text-lg font-semibold flex-1">Chats</h1>
+        <FindPeopleDialog />
       </header>
 
       <div className="flex-1 overflow-y-auto p-2">
@@ -127,7 +219,9 @@ export default function Chat() {
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
         ) : sorted.length === 0 ? (
-          <p className="text-center text-sm text-muted-foreground py-10">No other members yet.</p>
+          <p className="text-center text-sm text-muted-foreground py-10">
+            No chats yet. Search a username or join a public group to find people.
+          </p>
         ) : (
           <ul className="divide-y divide-border/50">
             {sorted.map((p) => {
@@ -139,10 +233,12 @@ export default function Chat() {
                     to={`/chat/${p.id}`}
                     className="flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors hover:bg-muted/60"
                   >
-                    <Avatar className="w-12 h-12">
-                      <AvatarImage src={p.avatar_url ?? undefined} alt={displayName(p)} />
-                      <AvatarFallback>{displayName(p).charAt(0).toUpperCase()}</AvatarFallback>
-                    </Avatar>
+                    <UserAvatar
+                      src={p.avatar_url}
+                      name={displayName(p)}
+                      className="w-12 h-12"
+                      live={isUserLive(p.id)}
+                    />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-baseline justify-between gap-2">
                         <span className="font-medium truncate">{displayName(p)}</span>
@@ -188,6 +284,9 @@ export function ChatThread() {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { isHidden, hide } = useHiddenMessages("dm");
+  const { isUserLive } = useLiveStudy(userId ? [userId] : []);
+  const otherLive = userId ? isUserLive(userId) : false;
 
   const markRead = useCallback(async () => {
     if (!user || !userId) return;
@@ -259,6 +358,11 @@ export function ChatThread() {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const visibleMessages = useMemo(
+    () => messages.filter((m) => !isHidden(m.id)),
+    [messages, isHidden]
+  );
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
@@ -294,11 +398,20 @@ export function ChatThread() {
         </Button>
         {other && (
           <Link to={`/u/${other.id}`} className="flex items-center gap-3 min-w-0">
-            <Avatar className="w-9 h-9">
-              <AvatarImage src={other.avatar_url ?? undefined} alt={displayName(other)} />
-              <AvatarFallback>{displayName(other).charAt(0).toUpperCase()}</AvatarFallback>
-            </Avatar>
-            <h1 className="font-semibold truncate">{displayName(other)}</h1>
+            <UserAvatar
+              src={other.avatar_url}
+              name={displayName(other)}
+              className="w-9 h-9"
+              live={otherLive}
+            />
+            <div className="min-w-0">
+              <h1 className="font-semibold truncate leading-tight">{displayName(other)}</h1>
+              {otherLive && (
+                <span className="text-[11px] text-emerald-600 flex items-center gap-1">
+                  <BookOpen className="w-3 h-3" /> Studying now
+                </span>
+              )}
+            </div>
           </Link>
         )}
       </header>
@@ -308,12 +421,12 @@ export function ChatThread() {
           <div className="flex justify-center py-10">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
           </div>
-        ) : messages.length === 0 ? (
+        ) : visibleMessages.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-10">
             No messages yet — say hello.
           </p>
         ) : (
-          messages.map((m) => {
+          visibleMessages.map((m) => {
             const mine = m.sender_id === user.id;
             const day = dayLabel(m.created_at);
             const showDay = day !== lastDay;
@@ -328,9 +441,11 @@ export function ChatThread() {
                   </div>
                 )}
                 <div className={cn("flex", mine ? "justify-end" : "justify-start")}>
+                  <ContextMenu>
+                    <ContextMenuTrigger asChild>
                   <div
                     className={cn(
-                      "max-w-[78%] rounded-2xl px-3 py-2 shadow-sm",
+                      "max-w-[78%] rounded-2xl px-3 py-2 shadow-sm select-none",
                       mine
                         ? "bg-primary text-primary-foreground rounded-br-sm"
                         : "bg-card text-card-foreground border border-border/50 rounded-bl-sm"
@@ -352,6 +467,13 @@ export function ChatThread() {
                         ))}
                     </div>
                   </div>
+                    </ContextMenuTrigger>
+                    <ContextMenuContent>
+                      <ContextMenuItem onSelect={() => hide(m.id)} className="text-destructive">
+                        <Trash2 className="w-4 h-4 mr-2" /> Delete for me
+                      </ContextMenuItem>
+                    </ContextMenuContent>
+                  </ContextMenu>
                 </div>
               </div>
             );
