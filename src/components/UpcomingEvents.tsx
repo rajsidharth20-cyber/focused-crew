@@ -160,6 +160,7 @@ export function UpcomingEvents({ events, onAdd, onRemove }: UpcomingEventsProps)
       </AnimatePresence>
 
       <EventsList events={events} onRemove={onRemove} />
+
     </div>
   );
 }
