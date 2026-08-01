@@ -1,4 +1,4 @@
-import { useState, useEffect, createContext, useContext } from 'react';
+import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 
@@ -30,6 +30,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [username, setUsernameState] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const isGuestRef = useRef(false);
 
   const fetchUsername = async (userId: string) => {
     const { data } = await supabase
@@ -44,6 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // Check for guest mode in localStorage
     const guestMode = localStorage.getItem('taskpilot_guest');
     if (guestMode === 'true') {
+      isGuestRef.current = true;
       setIsGuest(true);
       setUsernameState(localStorage.getItem('taskpilot_guest_username') || 'Guest');
       setLoading(false);
@@ -53,10 +55,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        isGuestRef.current = false;
         setIsGuest(false);
         localStorage.removeItem('taskpilot_guest');
         setTimeout(() => fetchUsername(session.user.id), 0);
-      } else if (!isGuest) {
+      } else if (!isGuestRef.current) {
         setUsernameState(null);
       }
       setLoading(false);
@@ -66,6 +69,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
+        isGuestRef.current = false;
         setIsGuest(false);
         localStorage.removeItem('taskpilot_guest');
         fetchUsername(session.user.id);
@@ -79,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const enterGuestMode = () => {
     localStorage.setItem('taskpilot_guest', 'true');
     localStorage.setItem('taskpilot_guest_username', 'Guest');
+    isGuestRef.current = true;
     setIsGuest(true);
     setUsernameState('Guest');
   };
@@ -101,6 +106,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     if (isGuest) {
+      isGuestRef.current = false;
       setIsGuest(false);
       setUsernameState(null);
       localStorage.removeItem('taskpilot_guest');

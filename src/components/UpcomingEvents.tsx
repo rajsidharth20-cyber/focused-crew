@@ -174,7 +174,7 @@ function EventsList({ events: allEvents, onRemove }: { events: PlannerEvent[]; o
   );
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const todayDow = now.getDay();
-  const todayISO = now.toISOString().slice(0, 10);
+  const todayISO = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 
 
   const { sorted, currentId, nextId } = useMemo(() => {

@@ -71,6 +71,67 @@
     --font-mono: 'JetBrains Mono', ui-monospace, monospace;
   }
 
+  /* ============ PREMIUM — light indigo, glossy ============ */
+  [data-theme="premium"] {
+    --background: 228 40% 98%;
+    --foreground: 230 30% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 230 30% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 230 30% 12%;
+
+    --primary: 231 84% 58%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 199 92% 62%;
+
+    --secondary: 228 36% 95%;
+    --secondary-foreground: 230 28% 20%;
+
+    --muted: 228 32% 94%;
+    --muted-foreground: 230 12% 45%;
+
+    --accent: 199 92% 56%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 356 78% 58%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 228 28% 89%;
+    --input: 228 28% 89%;
+    --ring: 231 84% 58%;
+
+    --radius: 1rem;
+
+    --sidebar-background: 228 40% 98%;
+    --sidebar-foreground: 230 30% 12%;
+    --sidebar-primary: 231 84% 58%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 228 36% 95%;
+    --sidebar-accent-foreground: 230 28% 20%;
+    --sidebar-border: 228 28% 89%;
+    --sidebar-ring: 231 84% 58%;
+
+    --success: 158 68% 40%;
+    --success-foreground: 0 0% 100%;
+
+    --warning: 38 96% 52%;
+    --warning-foreground: 230 30% 12%;
+
+    --runway: 231 84% 58%;
+
+    --priority-high: 356 78% 58%;
+    --priority-med: 38 96% 52%;
+    --priority-low: 199 60% 55%;
+
+    --gradient-hero: linear-gradient(180deg, hsl(228 60% 98%), hsl(220 60% 96%));
+    --gradient-primary: linear-gradient(135deg, hsl(231 84% 58%), hsl(199 92% 62%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100%), hsl(228 45% 98%));
+    --shadow-elev: 0 1px 2px hsl(231 40% 20% / 0.05), 0 10px 30px -14px hsl(231 60% 40% / 0.18);
+    --shadow-glow: 0 10px 36px -12px hsl(231 84% 58% / 0.35);
+  }
+
   /* ============ FLIGHT — deep-space cockpit ============ */
   [data-theme="flight"] {
     --background: 224 40% 4%;
