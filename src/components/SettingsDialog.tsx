@@ -7,6 +7,8 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { Link } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 
 export function SettingsDialog() {
   const { theme, setTheme } = useTheme();
@@ -69,6 +71,21 @@ export function SettingsDialog() {
               ))}
             </div>
           </div>
+
+          {user && !isGuest && (
+            <Link
+              to="/settings/notifications"
+              className="flex items-center gap-3 p-3 rounded-lg border border-border hover:border-primary/50 hover:bg-primary/5 transition"
+            >
+              <div className="w-9 h-9 rounded-lg bg-primary/15 flex items-center justify-center">
+                <Bell className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <div className="text-sm font-semibold">Notifications</div>
+                <div className="text-xs text-muted-foreground">Choose what you get alerted about</div>
+              </div>
+            </Link>
+          )}
 
           {user && !isGuest && (
             <div className="space-y-3 border-t border-border/50 pt-4">

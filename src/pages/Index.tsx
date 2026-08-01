@@ -16,6 +16,8 @@ import { DailyObjectives } from '@/components/DailyObjectives';
 import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { FlightProtocols } from '@/components/FlightProtocols';
+import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
+import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
 import { AIAdvisor } from '@/components/AIAdvisor';
 import { DailyNote } from '@/components/DailyNote';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
@@ -146,6 +148,7 @@ const Index = () => {
       </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+        <PushPermissionPrompt />
         <QuoteCard />
 
         {/* HERO */}
