@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { sendPush } from "@/lib/push";
 import { useAuth } from "@/hooks/useAuth";
 import { useUnreadMessages } from "@/hooks/use-unread-messages";
 import { Button } from "@/components/ui/button";
@@ -381,6 +382,14 @@ export function ChatThread() {
     setMessages((prev) =>
       prev.some((p) => p.id === (data as Message).id) ? prev : [...prev, data as Message]
     );
+    sendPush({
+      userIds: [userId],
+      category: "direct_messages",
+      title: "New message",
+      body: text.slice(0, 120),
+      url: `/chat/${user.id}`,
+      dedupeKey: (data as Message).id,
+    });
   };
 
   if (isGuest || !user) return <GuestGate />;

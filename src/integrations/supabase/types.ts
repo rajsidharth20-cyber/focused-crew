@@ -364,6 +364,84 @@ export type Database = {
         }
         Relationships: []
       }
+      notification_log: {
+        Row: {
+          body: string | null
+          category: string
+          created_at: string
+          dedupe_key: string
+          id: string
+          title: string
+          url: string | null
+          user_id: string
+        }
+        Insert: {
+          body?: string | null
+          category: string
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          title: string
+          url?: string | null
+          user_id: string
+        }
+        Update: {
+          body?: string | null
+          category?: string
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          title?: string
+          url?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      notification_preferences: {
+        Row: {
+          created_at: string
+          direct_messages: boolean
+          friend_requests: boolean
+          goal_completion: boolean
+          group_invites: boolean
+          group_messages: boolean
+          mentions: boolean
+          push_enabled: boolean
+          streak_reminders: boolean
+          study_reminders: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          direct_messages?: boolean
+          friend_requests?: boolean
+          goal_completion?: boolean
+          group_invites?: boolean
+          group_messages?: boolean
+          mentions?: boolean
+          push_enabled?: boolean
+          streak_reminders?: boolean
+          study_reminders?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          direct_messages?: boolean
+          friend_requests?: boolean
+          goal_completion?: boolean
+          group_invites?: boolean
+          group_messages?: boolean
+          mentions?: boolean
+          push_enabled?: boolean
+          streak_reminders?: boolean
+          study_reminders?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
@@ -414,6 +492,36 @@ export type Database = {
           endpoint?: string
           id?: string
           p256dh?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      push_tokens: {
+        Row: {
+          created_at: string
+          device_label: string | null
+          id: string
+          token: string
+          updated_at: string
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_label?: string | null
+          id?: string
+          token: string
+          updated_at?: string
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_label?: string | null
+          id?: string
+          token?: string
+          updated_at?: string
+          user_agent?: string | null
           user_id?: string
         }
         Relationships: []
