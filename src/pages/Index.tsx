@@ -351,7 +351,7 @@ function TabButton({ icon: Icon, label, onClick, to, badge }: TabProps) {
 
 function CenterAdd({ onClick }: { onClick: () => void }) {
   return (
-    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-6 z-10">
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 bottom-full mb-3 z-10">
       <button
         onClick={onClick}
         aria-label="Add task"
