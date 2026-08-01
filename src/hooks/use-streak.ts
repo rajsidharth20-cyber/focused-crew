@@ -65,11 +65,15 @@ export function useStreak(sessions: StudySession[]) {
     let cursor = new Date();
     let count = 0;
     let anchored = false;
-    if ((minutesByDay.get(dayKey(cursor)) ?? 0) >= threshold) {
+    const qualifies = (d: Date) => {
+      const k = dayKey(d);
+      return (minutesByDay.get(k) ?? 0) >= threshold || restored.has(k);
+    };
+    if (qualifies(cursor)) {
       anchored = true;
     } else {
       cursor = addDays(cursor, -1);
-      if ((minutesByDay.get(dayKey(cursor)) ?? 0) >= threshold) anchored = true;
+      if (qualifies(cursor)) anchored = true;
     }
     if (!anchored) {
       // find recent missed candidates (yesterday & day-before) for possible restore

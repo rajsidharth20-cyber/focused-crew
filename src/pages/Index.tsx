@@ -270,10 +270,10 @@ const Index = () => {
         className="fixed bottom-0 inset-x-0 z-30 border-t border-border/50 bg-background/85 backdrop-blur-xl"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-6xl mx-auto grid grid-cols-6 h-[64px]">
+        <div className="relative max-w-6xl mx-auto grid grid-cols-5 h-[64px]">
+          <CenterAdd onClick={scrollToDaily} />
           <TabButton icon={Home} label="Home" onClick={scrollTop} />
           <TabButton icon={CalendarDays} label="Planner" to="/planner" />
-          <CenterAdd onClick={scrollToDaily} />
           <TabButton icon={Timer} label="Timer" to="/study" />
           <TabButton icon={MessagesSquare} label="Chats" to="/chat" badge={unreadTotal} />
           <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
@@ -351,11 +351,11 @@ function TabButton({ icon: Icon, label, onClick, to, badge }: TabProps) {
 
 function CenterAdd({ onClick }: { onClick: () => void }) {
   return (
-    <div className="flex items-center justify-center">
+    <div className="pointer-events-none absolute left-1/2 -translate-x-1/2 -top-6 z-10">
       <button
         onClick={onClick}
         aria-label="Add task"
-        className="-mt-6 w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition"
+        className="pointer-events-auto w-14 h-14 rounded-full bg-gradient-primary text-primary-foreground shadow-xl shadow-primary/30 flex items-center justify-center active:scale-95 transition"
       >
         <PlusCircle className="w-6 h-6" />
       </button>
