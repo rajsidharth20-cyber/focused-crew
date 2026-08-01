@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { sendPush } from '@/lib/push';
 import { useAuth } from '@/hooks/useAuth';
 import {
   fetchProfiles,
@@ -183,6 +184,16 @@ export default function GroupDashboard() {
     const { error } = await supabase
       .from('group_invites')
       .insert({ group_id: groupId, inviter_id: user.id, invitee_id: inviteeId });
+    if (!error) {
+      sendPush({
+        userIds: [inviteeId],
+        category: 'group_invites',
+        title: 'Study group invite',
+        body: `You were invited to join ${group?.name ?? 'a study group'}.`,
+        url: `/groups/${groupId}`,
+        dedupeKey: `invite-${groupId}-${inviteeId}`,
+      });
+    }
     if (error) {
       toast.error(error.message.includes('duplicate') ? 'Already invited' : error.message);
       return;

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { sendPush } from '@/lib/push';
 import { useAuth } from '@/hooks/useAuth';
 import { fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
 import { Button } from '@/components/ui/button';
@@ -162,22 +163,57 @@ export default function GroupChat() {
     return map;
   }, [messages]);
 
+  const notifyGroup = async (messageId: string, content: string, replyId: string | null) => {
+    if (!groupId || !user) return;
+    const { data: members } = await supabase
+      .from('group_members').select('user_id').eq('group_id', groupId);
+    const ids = (members ?? []).map((m: any) => m.user_id).filter((id: string) => id !== user.id);
+    if (!ids.length) return;
+
+    const replyTarget = replyId ? byId[replyId]?.user_id : null;
+    const mentioned = ids.filter((id: string) => id === replyTarget);
+    const rest = ids.filter((id: string) => !mentioned.includes(id));
+
+    if (mentioned.length) {
+      sendPush({
+        userIds: mentioned,
+        category: 'mentions',
+        title: 'You were replied to',
+        body: content.slice(0, 120) || 'Sent a photo',
+        url: `/groups/${groupId}/chat`,
+        dedupeKey: messageId,
+      });
+    }
+    if (rest.length) {
+      sendPush({
+        userIds: rest,
+        category: 'group_messages',
+        title: 'New group message',
+        body: content.slice(0, 120) || 'Sent a photo',
+        url: `/groups/${groupId}/chat`,
+        dedupeKey: messageId,
+      });
+    }
+  };
+
   const send = async () => {
     if (!groupId || !user || !text.trim()) return;
     const content = text.trim();
     setText('');
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    const { error } = await supabase.from('group_messages').insert({
+    const { data: inserted, error } = await supabase.from('group_messages').insert({
       group_id: groupId,
       user_id: user.id,
       content,
       reply_to_id: replyId,
-    });
+    }).select('id').single();
     if (error) {
       toast.error(error.message);
       setText(content);
+      return;
     }
+    notifyGroup(inserted?.id ?? crypto.randomUUID(), content, replyId);
   };
 
   const sendImage = async (file: File) => {

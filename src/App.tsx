@@ -16,6 +16,7 @@ import GroupDashboard from "./pages/GroupDashboard";
 import GroupChat from "./pages/GroupChat";
 
 import ResetPassword from "./pages/ResetPassword";
+import NotificationSettings from "./pages/NotificationSettings";
 import NotFound from "./pages/NotFound";
 import { Loader2 } from "lucide-react";
 
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDashboard /></ProtectedRoute>} />
             <Route path="/groups/:groupId/chat" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
 
+            <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
