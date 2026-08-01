@@ -50,6 +50,7 @@ const fadeUp: Variants = {
 
 const Index = () => {
   const store = usePlannerStore();
+  useNotificationTriggers();
   const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
