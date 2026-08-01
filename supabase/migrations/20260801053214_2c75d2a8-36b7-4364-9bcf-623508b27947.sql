@@ -1,0 +1,1 @@
+GRANT EXECUTE ON FUNCTION private.has_dm_with(uuid, uuid) TO authenticated, service_role;
