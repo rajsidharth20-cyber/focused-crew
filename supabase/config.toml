@@ -8,3 +8,9 @@ verify_jwt = false
 
 [functions.daily-summary]
 verify_jwt = false
+
+[functions.push-config]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = true
