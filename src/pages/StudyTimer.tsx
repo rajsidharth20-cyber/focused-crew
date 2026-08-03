@@ -12,8 +12,9 @@ import { ManualSessionDialog } from '@/components/study/ManualSessionDialog';
 import { StudyStats } from '@/components/study/StudyStats';
 import { SessionList } from '@/components/study/SessionList';
 import { StudyObjectivesPanel } from '@/components/study/StudyObjectivesPanel';
+import { SessionNotesDialog } from '@/components/study/SessionNotesDialog';
 import { DelayPromptHost } from '@/components/study/DelayPromptDialog';
-import { useStudyStore } from '@/hooks/use-study-store';
+import { useStudyStore, type StudySession } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 
 type Mode = 'pomodoro' | 'stopwatch';
@@ -27,6 +28,7 @@ const StudyTimer = () => {
   const [subjectId, setSubjectId] = useState<string>('');
   const [topic, setTopic] = useState('');
   const [downloadingReport, setDownloadingReport] = useState(false);
+  const [noteSession, setNoteSession] = useState<StudySession | null>(null);
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
@@ -56,10 +58,10 @@ const StudyTimer = () => {
     topic: topic.trim() || null,
   });
 
-  const handlePomodoroComplete = (durationSec: number, plannedSec: number, delay: number | null) => {
+  const handlePomodoroComplete = async (durationSec: number, plannedSec: number, delay: number | null) => {
     const now = new Date();
     const start = new Date(now.getTime() - durationSec * 1000);
-    study.addSession({
+    const saved = await study.addSession({
       ...activeContext(),
       type: 'pomodoro',
       durationSeconds: durationSec,
@@ -69,10 +71,11 @@ const StudyTimer = () => {
       delayMinutes: delay,
     });
     toast.success(`Pomodoro logged · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
+    if (saved) setNoteSession(saved);
   };
 
-  const handleStopwatchSave = (durationSec: number, startedAt: string, endedAt: string, delay: number | null) => {
-    study.addSession({
+  const handleStopwatchSave = async (durationSec: number, startedAt: string, endedAt: string, delay: number | null) => {
+    const saved = await study.addSession({
       ...activeContext(),
       type: 'stopwatch',
       durationSeconds: durationSec,
@@ -81,11 +84,17 @@ const StudyTimer = () => {
       delayMinutes: delay,
     });
     toast.success(`Session saved · ${Math.round(durationSec / 60)}m${delay ? ` · ${delay}m late` : ''}`);
+    if (saved) setNoteSession(saved);
   };
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
       <DelayPromptHost />
+      <SessionNotesDialog
+        session={noteSession}
+        onClose={() => setNoteSession(null)}
+        onSave={(id, notes) => study.updateSession(id, { notes })}
+      />
       <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="aurora animate-float" style={{ width: 480, height: 480, background: 'hsl(var(--primary) / 0.28)', top: -140, left: -120 }} />
         <div className="aurora animate-float" style={{ width: 520, height: 520, background: 'hsl(var(--accent) / 0.25)', top: 120, right: -160, animationDelay: '1.5s' }} />
