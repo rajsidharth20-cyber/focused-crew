@@ -10,7 +10,9 @@ export type NotificationCategory =
   | 'study_reminders'
   | 'streak_reminders'
   | 'goal_completion'
-  | 'mentions';
+  | 'mentions'
+  | 'schedule_reminders'
+  | 'event_reminders';
 
 type PushConfig = {
   apiKey: string;

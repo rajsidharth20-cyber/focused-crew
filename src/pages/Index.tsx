@@ -55,7 +55,7 @@ const Index = () => {
   const { username, signOut } = useAuth();
   const { theme } = useTheme();
   const t = useTerms();
-  useEventReminders(store.events);
+  useEventReminders(store.events, store.commitments);
   const now = useNow(30_000);
   const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const [downloadingPdf, setDownloadingPdf] = useState(false);
@@ -255,6 +255,8 @@ const Index = () => {
                     onUpdatePriority={store.updateObjectivePriority}
                     onRemove={store.removeDailyObjective}
                     onCarryForward={store.carryForwardObjective}
+                    templates={store.objectiveTemplates}
+                    onRemoveTemplate={store.removeObjectiveTemplate}
                   />
                 </motion.div>
                 <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>

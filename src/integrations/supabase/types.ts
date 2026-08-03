@@ -85,10 +85,13 @@ export type Database = {
           deadline: string | null
           estimated_minutes: number
           id: string
+          is_template: boolean
           priority: string
           progress_notes: string[]
+          recurring_days: number[] | null
           subject_id: string
           task: string
+          template_id: string | null
           user_id: string
         }
         Insert: {
@@ -98,10 +101,13 @@ export type Database = {
           deadline?: string | null
           estimated_minutes?: number
           id?: string
+          is_template?: boolean
           priority?: string
           progress_notes?: string[]
+          recurring_days?: number[] | null
           subject_id: string
           task: string
+          template_id?: string | null
           user_id: string
         }
         Update: {
@@ -111,10 +117,13 @@ export type Database = {
           deadline?: string | null
           estimated_minutes?: number
           id?: string
+          is_template?: boolean
           priority?: string
           progress_notes?: string[]
+          recurring_days?: number[] | null
           subject_id?: string
           task?: string
+          template_id?: string | null
           user_id?: string
         }
         Relationships: [
@@ -123,6 +132,13 @@ export type Database = {
             columns: ["subject_id"]
             isOneToOne: false
             referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_objectives_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "daily_objectives"
             referencedColumns: ["id"]
           },
         ]
@@ -401,12 +417,14 @@ export type Database = {
         Row: {
           created_at: string
           direct_messages: boolean
+          event_reminders: boolean
           friend_requests: boolean
           goal_completion: boolean
           group_invites: boolean
           group_messages: boolean
           mentions: boolean
           push_enabled: boolean
+          schedule_reminders: boolean
           streak_reminders: boolean
           study_reminders: boolean
           updated_at: string
@@ -415,12 +433,14 @@ export type Database = {
         Insert: {
           created_at?: string
           direct_messages?: boolean
+          event_reminders?: boolean
           friend_requests?: boolean
           goal_completion?: boolean
           group_invites?: boolean
           group_messages?: boolean
           mentions?: boolean
           push_enabled?: boolean
+          schedule_reminders?: boolean
           streak_reminders?: boolean
           study_reminders?: boolean
           updated_at?: string
@@ -429,12 +449,14 @@ export type Database = {
         Update: {
           created_at?: string
           direct_messages?: boolean
+          event_reminders?: boolean
           friend_requests?: boolean
           goal_completion?: boolean
           group_invites?: boolean
           group_messages?: boolean
           mentions?: boolean
           push_enabled?: boolean
+          schedule_reminders?: boolean
           streak_reminders?: boolean
           study_reminders?: boolean
           updated_at?: string

@@ -28,6 +28,9 @@ export interface DailyObjective {
   date: string;
   deadline: string | null;
   priority: Priority;
+  recurringDays: number[] | null;
+  isTemplate: boolean;
+  templateId: string | null;
 }
 
 export interface Commitment {
@@ -64,6 +67,7 @@ export function usePlannerStore() {
   const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>([]);
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
+  const [objectiveTemplates, setObjectiveTemplates] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
   const [events, setEvents] = useState<PlannerEvent[]>([]);
@@ -91,10 +95,28 @@ export function usePlannerStore() {
       const allWT = data.weeklyTargets || [];
       setWeeklyTargets(allWT.filter((t: WeeklyTarget) => !t.deadline || t.deadline >= today));
       setPastWeeklyTargets(allWT.filter((t: WeeklyTarget) => t.deadline && t.deadline < today));
-      const allDO = data.dailyObjectives || [];
-      setDailyObjectives(allDO.filter((o: DailyObjective) => o.date === today));
-      setPastObjectives(allDO.filter((o: DailyObjective) => o.date < today));
       const todayDow = new Date(today + 'T00:00:00').getDay();
+      let allDO: DailyObjective[] = data.dailyObjectives || [];
+      const templates = allDO.filter((o: DailyObjective) => o.isTemplate);
+      // Materialize today's copies of recurring objectives
+      const generated: DailyObjective[] = [];
+      templates.forEach((t: DailyObjective) => {
+        if (!t.recurringDays || !t.recurringDays.includes(todayDow)) return;
+        const exists = allDO.some((o: DailyObjective) => o.templateId === t.id && o.date === today);
+        if (exists) return;
+        generated.push({
+          ...t, id: crypto.randomUUID(), date: today, completed: false,
+          progressNotes: [], isTemplate: false, templateId: t.id, recurringDays: t.recurringDays,
+        });
+      });
+      if (generated.length) {
+        allDO = [...allDO, ...generated];
+        data.dailyObjectives = allDO;
+        saveGuestData(data);
+      }
+      setObjectiveTemplates(templates);
+      setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today));
+      setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today));
       setCommitments((data.commitments || []).filter((c: any) =>
         (c.recurringDays && c.recurringDays.includes(todayDow)) || c.date === today || (!c.date && !c.recurringDays)
       ));
@@ -108,17 +130,18 @@ export function usePlannerStore() {
     setLoading(true);
 
     const fetchAll = async () => {
-      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes] = await Promise.all([
+      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes, tplRes] = await Promise.all([
         supabase.from('subjects').select('*').eq('user_id', user.id),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today),
+        supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today).eq('is_template', false),
         supabase.from('commitments').select('*').eq('user_id', user.id)
           .or(`date.eq.${today},recurring_days.cs.{${new Date(today + 'T00:00:00').getDay()}}`),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today),
+        supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today).eq('is_template', false),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
         supabase.from('events').select('*').eq('user_id', user.id)
           .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
+        supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('is_template', true),
       ]);
 
       setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
@@ -134,9 +157,31 @@ export function usePlannerStore() {
         estimatedMinutes: o.estimated_minutes, completed: o.completed,
         progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
         priority: (o.priority || 'medium') as Priority,
+        recurringDays: o.recurring_days ?? null,
+        isTemplate: !!o.is_template,
+        templateId: o.template_id ?? null,
       });
-      setDailyObjectives((doRes.data ?? []).map(mapDO));
-      setPastObjectives((pastDoRes.data ?? []).map(mapDO));
+
+      // Recurring objectives: create today's copy for each template that matches today.
+      const templates = (tplRes.data ?? []).map(mapDO);
+      setObjectiveTemplates(templates);
+      const todayDow = new Date(today + 'T00:00:00').getDay();
+      const todaysRows = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const missing = templates.filter(t =>
+        t.recurringDays?.includes(todayDow) && !todaysRows.some(o => o.templateId === t.id),
+      );
+      if (missing.length > 0) {
+        const { data: created } = await supabase.from('daily_objectives').insert(
+          missing.map(t => ({
+            user_id: user.id, subject_id: t.subjectId, task: t.task,
+            estimated_minutes: t.estimatedMinutes, date: today, deadline: null,
+            priority: t.priority, progress_notes: [], template_id: t.id, is_template: false,
+          })),
+        ).select();
+        (created ?? []).forEach((r: any) => todaysRows.push(mapDO(r)));
+      }
+      setDailyObjectives(todaysRows);
+      setPastObjectives((pastDoRes.data ?? []).map(mapDO).filter(o => !o.isTemplate));
 
       setCommitments((cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
@@ -231,30 +276,72 @@ export function usePlannerStore() {
     await supabase.from('weekly_targets').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
-  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string, priority: Priority = 'medium', initialNote?: string) => {
+  const addDailyObjective = useCallback(async (subjectId: string, task: string, estimatedMinutes: number, deadline?: string, priority: Priority = 'medium', initialNote?: string, recurringDays?: number[]) => {
+    const rec = recurringDays && recurringDays.length ? recurringDays : null;
+    const todayDow = new Date(today + 'T00:00:00').getDay();
     const initialNotes = initialNote && initialNote.trim()
       ? [JSON.stringify({ text: initialNote.trim(), timestamp: new Date().toISOString() })]
       : [];
     if (isGuest) {
-      const newO: DailyObjective = { id: crypto.randomUUID(), subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, date: today, deadline: deadline || null, priority };
-      setDailyObjectives(prev => {
-        const updated = [...prev, newO];
-        const data = getGuestData(); data.dailyObjectives = [...(data.dailyObjectives || []), newO]; saveGuestData(data);
-        return updated;
-      });
+      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority };
+      const data = getGuestData();
+      const rows: DailyObjective[] = [];
+      let template: DailyObjective | null = null;
+      if (rec) {
+        template = { ...base, id: crypto.randomUUID(), date: today, recurringDays: rec, isTemplate: true, templateId: null };
+        rows.push(template);
+        setObjectiveTemplates(prev => [...prev, template!]);
+      }
+      let instance: DailyObjective | null = null;
+      if (!rec || rec.includes(todayDow)) {
+        instance = { ...base, id: crypto.randomUUID(), date: today, recurringDays: rec, isTemplate: false, templateId: template?.id ?? null };
+        rows.push(instance);
+        setDailyObjectives(prev => [...prev, instance!]);
+      }
+      data.dailyObjectives = [...(data.dailyObjectives || []), ...rows];
+      saveGuestData(data);
       return;
     }
     if (!user) return;
+    const map = (d: any): DailyObjective => ({
+      id: d.id, subjectId: d.subject_id, task: d.task,
+      estimatedMinutes: d.estimated_minutes, completed: d.completed,
+      progressNotes: d.progress_notes ?? [], date: d.date, deadline: d.deadline,
+      priority: (d.priority || 'medium') as Priority,
+      recurringDays: d.recurring_days ?? null,
+      isTemplate: !!d.is_template,
+      templateId: d.template_id ?? null,
+    });
+
+    let templateId: string | null = null;
+    if (rec) {
+      const { data: tpl } = await supabase.from('daily_objectives')
+        .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: null, priority, progress_notes: [], recurring_days: rec, is_template: true })
+        .select().single();
+      if (tpl) {
+        templateId = tpl.id;
+        setObjectiveTemplates(prev => [...prev, map(tpl)]);
+      }
+    }
+
+    if (rec && !rec.includes(todayDow)) return;
+
     const { data, error } = await supabase.from('daily_objectives')
-      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority, progress_notes: initialNotes })
+      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority, progress_notes: initialNotes, template_id: templateId })
       .select().single();
-    if (!error && data) setDailyObjectives(prev => [...prev, {
-      id: data.id, subjectId: data.subject_id, task: data.task,
-      estimatedMinutes: data.estimated_minutes, completed: data.completed,
-      progressNotes: data.progress_notes ?? [], date: data.date, deadline: data.deadline,
-      priority: (data.priority || 'medium') as Priority,
-    }]);
+    if (!error && data) setDailyObjectives(prev => [...prev, map(data)]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
+
+  const removeObjectiveTemplate = useCallback(async (id: string) => {
+    setObjectiveTemplates(prev => prev.filter(t => t.id !== id));
+    if (isGuest) {
+      const data = getGuestData();
+      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
+      saveGuestData(data);
+      return;
+    }
+    await supabase.from('daily_objectives').delete().eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
 
   const toggleDailyObjective = useCallback(async (id: string) => {
     const all = [...dailyObjectives, ...pastObjectives];
@@ -488,6 +575,7 @@ export function usePlannerStore() {
     pastWeeklyTargets,
     dailyObjectives,
     pastObjectives,
+    objectiveTemplates,
     commitments,
     protocols,
     events,
@@ -503,6 +591,7 @@ export function usePlannerStore() {
     updateProgressNotes,
     updateObjectivePriority,
     removeDailyObjective,
+    removeObjectiveTemplate,
     addCommitment,
     removeCommitment,
     addProtocol,

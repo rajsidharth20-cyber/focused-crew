@@ -9,7 +9,7 @@ interface Props {
   tags: StudyTag[];
   subjects: Subject[];
   onRemove: (id: string) => void;
-  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'delayMinutes'>>) => void;
+  onUpdate: (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'notes' | 'delayMinutes'>>) => void;
 }
 
 const fmtDur = (s: number) => {
@@ -26,7 +26,7 @@ const fmtTime = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: 'n
 export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Props) {
   const recent = sessions.slice(0, 30);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string; delayMinutes: string }>({ topic: '', tagId: '', subjectId: '', delayMinutes: '' });
+  const [draft, setDraft] = useState<{ topic: string; tagId: string; subjectId: string; delayMinutes: string; notes: string }>({ topic: '', tagId: '', subjectId: '', delayMinutes: '', notes: '' });
 
   const startEdit = (s: StudySession) => {
     setEditingId(s.id);
@@ -35,6 +35,7 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
       tagId: s.tagId ?? '',
       subjectId: s.subjectId ?? '',
       delayMinutes: s.delayMinutes != null ? String(s.delayMinutes) : '',
+      notes: s.notes ?? '',
     });
   };
   const saveEdit = () => {
@@ -45,6 +46,7 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
       tagId: draft.tagId || null,
       subjectId: draft.subjectId || null,
       delayMinutes: Number.isFinite(delayNum as number) ? delayNum : null,
+      notes: draft.notes.trim() || null,
     });
     setEditingId(null);
   };
@@ -110,6 +112,16 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                           className="w-full bg-background border border-border/60 rounded px-2 py-1.5 text-xs tabular-nums mt-1"
                         />
                       </div>
+                      <div>
+                        <label className="text-[10px] uppercase tracking-widest text-muted-foreground">Session notes</label>
+                        <textarea
+                          value={draft.notes}
+                          onChange={e => setDraft(d => ({ ...d, notes: e.target.value }))}
+                          rows={3}
+                          placeholder="What did you cover?"
+                          className="w-full bg-background border border-border/60 rounded px-2 py-1.5 text-xs mt-1"
+                        />
+                      </div>
                       <div className="flex justify-end gap-2">
                         <button onClick={() => setEditingId(null)} className="text-xs px-2 py-1 rounded hover:bg-secondary text-muted-foreground inline-flex items-center gap-1">
                           <X className="w-3 h-3" />Cancel
@@ -144,6 +156,11 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
+                  )}
+                  {!isEditing && s.notes && (
+                    <p className="mt-2 pl-5 border-l-2 border-primary/30 text-[11px] text-muted-foreground whitespace-pre-wrap">
+                      {s.notes}
+                    </p>
                   )}
                 </motion.div>
               );

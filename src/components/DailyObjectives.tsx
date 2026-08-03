@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock, Flag, Pencil, Trash2 } from 'lucide-react';
+import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, CalendarClock, Flag, Pencil, Trash2, Repeat } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective, Priority } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
@@ -8,7 +8,9 @@ interface DailyObjectivesProps {
   subjects: Subject[];
   objectives: DailyObjective[];
   pastObjectives: DailyObjective[];
-  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string) => void;
+  onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string, recurringDays?: number[]) => void;
+  templates?: DailyObjective[];
+  onRemoveTemplate?: (id: string) => void;
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onUpdateNotes: (id: string, notes: string[]) => void;
@@ -16,6 +18,8 @@ interface DailyObjectivesProps {
   onRemove: (id: string) => void;
   onCarryForward: (id: string, targetDate?: string) => void;
 }
+
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
 const PRIORITY_CONFIG: Record<Priority, { label: string; color: string; bg: string }> = {
   high: { label: 'High', color: 'text-destructive', bg: 'bg-destructive/20' },
@@ -46,7 +50,7 @@ const formatTimestamp = (iso: string) => {
   });
 };
 
-export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward, templates = [], onRemoveTemplate }: DailyObjectivesProps) {
   const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
@@ -54,6 +58,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [deadline, setDeadline] = useState('');
   const [priority, setPriority] = useState<Priority>('medium');
   const [initialNote, setInitialNote] = useState('');
+  const [repeatDays, setRepeatDays] = useState<number[]>([]);
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
@@ -64,11 +69,12 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
-      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority, initialNote.trim() || undefined);
+      onAdd(subjectId, task.trim(), parseInt(minutes) || 30, deadline || undefined, priority, initialNote.trim() || undefined, repeatDays.length ? repeatDays : undefined);
       setTask('');
       setDeadline('');
       setPriority('medium');
       setInitialNote('');
+      setRepeatDays([]);
     }
   };
 
@@ -152,6 +158,11 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
               <span className="text-xs text-primary/70 font-display">{getSubjectName(o.subjectId)}</span>
               <span className="text-xs text-muted-foreground">· {o.estimatedMinutes}min</span>
               {isPast && <span className="text-xs text-muted-foreground">· {o.date}</span>}
+              {(o.templateId || o.recurringDays) && (
+                <span className="inline-flex items-center gap-0.5 text-[10px] text-accent-foreground/80 bg-primary/10 text-primary rounded px-1 py-0.5">
+                  <Repeat className="w-2.5 h-2.5" />repeats
+                </span>
+              )}
               {o.deadline && (
                 <span className={`text-xs font-display ${isOverdue(o) ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
                   · ETA {o.deadline}
@@ -388,6 +399,54 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
             placeholder="Optional note for this objective…"
             className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
           />
+        </div>
+      )}
+
+      {subjects.length > 0 && (
+        <div className="mb-4 flex items-center gap-2 flex-wrap">
+          <span className="inline-flex items-center gap-1 text-[11px] uppercase tracking-widest text-muted-foreground">
+            <Repeat className="w-3 h-3" />Repeat
+          </span>
+          {DAY_LABELS.map((d, i) => {
+            const active = repeatDays.includes(i);
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setRepeatDays(prev => active ? prev.filter(x => x !== i) : [...prev, i])}
+                className={`w-8 h-8 rounded-full text-[11px] font-semibold transition active:scale-95 ${
+                  active ? 'bg-primary text-primary-foreground' : 'bg-secondary/60 text-muted-foreground hover:text-foreground'
+                }`}
+              >
+                {d}
+              </button>
+            );
+          })}
+          {repeatDays.length > 0 && (
+            <button type="button" onClick={() => setRepeatDays([])} className="text-[11px] text-muted-foreground hover:text-foreground underline">
+              clear
+            </button>
+          )}
+        </div>
+      )}
+
+      {templates.length > 0 && (
+        <div className="mb-4 rounded-xl border border-border/50 bg-secondary/20 p-3 space-y-2">
+          <div className="text-[11px] uppercase tracking-widest text-muted-foreground">Repeating objectives</div>
+          {templates.map(tpl => (
+            <div key={tpl.id} className="flex items-center gap-2 text-xs">
+              <Repeat className="w-3 h-3 text-primary shrink-0" />
+              <span className="flex-1 min-w-0 truncate">{tpl.task}</span>
+              <span className="text-muted-foreground">
+                {(tpl.recurringDays ?? []).slice().sort().map(d => DAY_LABELS[d]).join(' ')}
+              </span>
+              {onRemoveTemplate && (
+                <button onClick={() => onRemoveTemplate(tpl.id)} className="text-muted-foreground hover:text-destructive" aria-label="Stop repeating">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
         </div>
       )}
 
