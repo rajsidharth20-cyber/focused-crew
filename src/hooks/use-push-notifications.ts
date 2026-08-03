@@ -17,6 +17,8 @@ export type NotificationPrefs = {
   streak_reminders: boolean;
   goal_completion: boolean;
   mentions: boolean;
+  schedule_reminders: boolean;
+  event_reminders: boolean;
 };
 
 export const DEFAULT_PREFS: NotificationPrefs = {
@@ -29,6 +31,8 @@ export const DEFAULT_PREFS: NotificationPrefs = {
   streak_reminders: true,
   goal_completion: true,
   mentions: true,
+  schedule_reminders: true,
+  event_reminders: true,
 };
 
 export function usePushNotifications() {
