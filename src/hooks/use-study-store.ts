@@ -122,7 +122,7 @@ export function useStudyStore() {
     endedAt: string;
     notes?: string | null;
     delayMinutes?: number | null;
-  }) => {
+  }): Promise<StudySession | null> => {
     if (isGuest) {
       const s: StudySession = {
         id: crypto.randomUUID(),
@@ -138,9 +138,9 @@ export function useStudyStore() {
         delayMinutes: input.delayMinutes ?? null,
       };
       setSessions(prev => { const u = [s, ...prev]; writeLS(GUEST_SESSIONS, u); return u; });
-      return;
+      return s;
     }
-    if (!user) return;
+    if (!user) return null;
     const { data, error } = await db.from('study_sessions').insert({
       user_id: user.id,
       tag_id: input.tagId ?? null,
@@ -154,7 +154,10 @@ export function useStudyStore() {
       notes: input.notes ?? null,
       delay_minutes: input.delayMinutes ?? null,
     }).select().single();
-    if (!error && data) setSessions(prev => [mapSession(data), ...prev]);
+    if (error || !data) return null;
+    const saved = mapSession(data);
+    setSessions(prev => [saved, ...prev]);
+    return saved;
   }, [user, isGuest]);
 
   const updateSession = useCallback(async (id: string, patch: Partial<Pick<StudySession, 'tagId' | 'subjectId' | 'topic' | 'notes' | 'delayMinutes'>>) => {
