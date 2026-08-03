@@ -255,6 +255,8 @@ const Index = () => {
                     onUpdatePriority={store.updateObjectivePriority}
                     onRemove={store.removeDailyObjective}
                     onCarryForward={store.carryForwardObjective}
+                    templates={store.objectiveTemplates}
+                    onRemoveTemplate={store.removeObjectiveTemplate}
                   />
                 </motion.div>
                 <motion.div custom={5} initial="hidden" animate="show" variants={fadeUp}>
