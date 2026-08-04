@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare, Users } from 'lucide-react';
+import { Plane, Swords, Sparkles, Flame, TrendingUp, CheckCircle2, FileDown, Loader2, Timer, Home, Bot, MoreHorizontal, Trash2, LogOut, PlusCircle, CalendarDays, MessagesSquare, Users, Image as ImageIcon } from 'lucide-react';
+import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { Link } from 'react-router-dom';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 import { useState, useRef } from 'react';
