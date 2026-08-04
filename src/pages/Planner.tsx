@@ -7,9 +7,11 @@ import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useNow } from '@/hooks/use-now';
+import { useEventReminders } from '@/hooks/use-event-reminders';
 
 const Planner = () => {
   const store = usePlannerStore();
+  useEventReminders(store.events, store.commitments);
   const { theme } = useTheme();
   const now = useNow(60_000);
   const ThemeIcon = theme === 'war' ? Swords : Plane;

@@ -34,6 +34,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface Profile {
   id: string;
@@ -364,6 +365,17 @@ export function ChatThread() {
     [messages, isHidden]
   );
 
+  /** Removes the message for both people (Telegram-style "delete for everyone"). */
+  const deleteForAll = async (id: string) => {
+    const prev = messages;
+    setMessages((list) => list.filter((m) => m.id !== id));
+    const { error } = await supabase.from("messages").delete().eq("id", id);
+    if (error) {
+      setMessages(prev);
+      toast.error("Could not delete this message");
+    }
+  };
+
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
@@ -478,9 +490,14 @@ export function ChatThread() {
                   </div>
                     </ContextMenuTrigger>
                     <ContextMenuContent>
-                      <ContextMenuItem onSelect={() => hide(m.id)} className="text-destructive">
+                      <ContextMenuItem onSelect={() => hide(m.id)}>
                         <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                       </ContextMenuItem>
+                      {mine && (
+                        <ContextMenuItem onSelect={() => deleteForAll(m.id)} className="text-destructive">
+                          <Trash2 className="w-4 h-4 mr-2" /> Delete for everyone
+                        </ContextMenuItem>
+                      )}
                     </ContextMenuContent>
                   </ContextMenu>
                 </div>
