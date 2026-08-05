@@ -182,6 +182,69 @@ export type Database = {
         }
         Relationships: []
       }
+      google_calendar_connections: {
+        Row: {
+          calendar_id: string
+          connection_key_enc: string
+          created_at: string
+          google_email: string | null
+          last_synced_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calendar_id?: string
+          connection_key_enc: string
+          created_at?: string
+          google_email?: string | null
+          last_synced_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calendar_id?: string
+          connection_key_enc?: string
+          created_at?: string
+          google_email?: string | null
+          last_synced_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      google_calendar_sync_map: {
+        Row: {
+          created_at: string
+          fingerprint: string | null
+          google_event_id: string
+          id: string
+          item_id: string
+          item_type: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          fingerprint?: string | null
+          google_event_id: string
+          id?: string
+          item_id: string
+          item_type: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          fingerprint?: string | null
+          google_event_id?: string
+          id?: string
+          item_id?: string
+          item_type?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       group_announcements: {
         Row: {
           content: string
