@@ -88,7 +88,10 @@ export function SettingsDialog() {
             </Link>
           )}
 
+          {user && !isGuest && <GoogleCalendarCard />}
+
           {user && !isGuest && (
+
             <div className="space-y-3 border-t border-border/50 pt-4">
               <Label className="text-sm font-medium text-muted-foreground flex items-center gap-1.5">
                 <KeyRound className="w-3.5 h-3.5" /> Change password
