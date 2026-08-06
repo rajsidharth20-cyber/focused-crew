@@ -228,7 +228,7 @@ export function PomodoroTimer({
 
       <div className="flex justify-center">
         <div className="relative">
-          <ProgressRing value={pct} size={running ? 260 : 220} label={fmt(remaining)} sub={phase === 'focus' ? undefined : 'break'} />
+          <ProgressRing showValue={false} value={pct} size={running ? 260 : 220} label={fmt(remaining)} sub={phase === 'focus' ? undefined : 'break'} />
           {phase !== 'focus' && (
             <Coffee className="absolute top-3 right-3 w-4 h-4 text-accent" />
           )}
