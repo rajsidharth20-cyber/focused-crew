@@ -138,7 +138,7 @@ const Index = () => {
                   : `${doneDaily} of ${totalDaily} done · ${highPriority} high priority`}
             </p>
           </div>
-          <ProgressRing value={pctDaily} size={96} label={`${Math.round(pctDaily)}%`} sub={t.ringLabel} />
+          <ProgressRing value={pctDaily} size={92} stroke={9} label={t.ringLabel} />
         </motion.section>
 
         <AnimatePresence mode="wait">
