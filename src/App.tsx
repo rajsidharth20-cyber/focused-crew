@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import StudyTimer from "./pages/StudyTimer";
 import Planner from "./pages/Planner";
+import More from "./pages/More";
+
 import Chat, { ChatThread } from "./pages/Chat";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";

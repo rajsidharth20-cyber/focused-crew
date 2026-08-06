@@ -58,8 +58,9 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
         <span className="text-[10px] text-muted-foreground">{sessions.length} total</span>
       </div>
       {recent.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-3">No sessions logged yet. Start a timer above.</p>
+        <EmptyState compact icon={History} title="No sessions yet" hint="Start a timer and your focus sessions will show up here." />
       ) : (
+
         <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
           <AnimatePresence initial={false}>
             {recent.map(s => {
