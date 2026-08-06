@@ -1,7 +1,6 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
@@ -16,6 +15,7 @@ import { SessionNotesDialog } from '@/components/study/SessionNotesDialog';
 import { DelayPromptHost } from '@/components/study/DelayPromptDialog';
 import { useStudyStore, type StudySession } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
+import { BottomNav } from '@/components/shell/BottomNav';
 
 type Mode = 'pomodoro' | 'stopwatch';
 
@@ -29,6 +29,8 @@ const StudyTimer = () => {
   const [topic, setTopic] = useState('');
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [noteSession, setNoteSession] = useState<StudySession | null>(null);
+  const [timerRunning, setTimerRunning] = useState(false);
+  const immersive = mode === 'pomodoro' && timerRunning;
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
