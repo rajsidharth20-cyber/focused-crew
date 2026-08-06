@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, ArrowLeft, Calendar as CalendarIcon, Clock3, Target } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plane, Swords, Calendar as CalendarIcon, Clock3, Target } from 'lucide-react';
+import { BottomNav } from '@/components/shell/BottomNav';
 import { TodayTimeline } from '@/components/TodayTimeline';
 import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
@@ -24,7 +24,7 @@ const Planner = () => {
 
   return (
     <div
-      className="relative min-h-screen overflow-x-hidden pb-[calc(80px+env(safe-area-inset-bottom))]"
+      className="relative min-h-screen overflow-x-hidden app-surface"
       style={{
         paddingTop: 'env(safe-area-inset-top)',
         paddingLeft: 'env(safe-area-inset-left)',
@@ -35,24 +35,20 @@ const Planner = () => {
         <div className="aurora animate-float" style={{ width: 360, height: 360, background: 'hsl(var(--primary) / 0.2)', top: -140, right: -120 }} />
       </div>
 
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/75 border-b border-border/40">
-        <div className="max-w-6xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          <Link to="/" className="flex items-center gap-2 min-w-0 active:scale-[0.98] transition-transform">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-primary flex items-center justify-center shadow-md shrink-0">
-              <ArrowLeft className="w-4 h-4 text-primary-foreground" />
-            </div>
-            <div className="min-w-0 text-left">
-              <h1 className="font-display text-[15px] font-bold tracking-tight leading-none truncate">Planner</h1>
-              <p className="text-[10.5px] text-muted-foreground truncate mt-0.5">{today}</p>
-            </div>
-          </Link>
+      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70">
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
+          <div className="min-w-0">
+            <h1 className="font-display text-[17px] font-bold tracking-tight leading-none truncate">Planner</h1>
+            <p className="text-[10.5px] text-muted-foreground truncate mt-1">{today}</p>
+          </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <ThemeIcon className="w-4 h-4 text-primary" />
           </div>
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+
+      <main className="max-w-2xl mx-auto px-4 py-3 space-y-4">
         <motion.section
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="grid grid-cols-3 gap-2 sm:gap-3"
@@ -78,6 +74,8 @@ const Planner = () => {
           <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
         </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   );
 };

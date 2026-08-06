@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Clock, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Clock, Pencil, Check, X, History } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject } from '@/hooks/use-planner-store';
 
@@ -58,8 +59,9 @@ export function SessionList({ sessions, tags, subjects, onRemove, onUpdate }: Pr
         <span className="text-[10px] text-muted-foreground">{sessions.length} total</span>
       </div>
       {recent.length === 0 ? (
-        <p className="text-xs text-muted-foreground py-3">No sessions logged yet. Start a timer above.</p>
+        <EmptyState compact icon={History} title="No sessions yet" hint="Start a timer and your focus sessions will show up here." />
       ) : (
+
         <div className="space-y-1.5 max-h-[420px] overflow-y-auto pr-1">
           <AnimatePresence initial={false}>
             {recent.map(s => {

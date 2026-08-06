@@ -6,9 +6,10 @@ interface ProgressRingProps {
   stroke?: number;
   label?: string;
   sub?: string;
+  showValue?: boolean;
 }
 
-export function ProgressRing({ value, size = 132, stroke = 12, label, sub }: ProgressRingProps) {
+export function ProgressRing({ value, size = 132, stroke = 12, label, sub, showValue = true }: ProgressRingProps) {
   const clamped = Math.max(0, Math.min(100, value));
   const r = (size - stroke) / 2;
   const c = 2 * Math.PI * r;
@@ -48,10 +49,18 @@ export function ProgressRing({ value, size = 132, stroke = 12, label, sub }: Pro
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center">
-        <span className="text-3xl font-bold text-gradient tabular-nums leading-none">
-          {Math.round(clamped)}%
-        </span>
-        {label && <span className="text-[10px] font-display tracking-widest uppercase text-muted-foreground mt-1">{label}</span>}
+        {showValue ? (
+          <>
+            <span className="text-3xl font-bold text-gradient tabular-nums leading-none">
+              {Math.round(clamped)}%
+            </span>
+            {label && <span className="text-[10px] font-display tracking-widest uppercase text-muted-foreground mt-1">{label}</span>}
+          </>
+        ) : (
+          label && (
+            <span className="text-[42px] font-bold text-gradient tabular-nums leading-none tracking-tight">{label}</span>
+          )
+        )}
         {sub && <span className="text-[10px] text-muted-foreground mt-0.5">{sub}</span>}
       </div>
     </div>

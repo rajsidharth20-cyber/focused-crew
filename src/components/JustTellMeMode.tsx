@@ -122,11 +122,13 @@ export function JustTellMeToggle({ onClick, active }: { onClick: () => void; act
   return (
     <button
       onClick={onClick}
-      className={`inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg border transition ${active ? 'bg-primary text-primary-foreground border-primary shadow' : 'border-primary/40 text-primary hover:bg-primary/10'}`}
+      className={`press inline-flex items-center gap-1.5 text-[11px] font-semibold px-2.5 h-9 rounded-full border transition ${active ? 'bg-primary text-primary-foreground border-primary shadow' : 'border-primary/30 text-primary hover:bg-primary/10'}`}
       aria-pressed={active}
+      aria-label={active ? 'Exit focus mode' : 'Just tell me what to do'}
+      title={active ? 'Exit focus mode' : 'Just tell me what to do'}
     >
       <Zap className="w-3.5 h-3.5" />
-      <span>{active ? 'Exit focus mode' : 'Just tell me what to do'}</span>
+      <span className="hidden sm:inline">{active ? 'Exit' : 'Just tell me'}</span>
     </button>
   );
 }

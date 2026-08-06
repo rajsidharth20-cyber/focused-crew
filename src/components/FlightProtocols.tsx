@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useTerms } from '@/lib/terms';
+import { EmptyState } from '@/components/EmptyState';
 
 interface FlightProtocolsProps {
   protocols: string[];
@@ -45,8 +46,9 @@ export function FlightProtocols({ protocols, onAdd, onRemove }: FlightProtocolsP
         </div>
 
         {protocols.length === 0 && (
-          <p className="text-xs text-muted-foreground/60 text-center py-2">No protocols set yet</p>
+          <EmptyState compact icon={ShieldCheck} title="No rules yet" hint="Add a daily rule you want to hold yourself to." />
         )}
+
 
         <ul className="space-y-1.5">
           {protocols.map((protocol, i) => (

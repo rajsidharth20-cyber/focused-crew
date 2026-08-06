@@ -9,6 +9,7 @@ type Phase = 'focus' | 'short' | 'long';
 
 interface Props {
   onComplete: (durationSec: number, plannedSec: number, delayMinutes: number | null) => void;
+  onRunningChange?: (running: boolean) => void;
   focusMin?: number;
   shortMin?: number;
   longMin?: number;
@@ -44,6 +45,7 @@ const fmt = (s: number) => {
 
 export function PomodoroTimer({
   onComplete,
+  onRunningChange,
   focusMin: focusMinDefault = 25,
   shortMin: shortMinDefault = 5,
   longMin: longMinDefault = 15,
@@ -60,6 +62,8 @@ export function PomodoroTimer({
   const stateRef = useRef<Persisted | null>(null);
   const onCompleteRef = useRef(onComplete);
   useEffect(() => { onCompleteRef.current = onComplete; }, [onComplete]);
+
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
 
   const secForPhase = useCallback((ph: Phase, f: number, s: number, l: number) =>
     (ph === 'focus' ? f : ph === 'short' ? s : l) * 60, []);
@@ -213,7 +217,7 @@ export function PomodoroTimer({
   const phaseLabel = phase === 'focus' ? 'Focus' : phase === 'short' ? 'Short Break' : 'Long Break';
 
   return (
-    <div className="glass-card p-6 sm:p-8 space-y-6">
+    <div className={`glass-card space-y-6 transition-all duration-300 ${running ? 'p-6 sm:p-10' : 'p-6 sm:p-8'}`}>
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-display text-primary/80">Pomodoro</div>
@@ -224,7 +228,7 @@ export function PomodoroTimer({
 
       <div className="flex justify-center">
         <div className="relative">
-          <ProgressRing value={pct} size={220} label={fmt(remaining)} sub={phase === 'focus' ? undefined : 'break'} />
+          <ProgressRing showValue={false} value={pct} size={running ? 260 : 220} label={fmt(remaining)} sub={phase === 'focus' ? undefined : 'break'} />
           {phase !== 'focus' && (
             <Coffee className="absolute top-3 right-3 w-4 h-4 text-accent" />
           )}
@@ -247,15 +251,19 @@ export function PomodoroTimer({
         </button>
       </div>
 
-      <p className="text-[11px] text-muted-foreground text-center">
-        Timer keeps counting even if you close the tab or lock your phone.
-      </p>
+      {!running && (
+        <>
+          <p className="text-[11px] text-muted-foreground text-center">
+            Timer keeps counting even if you close the tab or lock your phone.
+          </p>
 
-      <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
-        <NumField label="Focus" value={focusMin} setValue={setFocusMin} disabled={running} />
-        <NumField label="Short" value={shortMin} setValue={setShortMin} disabled={running} />
-        <NumField label="Long" value={longMin} setValue={setLongMin} disabled={running} />
-      </div>
+          <div className="grid grid-cols-3 gap-2 pt-2 border-t border-border/40">
+            <NumField label="Focus" value={focusMin} setValue={setFocusMin} disabled={running} />
+            <NumField label="Short" value={shortMin} setValue={setShortMin} disabled={running} />
+            <NumField label="Long" value={longMin} setValue={setLongMin} disabled={running} />
+          </div>
+        </>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Clock, MapPin, Calendar as CalendarIcon, Target } from 'lucide-react';
 import { useNow } from '@/hooks/use-now';
 import type { Commitment, DailyObjective, PlannerEvent } from '@/hooks/use-planner-store';
+import { EmptyState } from '@/components/EmptyState';
 
 type Item = {
   id: string;
@@ -78,13 +79,16 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
 
   if (items.length === 0) {
     return (
-      <div className="glass-card p-8 text-center">
-        <CalendarIcon className="w-8 h-8 mx-auto text-muted-foreground mb-3" />
-        <p className="text-sm font-semibold">Nothing on the schedule</p>
-        <p className="text-xs text-muted-foreground mt-1">Add commitments, events, or task deadlines to see them here.</p>
+      <div className="glass-card p-4">
+        <EmptyState
+          icon={CalendarIcon}
+          title="Nothing on the schedule"
+          hint="Add commitments, events, or task deadlines to see them here."
+        />
       </div>
     );
   }
+
 
   return (
     <div className="glass-card p-3 sm:p-4">

@@ -9,6 +9,8 @@ import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import StudyTimer from "./pages/StudyTimer";
 import Planner from "./pages/Planner";
+import More from "./pages/More";
+
 import Chat, { ChatThread } from "./pages/Chat";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";
@@ -50,6 +52,8 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
+            <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
+
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
