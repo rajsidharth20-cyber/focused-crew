@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
-import { Plane, Swords, ArrowLeft, Calendar as CalendarIcon, Clock3, Target } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Plane, Swords, Calendar as CalendarIcon, Clock3, Target } from 'lucide-react';
+import { BottomNav } from '@/components/shell/BottomNav';
 import { TodayTimeline } from '@/components/TodayTimeline';
 import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
@@ -48,7 +48,7 @@ const Planner = () => {
       </header>
 
 
-      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-4 sm:py-6 space-y-5">
+      <main className="max-w-2xl mx-auto px-4 py-3 space-y-4">
         <motion.section
           initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
           className="grid grid-cols-3 gap-2 sm:gap-3"
@@ -74,6 +74,8 @@ const Planner = () => {
           <UpcomingEvents events={store.events} onAdd={store.addEvent} onRemove={store.removeEvent} />
         </motion.div>
       </main>
+
+      <BottomNav />
     </div>
   );
 };
