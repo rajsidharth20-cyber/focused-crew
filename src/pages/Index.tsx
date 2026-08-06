@@ -189,7 +189,7 @@ const Index = () => {
                       <CheckCircle2 className="w-4 h-4 opacity-0 hover:opacity-100 transition-opacity" />
                     </motion.button>
                     <div className="min-w-0 flex-1">
-                      <p className="text-[15px] font-semibold leading-snug break-words">{topTask.title}</p>
+                      <p className="text-[15px] font-semibold leading-snug break-words">{topTask.task}</p>
                       <div className="flex flex-wrap items-center gap-1.5 mt-2">
                         <span className={`m3-chip ${topTask.priority === 'high' ? 'prio-high' : topTask.priority === 'low' ? 'prio-low' : 'prio-med'} border-transparent`}>
                           {String(topTask.priority ?? 'medium')}
