@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Clock, MapPin, Calendar as CalendarIcon, Target } from 'lucide-react';
 import { useNow } from '@/hooks/use-now';
 import type { Commitment, DailyObjective, PlannerEvent } from '@/hooks/use-planner-store';
+import { EmptyState } from '@/components/EmptyState';
 
 type Item = {
   id: string;

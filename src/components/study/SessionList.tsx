@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Clock, Pencil, Check, X } from 'lucide-react';
+import { Trash2, Clock, Pencil, Check, X, History } from 'lucide-react';
+import { EmptyState } from '@/components/EmptyState';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject } from '@/hooks/use-planner-store';
 
