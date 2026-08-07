@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus } from 'lucide-react';
+import { Home, CalendarDays, Users, MessagesSquare, LayoutGrid, Plus } from 'lucide-react';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 export const QUICK_ADD_EVENT = 'taskpilot:quick-add';
@@ -15,7 +15,7 @@ export function BottomNav() {
   const items: Item[] = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
-    { to: '/study', icon: Timer, label: 'Timer' },
+    { to: '/groups', icon: Users, label: 'Groups' },
     { to: '/chat', icon: MessagesSquare, label: 'Chats', badge: unreadTotal },
     { to: '/more', icon: LayoutGrid, label: 'More' },
   ];
