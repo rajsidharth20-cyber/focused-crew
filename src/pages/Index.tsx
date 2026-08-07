@@ -237,8 +237,26 @@ const Index = () => {
                 />
               </div>
 
+              {/* Quick access to the study timer */}
+              <Link
+                to="/study"
+                className="glass-card press flex items-center gap-3 px-4 py-3.5"
+              >
+                <span className="w-9 h-9 rounded-2xl bg-gradient-primary grid place-items-center shrink-0">
+                  <Timer className="w-4 h-4 text-primary-foreground" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold leading-tight">Study timer</span>
+                  <span className="block text-[11px] text-muted-foreground mt-0.5">
+                    Pomodoro & stopwatch · {todaySessionMin}m today
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
+
               {/* Streak + mini metrics */}
               <StreakCard sessions={studyStore.sessions} />
+
 
               <div className="grid grid-cols-3 gap-2.5">
                 <MiniMetric icon={Timer} label="Studied" value={`${todaySessionMin}m`} />
