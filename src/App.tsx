@@ -12,6 +12,7 @@ import Planner from "./pages/Planner";
 import More from "./pages/More";
 
 import Chat, { ChatThread } from "./pages/Chat";
+import SocialHub from "./pages/SocialHub";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";
 import GroupDashboard from "./pages/GroupDashboard";
