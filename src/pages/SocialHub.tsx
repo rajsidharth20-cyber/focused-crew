@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessagesSquare, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Chat from './Chat';
 import StudyGroups from './StudyGroups';
 import { BottomNav } from '@/components/shell/BottomNav';
@@ -60,8 +60,19 @@ export default function SocialHub() {
         </div>
       </header>
 
-      <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto pb-24">
-        {tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}
+      <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto pb-24 overflow-x-hidden">
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.div
+            key={tab}
+            initial={{ opacity: 0, x: tab === 'chats' ? -16 : 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: tab === 'chats' ? 16 : -16 }}
+            transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+            className="flex-1 min-h-0 flex flex-col"
+          >
+            {tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}
+          </motion.div>
+        </AnimatePresence>
       </div>
 
       <BottomNav />
