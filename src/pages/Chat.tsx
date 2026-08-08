@@ -144,7 +144,7 @@ function FindPeopleDialog() {
 
 /* ------------------------------- Chat list ------------------------------- */
 
-export default function Chat() {
+export default function Chat({ embedded = false }: { embedded?: boolean }) {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { counts } = useUnreadMessages();
@@ -204,16 +204,19 @@ export default function Chat() {
 
   return (
     <div
-      className="min-h-screen bg-background flex flex-col"
-      style={{ paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
+      className={embedded ? "flex flex-col flex-1 min-h-0" : "min-h-screen bg-background flex flex-col"}
+      style={embedded ? undefined : { paddingTop: "env(safe-area-inset-top)", paddingBottom: "env(safe-area-inset-bottom)" }}
     >
-      <header className="flex items-center gap-2 px-3 py-3 border-b border-border/60 sticky top-0 bg-background/90 backdrop-blur z-10">
-        <Button variant="ghost" size="icon" onClick={() => navigate("/")} aria-label="Back">
-          <ArrowLeft className="w-5 h-5" />
-        </Button>
-        <h1 className="text-lg font-semibold flex-1">Chats</h1>
+      <header className="flex items-center gap-2 px-3 py-2 border-b border-border/60 sticky top-0 bg-background/90 backdrop-blur z-10">
+        {!embedded && (
+          <Button variant="ghost" size="icon" onClick={() => navigate("/")} aria-label="Back">
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+        )}
+        <h1 className="text-sm font-semibold flex-1">Chats</h1>
         <FindPeopleDialog />
       </header>
+
 
       <div className="flex-1 overflow-y-auto p-2">
         {loading ? (

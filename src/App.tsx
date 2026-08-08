@@ -12,6 +12,7 @@ import Planner from "./pages/Planner";
 import More from "./pages/More";
 
 import Chat, { ChatThread } from "./pages/Chat";
+import SocialHub from "./pages/SocialHub";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";
 import GroupDashboard from "./pages/GroupDashboard";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
             <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
 
+            <Route path="/social" element={<ProtectedRoute><SocialHub /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
