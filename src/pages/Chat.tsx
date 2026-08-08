@@ -144,7 +144,7 @@ function FindPeopleDialog() {
 
 /* ------------------------------- Chat list ------------------------------- */
 
-export default function Chat() {
+export default function Chat({ embedded = false }: { embedded?: boolean }) {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { counts } = useUnreadMessages();
