@@ -14,7 +14,9 @@ type Category =
   | "study_reminders"
   | "streak_reminders"
   | "goal_completion"
-  | "mentions";
+  | "mentions"
+  | "schedule_reminders"
+  | "event_reminders";
 
 const CATEGORIES: Category[] = [
   "direct_messages",
@@ -25,6 +27,17 @@ const CATEGORIES: Category[] = [
   "streak_reminders",
   "goal_completion",
   "mentions",
+  "schedule_reminders",
+  "event_reminders",
+];
+
+// Categories that are reminders to the user themselves — the caller may be a recipient.
+const SELF_CATEGORIES: Category[] = [
+  "schedule_reminders",
+  "event_reminders",
+  "study_reminders",
+  "streak_reminders",
+  "goal_completion",
 ];
 
 // ---- Google OAuth (service account -> access token) ----
@@ -111,9 +124,10 @@ serve(async (req) => {
     const url: string = String(payload.url ?? "/");
     const dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
 
-    // Never notify the caller about their own action.
+    // Never notify the caller about their own action — except for self-reminders.
+    const allowSelf = SELF_CATEGORIES.includes(category);
     const recipients: string[] = [...new Set((payload.userIds ?? []) as string[])]
-      .filter((id) => id && id !== caller.id);
+      .filter((id) => id && (allowSelf ? id === caller.id : id !== caller.id));
     if (recipients.length === 0) {
       return new Response(JSON.stringify({ sent: 0, skipped: "no recipients" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
