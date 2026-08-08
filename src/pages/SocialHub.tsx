@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { MessagesSquare, Users } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import Chat from './Chat';
 import StudyGroups from './StudyGroups';
 import { BottomNav } from '@/components/shell/BottomNav';
