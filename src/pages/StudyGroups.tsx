@@ -26,7 +26,7 @@ import {
 import { ArrowLeft, Globe, Loader2, Lock, Plus, Search, Users } from 'lucide-react';
 import { toast } from 'sonner';
 
-export default function StudyGroups() {
+export default function StudyGroups({ embedded = false }: { embedded?: boolean }) {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { groups, loading, refresh } = useMyGroups();
