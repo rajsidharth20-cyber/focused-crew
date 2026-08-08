@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, CalendarDays, Users, MessagesSquare, LayoutGrid, Plus } from 'lucide-react';
+import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus } from 'lucide-react';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 export const QUICK_ADD_EVENT = 'taskpilot:quick-add';
@@ -15,13 +15,18 @@ export function BottomNav() {
   const items: Item[] = [
     { to: '/', icon: Home, label: 'Home' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
-    { to: '/groups', icon: Users, label: 'Groups' },
-    { to: '/chat', icon: MessagesSquare, label: 'Chats', badge: unreadTotal },
+    { to: '/study', icon: Timer, label: 'Study' },
+    { to: '/social', icon: MessagesSquare, label: 'Social hub', badge: unreadTotal },
     { to: '/more', icon: LayoutGrid, label: 'More' },
   ];
 
   const isActive = (to: string) =>
-    to === '/' ? location.pathname === '/' : location.pathname.startsWith(to);
+    to === '/'
+      ? location.pathname === '/'
+      : to === '/social'
+        ? ['/social', '/chat', '/groups'].some(p => location.pathname.startsWith(p))
+        : location.pathname.startsWith(to);
+
 
   const quickAdd = () => {
     if (location.pathname !== '/') {
