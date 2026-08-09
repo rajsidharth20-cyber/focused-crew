@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { sendPush } from "@/lib/push";
@@ -151,6 +151,7 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
   const [people, setPeople] = useState<Profile[]>([]);
   const [lastMessages, setLastMessages] = useState<Record<string, Message>>({});
   const [loading, setLoading] = useState(true);
+  const instanceId = useId();
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -179,13 +180,13 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
     }
     load();
     const channel = supabase
-      .channel("chat-list")
+      .channel(`chat-list-${instanceId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, load]);
+  }, [user, load, instanceId]);
 
   const { isUserLive } = useLiveStudy(people.map((p) => p.id));
 
