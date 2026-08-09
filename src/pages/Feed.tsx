@@ -68,7 +68,7 @@ export default function Feed() {
             <EmptyState
               icon={PenSquare}
               title="Nothing here yet"
-              description="Add friends and share your study wins — only your friends can see them."
+              hint="Add friends and share your study wins — only your friends can see them."
             />
           ) : (
             posts.map(p => (
