@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -36,6 +36,7 @@ export function useMyGroups() {
   const [groups, setGroups] = useState<StudyGroup[]>([]);
   const [memberships, setMemberships] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
+  const instanceId = useId();
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -68,7 +69,7 @@ export function useMyGroups() {
     refresh();
     if (!user) return;
     const channel = supabase
-      .channel(`my-groups-${user.id}`)
+      .channel(`my-groups-${user.id}-${instanceId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'group_members', filter: `user_id=eq.${user.id}` },
@@ -78,7 +79,7 @@ export function useMyGroups() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, refresh]);
+  }, [user, refresh, instanceId]);
 
   return { groups, memberships, loading, refresh };
 }
