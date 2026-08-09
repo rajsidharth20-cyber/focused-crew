@@ -16,7 +16,8 @@ export function BottomNav() {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
     { to: '/study', icon: Timer, label: 'Study' },
-    { to: '/social', icon: MessagesSquare, label: 'Social hub', badge: unreadTotal },
+    { to: '/feed', icon: Sparkles, label: 'Feed' },
+    { to: '/social', icon: MessagesSquare, label: 'Social', badge: unreadTotal },
     { to: '/more', icon: LayoutGrid, label: 'More' },
   ];
 
