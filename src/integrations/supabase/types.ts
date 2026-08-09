@@ -995,6 +995,7 @@ export type Database = {
     }
     Functions: {
       are_friends: { Args: { _a: string; _b: string }; Returns: boolean }
+      has_friend_link: { Args: { _a: string; _b: string }; Returns: boolean }
       search_profiles_by_username: {
         Args: { _term: string }
         Returns: {
