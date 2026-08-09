@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 
 /** Unread message counts for the signed-in user, keyed by the other user's id. */
 export function useUnreadMessages() {
   const { user } = useAuth();
+  const instanceId = useId();
   const [counts, setCounts] = useState<Record<string, number>>({});
 
   const refresh = useCallback(async () => {
@@ -28,7 +29,7 @@ export function useUnreadMessages() {
     refresh();
     if (!user) return;
     const channel = supabase
-      .channel(`unread-${user.id}`)
+      .channel(`unread-${user.id}-${instanceId}`)
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "messages", filter: `receiver_id=eq.${user.id}` },
@@ -38,7 +39,7 @@ export function useUnreadMessages() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, refresh]);
+  }, [user, refresh, instanceId]);
 
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
   return { counts, total, refresh };

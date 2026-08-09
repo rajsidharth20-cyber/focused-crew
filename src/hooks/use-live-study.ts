@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { isLive, type PresenceRow } from '@/hooks/use-study-presence';
 
@@ -9,6 +9,7 @@ export function useLiveStudy(userIds: string[]) {
   const key = userIds.slice().sort().join(',');
   const [presence, setPresence] = useState<Record<string, PresenceRow>>({});
   const [, forceTick] = useState(0);
+  const instanceId = useId();
 
   const load = useCallback(async () => {
     const ids = key ? key.split(',') : [];
@@ -27,7 +28,7 @@ export function useLiveStudy(userIds: string[]) {
   useEffect(() => {
     load();
     const channel = supabase
-      .channel(`presence-${key.slice(0, 40)}`)
+      .channel(`presence-${key.slice(0, 40)}-${instanceId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'study_presence' }, () => load())
       .subscribe();
     const tick = setInterval(() => forceTick(t => t + 1), 30_000);
@@ -35,7 +36,7 @@ export function useLiveStudy(userIds: string[]) {
       supabase.removeChannel(channel);
       clearInterval(tick);
     };
-  }, [key, load]);
+  }, [key, load, instanceId]);
 
   const liveIds = Object.values(presence)
     .filter(isLive)
