@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus } from 'lucide-react';
+import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus, Sparkles } from 'lucide-react';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 export const QUICK_ADD_EVENT = 'taskpilot:quick-add';
@@ -16,7 +16,8 @@ export function BottomNav() {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
     { to: '/study', icon: Timer, label: 'Study' },
-    { to: '/social', icon: MessagesSquare, label: 'Social hub', badge: unreadTotal },
+    { to: '/feed', icon: Sparkles, label: 'Feed' },
+    { to: '/social', icon: MessagesSquare, label: 'Social', badge: unreadTotal },
     { to: '/more', icon: LayoutGrid, label: 'More' },
   ];
 
@@ -44,7 +45,7 @@ export function BottomNav() {
       style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 10px)' }}
     >
       <div className="mx-auto w-full max-w-md px-3">
-        <nav className="dock pointer-events-auto relative grid grid-cols-5 items-center h-[62px] px-1.5">
+        <nav className="dock pointer-events-auto relative grid grid-cols-6 items-center h-[62px] px-1.5">
           <button
             onClick={quickAdd}
             aria-label="Add task"
