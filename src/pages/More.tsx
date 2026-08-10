@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight } from 'lucide-react';
+import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles } from 'lucide-react';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
@@ -93,6 +93,7 @@ const More = () => {
         </motion.div>
 
         <section className="glass-card overflow-hidden divide-y divide-border/50">
+          <Row to="/copilot" icon={Sparkles} label="AI Copilot" />
           <Row to="/groups" icon={Users} label="Study groups" />
           <Row to="/settings/notifications" icon={Bell} label="Notification settings" />
           <DayAnalysisDialog

@@ -10,6 +10,7 @@ import Install from "./pages/Install";
 import StudyTimer from "./pages/StudyTimer";
 import Planner from "./pages/Planner";
 import More from "./pages/More";
+import Copilot from "./pages/Copilot";
 
 import Chat, { ChatThread } from "./pages/Chat";
 import SocialHub from "./pages/SocialHub";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
+            <Route path="/copilot" element={<ProtectedRoute><Copilot /></ProtectedRoute>} />
             <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
 
             <Route path="/social" element={<ProtectedRoute><SocialHub /></ProtectedRoute>} />

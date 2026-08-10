@@ -254,6 +254,23 @@ const Index = () => {
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Link>
 
+              {/* AI Copilot */}
+              <Link
+                to="/copilot"
+                className="glass-card press flex items-center gap-3 px-4 py-3.5"
+              >
+                <span className="w-9 h-9 rounded-2xl bg-gradient-primary grid place-items-center shrink-0">
+                  <Sparkles className="w-4 h-4 text-primary-foreground" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="block text-sm font-semibold leading-tight">AI Copilot</span>
+                  <span className="block text-[11px] text-muted-foreground mt-0.5">
+                    Analyse your data · add tasks, events & more
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
+
               {/* Streak + mini metrics */}
               <StreakCard sessions={studyStore.sessions} />
 
