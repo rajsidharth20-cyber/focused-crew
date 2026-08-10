@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -28,6 +28,7 @@ export const socialName = (p?: SocialProfile | null) =>
  */
 export function useFriends() {
   const { user } = useAuth();
+  const instanceId = useId();
   const [rows, setRows] = useState<Friendship[]>([]);
   const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -65,13 +66,13 @@ export function useFriends() {
     load();
     if (!user) return;
     const channel = supabase
-      .channel(`friendships-${user.id}`)
+      .channel(`friendships-${user.id}-${instanceId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, load]);
+  }, [user, load, instanceId]);
 
   const otherId = useCallback(
     (r: Friendship) => (r.requester_id === user?.id ? r.addressee_id : r.requester_id),
