@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { SocialProfile } from '@/hooks/use-friends';
@@ -35,6 +35,7 @@ export interface PostComment {
 /** Posts + stories that RLS already limits to the signed-in user and their friends. */
 export function useFeed() {
   const { user } = useAuth();
+  const instanceId = useId();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
@@ -94,14 +95,14 @@ export function useFeed() {
     load();
     if (!user) return;
     const channel = supabase
-      .channel(`feed-${user.id}`)
+      .channel(`feed-${user.id}-${instanceId}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => load())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => load())
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, load]);
+  }, [user, load, instanceId]);
 
   const createPost = useCallback(
     async (input: { kind: Post['kind']; caption?: string; image_url?: string | null }) => {
