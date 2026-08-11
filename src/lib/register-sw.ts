@@ -31,10 +31,36 @@ async function unregisterAppSW() {
   );
 }
 
+/** Drops legacy FCM workers that were registered on the root scope. */
+async function cleanupRootScopedFcmSW() {
+  if (!('serviceWorker' in navigator)) return;
+  const regs = await navigator.serviceWorker.getRegistrations();
+  await Promise.all(
+    regs
+      .filter((r) => {
+        const url = r.active?.scriptURL ?? r.installing?.scriptURL ?? r.waiting?.scriptURL ?? '';
+        return url.endsWith('/firebase-messaging-sw.js') && new URL(r.scope).pathname === '/';
+      })
+      .map((r) => r.unregister()),
+  );
+}
+
 export function registerAppServiceWorker() {
   if (isBlockedContext()) {
     unregisterAppSW().catch(() => {});
     return;
   }
-  viteRegisterSW({ immediate: true });
+
+  cleanupRootScopedFcmSW().catch(() => {});
+
+  // Update in the background instead of reloading the page the moment a new
+  // worker takes control — an automatic reload here can loop endlessly.
+  viteRegisterSW({
+    immediate: true,
+    onNeedRefresh() {},
+    onRegisteredSW(_url, reg) {
+      if (!reg) return;
+      setInterval(() => reg.update().catch(() => {}), 60 * 60 * 1000);
+    },
+  });
 }
