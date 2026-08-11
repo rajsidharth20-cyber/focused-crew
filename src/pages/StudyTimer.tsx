@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
+import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
@@ -13,11 +13,14 @@ import { SessionList } from '@/components/study/SessionList';
 import { StudyObjectivesPanel } from '@/components/study/StudyObjectivesPanel';
 import { SessionNotesDialog } from '@/components/study/SessionNotesDialog';
 import { DelayPromptHost } from '@/components/study/DelayPromptDialog';
+import { LiveStudyPanel } from '@/components/study/LiveStudyPanel';
 import { useStudyStore, type StudySession } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { BottomNav } from '@/components/shell/BottomNav';
 
 type Mode = 'pomodoro' | 'stopwatch';
+
+const FULLSCREEN_KEY = 'taskpilot_study_fullscreen_v1';
 
 const StudyTimer = () => {
   const study = useStudyStore();
@@ -30,7 +33,13 @@ const StudyTimer = () => {
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [noteSession, setNoteSession] = useState<StudySession | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [fullscreen, setFullscreen] = useState(() => localStorage.getItem(FULLSCREEN_KEY) === '1');
   const immersive = mode === 'pomodoro' && timerRunning;
+
+  useEffect(() => {
+    localStorage.setItem(FULLSCREEN_KEY, fullscreen ? '1' : '0');
+  }, [fullscreen]);
+
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
