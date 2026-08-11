@@ -40,6 +40,70 @@ const SELF_CATEGORIES: Category[] = [
   "goal_completion",
 ];
 
+/**
+ * Server-side authorisation: the caller may only notify people they already
+ * have a real relationship with, so nobody can push arbitrary messages or
+ * links to strangers.
+ */
+async function isRelated(
+  admin: any,
+  category: Category,
+  callerId: string,
+  targetId: string,
+): Promise<boolean> {
+  if (category === "direct_messages" || category === "mentions") {
+    const { count } = await admin
+      .from("messages")
+      .select("id", { count: "exact", head: true })
+      .or(
+        `and(sender_id.eq.${callerId},receiver_id.eq.${targetId}),and(sender_id.eq.${targetId},receiver_id.eq.${callerId})`,
+      );
+    if ((count ?? 0) > 0) return true;
+    const { count: friendCount } = await admin
+      .from("friendships")
+      .select("id", { count: "exact", head: true })
+      .eq("status", "accepted")
+      .or(
+        `and(requester_id.eq.${callerId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${callerId})`,
+      );
+    return (friendCount ?? 0) > 0;
+  }
+
+  if (category === "group_messages") {
+    const { data: mine } = await admin.from("group_members").select("group_id").eq("user_id", callerId);
+    const groupIds = (mine ?? []).map((r: any) => r.group_id);
+    if (groupIds.length === 0) return false;
+    const { count } = await admin
+      .from("group_members")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", targetId)
+      .in("group_id", groupIds);
+    return (count ?? 0) > 0;
+  }
+
+  if (category === "group_invites") {
+    const { count } = await admin
+      .from("group_invites")
+      .select("id", { count: "exact", head: true })
+      .eq("inviter_id", callerId)
+      .eq("invitee_id", targetId);
+    return (count ?? 0) > 0;
+  }
+
+  if (category === "friend_requests") {
+    const { count } = await admin
+      .from("friendships")
+      .select("id", { count: "exact", head: true })
+      .or(
+        `and(requester_id.eq.${callerId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${callerId})`,
+      );
+    return (count ?? 0) > 0;
+  }
+
+  // Self-reminder categories never target other people.
+  return false;
+}
+
 // ---- Google OAuth (service account -> access token) ----
 function pemToArrayBuffer(pem: string) {
   const b64 = pem.replace(/-----BEGIN PRIVATE KEY-----/, "")
