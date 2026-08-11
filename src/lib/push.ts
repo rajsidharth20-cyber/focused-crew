@@ -71,7 +71,11 @@ export async function registerPushToken(userId: string): Promise<string | null> 
   const messaging = await getMessagingInstance(cfg);
   if (!messaging) return null;
 
-  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', { scope: '/' });
+  // Keep the FCM worker off the root scope — sharing '/' with the PWA worker
+  // makes both fight for control of the page and triggers reload loops.
+  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
+    scope: '/firebase-cloud-messaging-push-scope',
+  });
   const token = await getToken(messaging, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: swReg });
   if (!token) return null;
 
