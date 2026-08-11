@@ -284,9 +284,8 @@ const StudyTimer = () => {
         )}
 
         <motion.div layout transition={{ type: 'spring', stiffness: 320, damping: 32 }}>
-          {mode === 'pomodoro'
-            ? <PomodoroTimer onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
-            : <StopwatchTimer onSave={handleStopwatchSave} />}
+          {timerEl}
+
         </motion.div>
 
         {!immersive && (
