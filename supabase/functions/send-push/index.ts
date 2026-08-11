@@ -155,7 +155,7 @@ serve(async (req) => {
       .select("*")
       .in("user_id", authorized);
     const prefMap = new Map((prefs ?? []).map((p: any) => [p.user_id, p]));
-    const allowed = recipients.filter((id) => {
+    const allowed = authorized.filter((id) => {
       const p = prefMap.get(id);
       if (!p) return true;
       return p.push_enabled !== false && p[category] !== false;
