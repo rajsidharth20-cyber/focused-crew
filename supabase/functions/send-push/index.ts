@@ -136,11 +136,24 @@ serve(async (req) => {
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
 
+    // Only notify people the caller actually has a relationship with.
+    const authorized = allowSelf
+      ? recipients
+      : (await Promise.all(
+        recipients.map(async (id) => (await isRelated(admin, category, caller.id, id)) ? id : null),
+      )).filter((id): id is string => id !== null);
+
+    if (authorized.length === 0) {
+      return new Response(JSON.stringify({ sent: 0, skipped: "not authorized for recipients" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     // Respect per-user preferences (missing row = defaults on).
     const { data: prefs } = await admin
       .from("notification_preferences")
       .select("*")
-      .in("user_id", recipients);
+      .in("user_id", authorized);
     const prefMap = new Map((prefs ?? []).map((p: any) => [p.user_id, p]));
     const allowed = recipients.filter((id) => {
       const p = prefMap.get(id);
