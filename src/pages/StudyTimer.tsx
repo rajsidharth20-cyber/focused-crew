@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Hourglass, FileDown, Loader2 } from 'lucide-react';
+import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
@@ -13,11 +13,14 @@ import { SessionList } from '@/components/study/SessionList';
 import { StudyObjectivesPanel } from '@/components/study/StudyObjectivesPanel';
 import { SessionNotesDialog } from '@/components/study/SessionNotesDialog';
 import { DelayPromptHost } from '@/components/study/DelayPromptDialog';
+import { LiveStudyPanel } from '@/components/study/LiveStudyPanel';
 import { useStudyStore, type StudySession } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { BottomNav } from '@/components/shell/BottomNav';
 
 type Mode = 'pomodoro' | 'stopwatch';
+
+const FULLSCREEN_KEY = 'taskpilot_study_fullscreen_v1';
 
 const StudyTimer = () => {
   const study = useStudyStore();
@@ -30,7 +33,13 @@ const StudyTimer = () => {
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [noteSession, setNoteSession] = useState<StudySession | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
+  const [fullscreen, setFullscreen] = useState(() => localStorage.getItem(FULLSCREEN_KEY) === '1');
   const immersive = mode === 'pomodoro' && timerRunning;
+
+  useEffect(() => {
+    localStorage.setItem(FULLSCREEN_KEY, fullscreen ? '1' : '0');
+  }, [fullscreen]);
+
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
@@ -89,7 +98,76 @@ const StudyTimer = () => {
     if (saved) setNoteSession(saved);
   };
 
+  const timerEl =
+    mode === 'pomodoro'
+      ? <PomodoroTimer onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
+      : <StopwatchTimer onSave={handleStopwatchSave} />;
+
+  const contextChips = (
+    <div className="flex flex-wrap gap-1.5 justify-center">
+      {topic && <span className="m3-chip">{topic}</span>}
+      {subjectId && <span className="m3-chip">{planner.subjects.find(s => s.id === subjectId)?.name}</span>}
+      {tagId && <span className="m3-chip">{study.tags.find(t => t.id === tagId)?.name}</span>}
+    </div>
+  );
+
+  if (fullscreen) {
+    return (
+      <div
+        className="fixed inset-0 z-50 overflow-y-auto app-surface"
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
+        }}
+      >
+        <DelayPromptHost />
+        <SessionNotesDialog
+          session={noteSession}
+          onClose={() => setNoteSession(null)}
+          onSave={(id, notes) => study.updateSession(id, { notes })}
+        />
+        <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+          <div className="aurora animate-float" style={{ width: 460, height: 460, background: 'hsl(var(--primary) / 0.26)', top: -160, left: -140 }} />
+          <div className="aurora animate-float" style={{ width: 480, height: 480, background: 'hsl(var(--accent) / 0.2)', bottom: -180, right: -160, animationDelay: '1.5s' }} />
+        </div>
+
+        <div className="max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-5">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="font-display text-[17px] font-bold tracking-tight leading-none truncate">Full screen study</h1>
+              <p className="text-[10.5px] text-muted-foreground mt-1">Your timer, your groups, your crew.</p>
+            </div>
+            <button
+              onClick={() => setFullscreen(false)}
+              className="press inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-border/60 hover:bg-muted/40 transition"
+              aria-label="Exit full screen study mode"
+            >
+              <Minimize2 className="w-3.5 h-3.5" />
+              Normal
+            </button>
+          </div>
+
+          {!timerRunning && (
+            <div className="inline-flex rounded-2xl border border-border/60 p-1 bg-background/60 backdrop-blur">
+              <ModeButton active={mode === 'pomodoro'} onClick={() => setMode('pomodoro')} icon={Hourglass} label="Pomodoro" />
+              <ModeButton active={mode === 'stopwatch'} onClick={() => setMode('stopwatch')} icon={Timer} label="Stopwatch" />
+            </div>
+          )}
+
+          {contextChips}
+
+          <motion.div layout transition={{ type: 'spring', stiffness: 320, damping: 32 }}>
+            {timerEl}
+          </motion.div>
+
+          <LiveStudyPanel />
+        </div>
+      </div>
+    );
+  }
+
   return (
+
     <div
       className="relative min-h-screen overflow-x-hidden app-surface"
       style={{
@@ -122,6 +200,15 @@ const StudyTimer = () => {
           {!immersive && (
             <div className="flex items-center gap-2">
               <button
+                onClick={() => setFullscreen(true)}
+                className="press inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-border/60 hover:bg-muted/40 transition"
+                aria-label="Switch to full screen study mode"
+              >
+                <Maximize2 className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">Full screen</span>
+              </button>
+              <button
+
                 onClick={handleDownloadWeekly}
                 disabled={downloadingReport}
                 className="press inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-primary/30 text-primary hover:bg-primary/10 transition disabled:opacity-50"
@@ -197,9 +284,8 @@ const StudyTimer = () => {
         )}
 
         <motion.div layout transition={{ type: 'spring', stiffness: 320, damping: 32 }}>
-          {mode === 'pomodoro'
-            ? <PomodoroTimer onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
-            : <StopwatchTimer onSave={handleStopwatchSave} />}
+          {timerEl}
+
         </motion.div>
 
         {!immersive && (
