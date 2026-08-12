@@ -27,14 +27,42 @@ export function useLiveStudy(userIds: string[]) {
 
   useEffect(() => {
     load();
+    const watched = new Set(key ? key.split(',') : []);
     const channel = supabase
       .channel(`presence-${key.slice(0, 40)}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_presence' }, () => load())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_presence' }, payload => {
+        const row = (payload.new ?? payload.old) as PresenceRow | undefined;
+        if (!row?.user_id) return load();
+        if (!watched.has(row.user_id)) return;
+        setPresence(prev => {
+          if (payload.eventType === 'DELETE') {
+            const next = { ...prev };
+            delete next[row.user_id];
+            return next;
+          }
+          return { ...prev, [row.user_id]: row };
+        });
+      })
       .subscribe();
-    const tick = setInterval(() => forceTick(t => t + 1), 30_000);
+
+    // Re-sync whenever the tab or connection comes back, so we never show stale rows.
+    const resync = () => {
+      if (document.visibilityState === 'visible') load();
+    };
+    document.addEventListener('visibilitychange', resync);
+    window.addEventListener('focus', resync);
+    window.addEventListener('online', load);
+
+    const tick = setInterval(() => forceTick(t => t + 1), 15_000);
+    // Periodic safety refetch in case a realtime event was missed.
+    const poll = setInterval(load, 60_000);
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', resync);
+      window.removeEventListener('focus', resync);
+      window.removeEventListener('online', load);
       clearInterval(tick);
+      clearInterval(poll);
     };
   }, [key, load, instanceId]);
 
