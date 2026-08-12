@@ -6,6 +6,11 @@ import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
 
 interface Props {
   onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
+  /** 'hero' renders the immersive full-screen presentation (same logic). */
+  variant?: 'card' | 'hero';
+  /** Task / subject lines shown under the time in hero mode. */
+  contextLines?: (string | null | undefined)[];
+  onRunningChange?: (running: boolean) => void;
 }
 
 const STORAGE_KEY = 'taskpilot_active_stopwatch_v1';
