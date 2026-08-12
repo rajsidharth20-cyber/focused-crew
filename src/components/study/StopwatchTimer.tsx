@@ -3,9 +3,15 @@ import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { promptDelay } from './DelayPromptDialog';
 import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
+import { HeroTimerRing } from '@/components/study/HeroTimerRing';
 
 interface Props {
   onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
+  /** 'hero' renders the immersive full-screen presentation (same logic). */
+  variant?: 'card' | 'hero';
+  /** Task / subject lines shown under the time in hero mode. */
+  contextLines?: (string | null | undefined)[];
+  onRunningChange?: (running: boolean) => void;
 }
 
 const STORAGE_KEY = 'taskpilot_active_stopwatch_v1';
@@ -37,10 +43,11 @@ const fmt = (s: number) => {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 };
 
-export function StopwatchTimer({ onSave }: Props) {
+export function StopwatchTimer({ onSave, variant = 'card', contextLines = [], onRunningChange }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const stateRef = useRef<Persisted | null>(null);
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
 
   useBroadcastStudyPresence(running, 'stopwatch', null, stateRef.current?.startedAtWall ?? null);
 
@@ -131,8 +138,49 @@ export function StopwatchTimer({ onSave }: Props) {
     setElapsed(0);
   };
 
+  if (variant === 'hero') {
+    const paused = !running && elapsed > 0;
+    const eyebrow = running ? 'FOCUS SESSION' : paused ? 'PAUSED' : 'READY TO FOCUS';
+    // Open-ended sessions loop the ring once an hour so it still feels alive.
+    const pct = ((elapsed % 3600) / 3600) * 100;
+    return (
+      <div className="flex flex-col items-center">
+        <HeroTimerRing
+          value={running || paused ? pct : 0}
+          time={fmt(elapsed)}
+          eyebrow={eyebrow}
+          active={running}
+          lines={running || paused ? contextLines : []}
+          footnote={
+            running || paused
+              ? `Focus streak · ${Math.floor(elapsed / 60)} min`
+              : "Choose what you're working on and start your session."
+          }
+        />
+        <div className="mt-7 flex items-center gap-2.5">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={toggle}
+            className="px-7 py-3.5 rounded-full bg-gradient-primary text-primary-foreground font-semibold text-[13.5px] inline-flex items-center gap-2 shadow-lg shadow-primary/25"
+          >
+            {running ? <><Pause className="w-4 h-4" />Pause</> : <><Play className="w-4 h-4" />{paused ? 'Resume' : 'Start'}</>}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={stop}
+            disabled={elapsed < 5}
+            className="px-6 py-3.5 rounded-full border border-border/60 bg-background/40 backdrop-blur text-[13.5px] font-medium hover:bg-background/70 transition disabled:opacity-40"
+          >
+            Finish
+          </motion.button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="glass-card p-6 sm:p-8 space-y-6">
+
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-display text-accent/80">Stopwatch</div>

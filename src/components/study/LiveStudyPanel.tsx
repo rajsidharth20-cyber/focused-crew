@@ -1,20 +1,21 @@
 import { useCallback, useEffect, useId, useMemo, useState } from 'react';
-import { Users, Radio } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { supabase } from '@/integrations/supabase/client';
 import { UserAvatar } from '@/components/UserAvatar';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups, fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
 import { useLiveStudy } from '@/hooks/use-live-study';
 
-const elapsed = (since?: string | null) => {
-  if (!since) return null;
-  const mins = Math.max(0, Math.round((Date.now() - new Date(since).getTime()) / 60000));
-  return mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`;
+const minutesSince = (since?: string | null) => {
+  if (!since) return 0;
+  return Math.max(0, Math.round((Date.now() - new Date(since).getTime()) / 60000));
 };
 
+const fmtMins = (mins: number) => (mins < 60 ? `${mins}m` : `${Math.floor(mins / 60)}h ${mins % 60}m`);
+
 /**
- * Shows the groups the user has joined and which members are studying right now.
- * Used inside the full-screen study mode.
+ * Compact, ambient "who is studying with me" surface for the immersive study mode.
+ * Data comes from the existing group + presence hooks; this file is presentation only.
  */
 export function LiveStudyPanel() {
   const { user } = useAuth();
@@ -60,83 +61,118 @@ export function LiveStudyPanel() {
   );
   const { presence, isUserLive } = useLiveStudy(allMemberIds);
 
-  const totalLive = allMemberIds.filter(id => id !== user?.id && isUserLive(id)).length;
+  const liveIds = allMemberIds.filter(isUserLive);
+  const liveSorted = liveIds
+    .slice()
+    .sort((a, b) => minutesSince(presence[b]?.started_at) - minutesSince(presence[a]?.started_at));
+
+  const rooms = groups
+    .map(g => {
+      const members = membersByGroup[g.id] ?? [];
+      const live = members.filter(isUserLive);
+      const minutes = live.reduce((sum, id) => sum + minutesSince(presence[id]?.started_at), 0);
+      return { group: g, members, live, minutes };
+    })
+    .sort((a, b) => b.live.length - a.live.length || a.group.name.localeCompare(b.group.name));
 
   return (
-    <section className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[11px] uppercase tracking-widest text-muted-foreground">Studying now</h2>
-        <span className="inline-flex items-center gap-1.5 text-[11px] text-primary">
-          <Radio className="w-3.5 h-3.5" />
-          {totalLive} live
-        </span>
-      </div>
-
-      {groups.length === 0 && (
-        <div className="glass-card p-4 text-[12.5px] text-muted-foreground">
-          Join a study group to see who else is grinding right now.
+    <div className="space-y-7">
+      <section className="space-y-3">
+        <div className="flex items-baseline justify-between">
+          <h2 className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Studying now</h2>
+          <span className="inline-flex items-center gap-1.5 text-[11.5px] font-medium text-foreground/80">
+            <span className="relative flex w-1.5 h-1.5">
+              <span className="absolute inline-flex w-full h-full rounded-full bg-primary opacity-70 animate-ping" />
+              <span className="relative inline-flex w-1.5 h-1.5 rounded-full bg-primary" />
+            </span>
+            {liveSorted.length} studying
+          </span>
         </div>
-      )}
 
-      <div className="space-y-3">
-        {groups.map(g => {
-          const members = (membersByGroup[g.id] ?? []).filter(id => id !== user?.id);
-          const live = members.filter(id => isUserLive(id));
-          const idle = members.filter(id => !isUserLive(id));
-          return (
-            <div key={g.id} className="glass-card p-3.5 space-y-2.5">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-muted-foreground" />
-                <p className="text-[13px] font-semibold truncate flex-1">{g.name}</p>
-                <span className="text-[11px] text-muted-foreground">
-                  {live.length}/{members.length} studying
-                </span>
-              </div>
-
-              {live.length === 0 ? (
-                <p className="text-[11.5px] text-muted-foreground">No one is studying in this group yet.</p>
-              ) : (
-                <ul className="space-y-2">
-                  {live.map(id => {
-                    const p = presence[id];
-                    return (
-                      <li key={id} className="flex items-center gap-2.5">
-                        <span className="relative">
-                          <UserAvatar src={profiles[id]?.avatar_url} name={memberName(profiles[id])} className="w-8 h-8" />
-                          <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-primary border-2 border-background animate-pulse" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-medium truncate">{memberName(profiles[id])}</p>
-                          <p className="text-[10.5px] text-muted-foreground truncate">
-                            {p?.topic || p?.mode || 'Focusing'}
-                            {elapsed(p?.started_at) ? ` · ${elapsed(p?.started_at)}` : ''}
-                          </p>
-                        </div>
-                      </li>
-                    );
-                  })}
-                </ul>
-              )}
-
-              {idle.length > 0 && (
-                <div className="flex items-center gap-1.5 pt-1 border-t border-border/40">
-                  <div className="flex -space-x-2">
-                    {idle.slice(0, 6).map(id => (
-                      <UserAvatar
-                        key={id}
-                        src={profiles[id]?.avatar_url}
-                        name={memberName(profiles[id])}
-                        className="w-6 h-6 opacity-50 border border-background"
-                      />
-                    ))}
+        {liveSorted.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground/80">
+            {groups.length === 0
+              ? 'Join a study room to feel the room fill up around you.'
+              : 'Quiet right now — you can be the first one in.'}
+          </p>
+        ) : (
+          <ul className="space-y-1">
+            {liveSorted.map((id, i) => {
+              const p = presence[id];
+              const isMe = id === user?.id;
+              return (
+                <motion.li
+                  key={id}
+                  layout
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(i * 0.03, 0.24) }}
+                  className="flex items-center gap-3 rounded-2xl px-2 py-2 hover:bg-foreground/[0.04] transition-colors"
+                >
+                  <span className="relative shrink-0">
+                    <UserAvatar
+                      src={profiles[id]?.avatar_url}
+                      name={memberName(profiles[id])}
+                      className="w-8 h-8 ring-1 ring-foreground/10"
+                    />
+                    <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-background animate-pulse" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium truncate">{isMe ? 'You' : memberName(profiles[id])}</p>
+                    {(p?.topic || p?.mode) && (
+                      <p className="text-[10.5px] text-muted-foreground truncate">{p?.topic || p?.mode}</p>
+                    )}
                   </div>
-                  <span className="text-[10.5px] text-muted-foreground">{idle.length} offline</span>
+                  <span className="text-[12px] tabular-nums text-muted-foreground shrink-0">
+                    {fmtMins(minutesSince(p?.started_at))}
+                  </span>
+                </motion.li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-[10px] uppercase tracking-[0.28em] text-muted-foreground">Study rooms</h2>
+
+        {rooms.length === 0 ? (
+          <p className="text-[12px] text-muted-foreground/80">You haven't joined any study rooms yet.</p>
+        ) : (
+          <ul className="space-y-1.5">
+            {rooms.map(({ group, members, live, minutes }) => (
+              <motion.li
+                key={group.id}
+                layout
+                whileTap={{ scale: 0.985 }}
+                className="flex items-center gap-3 rounded-2xl border border-foreground/[0.07] bg-foreground/[0.03] backdrop-blur px-3 py-2.5"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5">
+                    {live.length > 0 && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary animate-pulse shrink-0" />
+                    )}
+                    <p className="text-[13px] font-semibold truncate">{group.name}</p>
+                  </div>
+                  <p className="text-[10.5px] text-muted-foreground mt-0.5 tabular-nums">
+                    {live.length} studying{live.length > 0 ? ` · ${fmtMins(minutes)} together` : ` · ${members.length} members`}
+                  </p>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </section>
+                <div className="flex -space-x-2 shrink-0">
+                  {(live.length > 0 ? live : members).slice(0, 4).map(id => (
+                    <UserAvatar
+                      key={id}
+                      src={profiles[id]?.avatar_url}
+                      name={memberName(profiles[id])}
+                      className={`w-6 h-6 ring-2 ring-background ${live.includes(id) ? '' : 'opacity-45'}`}
+                    />
+                  ))}
+                </div>
+              </motion.li>
+            ))}
+          </ul>
+        )}
+      </section>
+    </div>
   );
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
+import { HeroTimerRing } from '@/components/study/HeroTimerRing';
 import { promptDelay } from './DelayPromptDialog';
 import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
 
@@ -14,6 +15,10 @@ interface Props {
   shortMin?: number;
   longMin?: number;
   cyclesBeforeLong?: number;
+  /** 'hero' renders the immersive full-screen presentation (same logic). */
+  variant?: 'card' | 'hero';
+  /** Task / subject lines shown under the time in hero mode. */
+  contextLines?: (string | null | undefined)[];
 }
 
 const STORAGE_KEY = 'taskpilot_active_pomodoro_v1';
@@ -50,6 +55,8 @@ export function PomodoroTimer({
   shortMin: shortMinDefault = 5,
   longMin: longMinDefault = 15,
   cyclesBeforeLong = 4,
+  variant = 'card',
+  contextLines = [],
 }: Props) {
   const [focusMin, setFocusMin] = useState(focusMinDefault);
   const [shortMin, setShortMin] = useState(shortMinDefault);
@@ -215,9 +222,52 @@ export function PomodoroTimer({
 
   const pct = totalForPhase > 0 ? ((totalForPhase - remaining) / totalForPhase) * 100 : 0;
   const phaseLabel = phase === 'focus' ? 'Focus' : phase === 'short' ? 'Short Break' : 'Long Break';
+  const paused = !running && !!stateRef.current;
+  const elapsedMin = Math.floor((totalForPhase - remaining) / 60);
+
+  if (variant === 'hero') {
+    const eyebrow = phase !== 'focus' ? phaseLabel.toUpperCase() : running ? 'FOCUS SESSION' : paused ? 'PAUSED' : 'READY TO FOCUS';
+    return (
+      <div className="flex flex-col items-center">
+        <HeroTimerRing
+          value={pct}
+          time={fmt(remaining)}
+          eyebrow={eyebrow}
+          active={running}
+          lines={running || paused ? contextLines : []}
+          footnote={
+            running || paused
+              ? `Focus streak · ${elapsedMin} min`
+              : "Choose what you're working on and start your session."
+          }
+        />
+
+        <div className="mt-7 flex items-center gap-2.5">
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={toggle}
+            className="px-7 py-3.5 rounded-full bg-gradient-primary text-primary-foreground font-semibold text-[13.5px] inline-flex items-center gap-2 shadow-lg shadow-primary/25"
+          >
+            {running ? <><Pause className="w-4 h-4" />Pause</> : <><Play className="w-4 h-4" />{paused ? 'Resume' : 'Start'}</>}
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.95 }}
+            onClick={running || paused ? skip : reset}
+            className="px-6 py-3.5 rounded-full border border-border/60 bg-background/40 backdrop-blur text-[13.5px] font-medium hover:bg-background/70 transition"
+          >
+            {running || paused ? 'Finish' : 'Reset'}
+          </motion.button>
+        </div>
+        {!running && !paused && (
+          <p className="mt-4 text-[11px] text-muted-foreground">{focusMin} min focus · cycle {cycles}</p>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div className={`glass-card space-y-6 transition-all duration-300 ${running ? 'p-6 sm:p-10' : 'p-6 sm:p-8'}`}>
+
       <div className="flex items-center justify-between">
         <div>
           <div className="text-[10px] uppercase tracking-widest font-display text-primary/80">Pomodoro</div>
