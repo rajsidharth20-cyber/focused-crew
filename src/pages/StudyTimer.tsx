@@ -346,4 +346,17 @@ function ModeButton({ active, onClick, icon: Icon, label }: { active: boolean; o
   );
 }
 
+function HeroModeButton({ active, onClick, icon: Icon, label }: { active: boolean; onClick: () => void; icon: any; label: string }) {
+  return (
+    <button
+      onClick={onClick}
+      className={`press inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-[12.5px] font-medium transition ${
+        active ? 'bg-foreground/[0.10] text-foreground' : 'text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      <Icon className="w-3.5 h-3.5" />{label}
+    </button>
+  );
+}
+
 export default StudyTimer;
