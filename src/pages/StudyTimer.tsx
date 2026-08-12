@@ -103,6 +103,16 @@ const StudyTimer = () => {
       ? <PomodoroTimer onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
       : <StopwatchTimer onSave={handleStopwatchSave} />;
 
+  const contextLines = [
+    topic || null,
+    planner.subjects.find(s => s.id === subjectId)?.name || study.tags.find(t => t.id === tagId)?.name || null,
+  ];
+
+  const heroTimerEl =
+    mode === 'pomodoro'
+      ? <PomodoroTimer variant="hero" contextLines={contextLines} onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
+      : <StopwatchTimer variant="hero" contextLines={contextLines} onRunningChange={setTimerRunning} onSave={handleStopwatchSave} />;
+
   const contextChips = (
     <div className="flex flex-wrap gap-1.5 justify-center">
       {topic && <span className="m3-chip">{topic}</span>}
@@ -114,7 +124,7 @@ const StudyTimer = () => {
   if (fullscreen) {
     return (
       <div
-        className="fixed inset-0 z-50 overflow-y-auto app-surface"
+        className="fixed inset-0 z-50 overflow-y-auto overflow-x-hidden study-room"
         style={{
           paddingTop: 'env(safe-area-inset-top)',
           paddingBottom: 'calc(env(safe-area-inset-bottom) + 24px)',
@@ -126,45 +136,57 @@ const StudyTimer = () => {
           onClose={() => setNoteSession(null)}
           onSave={(id, notes) => study.updateSession(id, { notes })}
         />
+
+        {/* Slow, barely-there ambient movement */}
         <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
-          <div className="aurora animate-float" style={{ width: 460, height: 460, background: 'hsl(var(--primary) / 0.26)', top: -160, left: -140 }} />
-          <div className="aurora animate-float" style={{ width: 480, height: 480, background: 'hsl(var(--accent) / 0.2)', bottom: -180, right: -160, animationDelay: '1.5s' }} />
+          <div className="study-room-glow study-room-glow--one" />
+          <div className="study-room-glow study-room-glow--two" />
         </div>
 
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-8 space-y-5">
+        <div className="max-w-md mx-auto px-5 pt-4 pb-10">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="font-display text-[17px] font-bold tracking-tight leading-none truncate">Full screen study</h1>
-              <p className="text-[10.5px] text-muted-foreground mt-1">Your timer, your groups, your crew.</p>
-            </div>
+            <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Study room</span>
             <button
               onClick={() => setFullscreen(false)}
-              className="press inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-border/60 hover:bg-muted/40 transition"
+              className="press inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] text-muted-foreground hover:text-foreground transition"
               aria-label="Exit full screen study mode"
             >
               <Minimize2 className="w-3.5 h-3.5" />
-              Normal
+              Exit
             </button>
           </div>
 
-          {!timerRunning && (
-            <div className="inline-flex rounded-2xl border border-border/60 p-1 bg-background/60 backdrop-blur">
-              <ModeButton active={mode === 'pomodoro'} onClick={() => setMode('pomodoro')} icon={Hourglass} label="Pomodoro" />
-              <ModeButton active={mode === 'stopwatch'} onClick={() => setMode('stopwatch')} icon={Timer} label="Stopwatch" />
-            </div>
-          )}
-
-          {contextChips}
-
-          <motion.div layout transition={{ type: 'spring', stiffness: 320, damping: 32 }}>
-            {timerEl}
+          <motion.div
+            layout
+            transition={{ type: 'spring', stiffness: 260, damping: 30 }}
+            className="flex flex-col items-center pt-8 pb-9"
+          >
+            {heroTimerEl}
           </motion.div>
+
+          <AnimatePresence initial={false}>
+            {!timerRunning && (
+              <motion.div
+                key="mode"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="overflow-hidden flex justify-center pb-8"
+              >
+                <div className="inline-flex rounded-full border border-foreground/10 bg-foreground/[0.04] p-1 backdrop-blur">
+                  <HeroModeButton active={mode === 'pomodoro'} onClick={() => setMode('pomodoro')} icon={Hourglass} label="Pomodoro" />
+                  <HeroModeButton active={mode === 'stopwatch'} onClick={() => setMode('stopwatch')} icon={Timer} label="Stopwatch" />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <LiveStudyPanel />
         </div>
       </div>
     );
   }
+
 
   return (
 
