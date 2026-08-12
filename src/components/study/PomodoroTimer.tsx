@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { Play, Pause, RotateCcw, SkipForward, Coffee } from 'lucide-react';
 import { ProgressRing } from '@/components/ProgressRing';
+import { HeroTimerRing } from '@/components/study/HeroTimerRing';
 import { promptDelay } from './DelayPromptDialog';
 import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
 
@@ -14,6 +15,10 @@ interface Props {
   shortMin?: number;
   longMin?: number;
   cyclesBeforeLong?: number;
+  /** 'hero' renders the immersive full-screen presentation (same logic). */
+  variant?: 'card' | 'hero';
+  /** Task / subject lines shown under the time in hero mode. */
+  contextLines?: (string | null | undefined)[];
 }
 
 const STORAGE_KEY = 'taskpilot_active_pomodoro_v1';
