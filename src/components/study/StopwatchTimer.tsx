@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Play, Pause, Square, RotateCcw } from 'lucide-react';
 import { promptDelay } from './DelayPromptDialog';
 import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
+import { HeroTimerRing } from '@/components/study/HeroTimerRing';
 
 interface Props {
   onSave: (durationSec: number, startedAt: string, endedAt: string, delayMinutes: number | null) => void;
