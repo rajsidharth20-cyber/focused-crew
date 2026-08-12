@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useId, useMemo, useState } from 'react';
 import { Users, Radio } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { UserAvatar } from '@/components/UserAvatar';
