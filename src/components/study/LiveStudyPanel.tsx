@@ -23,30 +23,36 @@ export function LiveStudyPanel() {
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
 
   const groupIds = useMemo(() => groups.map(g => g.id).sort().join(','), [groups]);
+  const instanceId = useId();
 
-  useEffect(() => {
+  const loadMembers = useCallback(async () => {
     const ids = groupIds ? groupIds.split(',') : [];
     if (ids.length === 0) {
       setMembersByGroup({});
       return;
     }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.from('group_members').select('group_id, user_id').in('group_id', ids);
-      if (cancelled) return;
-      const map: Record<string, string[]> = {};
-      (data ?? []).forEach(m => {
-        (map[m.group_id] ??= []).push(m.user_id);
-      });
-      setMembersByGroup(map);
-      const userIds = Array.from(new Set((data ?? []).map(m => m.user_id)));
-      const profs = await fetchProfiles(userIds);
-      if (!cancelled) setProfiles(profs);
-    })();
-    return () => {
-      cancelled = true;
-    };
+    const { data } = await supabase.from('group_members').select('group_id, user_id').in('group_id', ids);
+    const map: Record<string, string[]> = {};
+    (data ?? []).forEach(m => {
+      (map[m.group_id] ??= []).push(m.user_id);
+    });
+    setMembersByGroup(map);
+    const profs = await fetchProfiles(Array.from(new Set((data ?? []).map(m => m.user_id))));
+    setProfiles(prev => ({ ...prev, ...profs }));
   }, [groupIds]);
+
+  useEffect(() => {
+    loadMembers();
+    if (!groupIds) return;
+    // Keep the member list in sync when people join or leave a group.
+    const channel = supabase
+      .channel(`live-study-members-${instanceId}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => loadMembers())
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [groupIds, loadMembers, instanceId]);
 
   const allMemberIds = useMemo(
     () => Array.from(new Set(Object.values(membersByGroup).flat())),
