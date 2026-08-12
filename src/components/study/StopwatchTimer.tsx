@@ -42,10 +42,11 @@ const fmt = (s: number) => {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
 };
 
-export function StopwatchTimer({ onSave }: Props) {
+export function StopwatchTimer({ onSave, variant = 'card', contextLines = [], onRunningChange }: Props) {
   const [elapsed, setElapsed] = useState(0);
   const [running, setRunning] = useState(false);
   const stateRef = useRef<Persisted | null>(null);
+  useEffect(() => { onRunningChange?.(running); }, [running, onRunningChange]);
 
   useBroadcastStudyPresence(running, 'stopwatch', null, stateRef.current?.startedAtWall ?? null);
 
