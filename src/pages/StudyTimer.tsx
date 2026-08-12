@@ -113,13 +113,8 @@ const StudyTimer = () => {
       ? <PomodoroTimer variant="hero" contextLines={contextLines} onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
       : <StopwatchTimer variant="hero" contextLines={contextLines} onRunningChange={setTimerRunning} onSave={handleStopwatchSave} />;
 
-  const contextChips = (
-    <div className="flex flex-wrap gap-1.5 justify-center">
-      {topic && <span className="m3-chip">{topic}</span>}
-      {subjectId && <span className="m3-chip">{planner.subjects.find(s => s.id === subjectId)?.name}</span>}
-      {tagId && <span className="m3-chip">{study.tags.find(t => t.id === tagId)?.name}</span>}
-    </div>
-  );
+
+
 
   if (fullscreen) {
     return (
