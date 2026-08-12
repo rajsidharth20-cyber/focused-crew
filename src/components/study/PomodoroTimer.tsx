@@ -55,6 +55,8 @@ export function PomodoroTimer({
   shortMin: shortMinDefault = 5,
   longMin: longMinDefault = 15,
   cyclesBeforeLong = 4,
+  variant = 'card',
+  contextLines = [],
 }: Props) {
   const [focusMin, setFocusMin] = useState(focusMinDefault);
   const [shortMin, setShortMin] = useState(shortMinDefault);
