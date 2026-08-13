@@ -117,7 +117,7 @@ export default function Feed({ embedded = false }: { embedded?: boolean } = {}) 
         onCreateStory={createStory}
       />
       <FriendsDialog open={friendsOpen} onOpenChange={setFriendsOpen} />
-      <BottomNav />
+      {!embedded && <BottomNav />}
     </div>
   );
 }
