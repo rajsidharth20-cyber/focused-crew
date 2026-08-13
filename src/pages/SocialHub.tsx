@@ -30,7 +30,7 @@ export default function SocialHub() {
       <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/50">
         <div className="max-w-2xl mx-auto px-4 pt-3">
           <h1 className="text-[17px] font-bold tracking-tight">Social hub</h1>
-          <div className="mt-2.5 mb-2 grid grid-cols-2 gap-1 p-1 rounded-2xl bg-muted/50">
+          <div className="mt-2.5 mb-2 grid grid-cols-3 gap-1 p-1 rounded-2xl bg-muted/50">
             {tabs.map(t => {
               const Icon = t.icon;
               const active = tab === t.id;
