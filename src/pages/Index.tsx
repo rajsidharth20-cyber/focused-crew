@@ -249,6 +249,48 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
+      {/* Active timer mini bar */}
+      {activeSubject && !timerOpen && (
+        <div className="fixed left-0 right-0 bottom-24 z-40 px-4 pointer-events-none">
+          <div
+            className="pointer-events-auto max-w-2xl mx-auto glass-card flex items-center gap-3 px-3 py-2.5 shadow-lg"
+            role="button"
+            onClick={() => setTimerOpen(true)}
+          >
+            <span className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: activeSubject.color || 'hsl(var(--primary))' }}>
+              <Timer className="w-4 h-4 text-white" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13px] font-semibold truncate leading-tight">{activeSubject.name}</span>
+              <span className="block text-[11px] text-muted-foreground">{timer.isRunning ? 'Studying now' : 'Paused'}</span>
+            </span>
+            <span className="text-[14px] font-semibold tabular-nums">{fmtHMS(timer.elapsed)}</span>
+            <button
+              onClick={e => { e.stopPropagation(); timer.isRunning ? timer.pause() : timer.resume(); }}
+              aria-label={timer.isRunning ? 'Pause timer' : 'Resume timer'}
+              className="press h-8 w-8 rounded-full border border-border/60 grid place-items-center"
+            >
+              {timer.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {timerOpen && activeSubject && (
+          <FullScreenSubjectTimer
+            subjectName={activeSubject.name}
+            color={activeSubject.color || 'hsl(var(--primary))'}
+            elapsed={timer.elapsed}
+            isRunning={timer.isRunning}
+            onPause={timer.pause}
+            onResume={timer.resume}
+            onStop={handleStop}
+            onClose={() => setTimerOpen(false)}
+          />
+        )}
+      </AnimatePresence>
+
       <BottomNav />
     </div>
   );
