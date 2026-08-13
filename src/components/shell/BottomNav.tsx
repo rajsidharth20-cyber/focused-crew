@@ -25,7 +25,7 @@ export function BottomNav() {
     to === '/'
       ? location.pathname === '/'
       : to === '/social'
-        ? ['/social', '/chat', '/groups'].some(p => location.pathname.startsWith(p))
+        ? ['/social', '/chat', '/groups', '/feed'].some(p => location.pathname.startsWith(p))
         : location.pathname.startsWith(to);
 
 
