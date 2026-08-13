@@ -151,7 +151,9 @@ export function usePlannerStore() {
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('is_template', true),
       ]);
 
-      setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
+      setSubjects((sRes.data ?? [])
+        .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
+        .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       
       const mapWT = (t: any): WeeklyTarget => ({
         id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
