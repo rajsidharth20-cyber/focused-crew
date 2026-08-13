@@ -606,6 +606,8 @@ export function usePlannerStore() {
     events,
     loading,
     addSubject,
+    updateSubject,
+    reorderSubjects,
     removeSubject,
     addWeeklyTarget,
     toggleWeeklyTarget,
