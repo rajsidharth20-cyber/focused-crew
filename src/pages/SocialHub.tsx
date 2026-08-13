@@ -1,21 +1,26 @@
 import { useState } from 'react';
-import { MessagesSquare, Users } from 'lucide-react';
+import { MessagesSquare, Users, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Chat from './Chat';
 import StudyGroups from './StudyGroups';
+import Feed from './Feed';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
-type Tab = 'chats' | 'groups';
+type Tab = 'feed' | 'chats' | 'groups';
+
+const ORDER: Tab[] = ['feed', 'chats', 'groups'];
 
 export default function SocialHub() {
-  const [tab, setTab] = useState<Tab>('chats');
+  const [tab, setTab] = useState<Tab>('feed');
   const { total: unread } = useUnreadMessages();
 
   const tabs: { id: Tab; label: string; icon: React.ComponentType<{ className?: string }>; badge?: number }[] = [
+    { id: 'feed', label: 'Feed', icon: Sparkles },
     { id: 'chats', label: 'Chats', icon: MessagesSquare, badge: unread },
     { id: 'groups', label: 'Groups', icon: Users },
   ];
+
 
   return (
     <div
