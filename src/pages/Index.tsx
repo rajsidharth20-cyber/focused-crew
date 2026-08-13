@@ -57,6 +57,56 @@ const Index = () => {
 
   const todaySessionMin = streak.todayMinutes;
 
+  // ---- subject timers ----
+  const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
+  const timer = useSubjectTimer(subjectName);
+  const [timerOpen, setTimerOpen] = useState(false);
+
+  const todayTotals = useMemo(() => {
+    const day = getEffectiveToday();
+    const map: Record<string, number> = {};
+    for (const s of studyStore.sessions) {
+      if (!s.subjectId) continue;
+      const d = new Date(s.startedAt);
+      if (d.getHours() < 3) d.setDate(d.getDate() - 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (key !== day) continue;
+      map[s.subjectId] = (map[s.subjectId] ?? 0) + s.durationSeconds;
+    }
+    return map;
+  }, [studyStore.sessions]);
+
+  const activeSubject = store.subjects.find(s => s.id === timer.activeSubjectId) ?? null;
+
+  const handlePlay = async (subjectId: string) => {
+    if (timer.timer && timer.activeSubjectId !== subjectId) {
+      const finished = await timer.stop();
+      if (finished) {
+        await studyStore.addSession({
+          subjectId: finished.subjectId, type: 'stopwatch',
+          durationSeconds: finished.durationSeconds,
+          startedAt: finished.startedAt, endedAt: finished.endedAt,
+        });
+      }
+    }
+    await timer.start(subjectId);
+    setTimerOpen(true);
+  };
+
+  const handleStop = async () => {
+    const finished = await timer.stop();
+    setTimerOpen(false);
+    if (finished) {
+      await studyStore.addSession({
+        subjectId: finished.subjectId, type: 'stopwatch',
+        durationSeconds: finished.durationSeconds,
+        startedAt: finished.startedAt, endedAt: finished.endedAt,
+      });
+      toast.success(`Session saved · ${Math.round(finished.durationSeconds / 60)}m`);
+    }
+  };
+
+
 
   return (
     <div
