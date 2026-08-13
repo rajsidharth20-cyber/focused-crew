@@ -37,6 +37,7 @@ const Index = () => {
   const now = useNow(30_000);
   const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const [focusMode, setFocusMode] = useState(false);
+  const [streakOpen, setStreakOpen] = useState(false);
   const dailyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
