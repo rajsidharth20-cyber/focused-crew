@@ -10,13 +10,10 @@ import { useTerms } from '@/lib/terms';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
-import { AIAdvisor } from '@/components/AIAdvisor';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
-import { ProgressRing } from '@/components/ProgressRing';
 import { StreakCard } from '@/components/StreakCard';
 import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { BottomNav, QUICK_ADD_EVENT } from '@/components/shell/BottomNav';
-import { EmptyState } from '@/components/EmptyState';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useStreak } from '@/hooks/use-streak';
@@ -24,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
 import { useNow } from '@/hooks/use-now';
 
-const PRIORITY_RANK: Record<string, number> = { high: 0, medium: 1, med: 1, low: 2 };
+
 
 const Index = () => {
   const store = usePlannerStore();
