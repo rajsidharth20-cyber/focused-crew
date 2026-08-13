@@ -6,7 +6,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
-import { useTerms } from '@/lib/terms';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
@@ -30,7 +29,6 @@ const Index = () => {
   const streak = useStreak(studyStore.sessions);
   const { username } = useAuth();
   const { theme } = useTheme();
-  const t = useTerms();
   useEventReminders(store.events, store.commitments);
   const now = useNow(30_000);
   const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
