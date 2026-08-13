@@ -200,6 +200,24 @@ const Index = () => {
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Link>
 
+              {/* Subject timers */}
+              <SubjectTimerList
+                subjects={store.subjects}
+                totals={todayTotals}
+                activeSubjectId={timer.activeSubjectId}
+                isRunning={timer.isRunning}
+                liveElapsed={timer.elapsed}
+                onPlay={handlePlay}
+                onPause={timer.pause}
+                onOpenActive={() => setTimerOpen(true)}
+                onAdd={store.addSubject}
+                onRename={(id, name) => store.updateSubject(id, { name })}
+                onRecolor={(id, color) => store.updateSubject(id, { color })}
+                onReorder={store.reorderSubjects}
+                onDelete={store.removeSubject}
+              />
+
+
               {/* Today's tasks */}
               <div ref={dailyRef} className="scroll-mt-20">
                 <DailyObjectives
