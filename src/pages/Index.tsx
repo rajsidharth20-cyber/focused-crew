@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Swords, Flame, Sparkles, CheckCircle2, Timer, Target, ChevronRight, ListChecks } from 'lucide-react';
+import { Plane, Swords, Flame, Timer, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
