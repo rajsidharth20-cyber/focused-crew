@@ -184,16 +184,5 @@ const Index = () => {
 };
 
 
-function MiniMetric({ icon: Icon, label, value }: { icon: React.ComponentType<{ className?: string }>; label: string; value: string }) {
-  return (
-    <div className="glass-card px-3 py-3 flex flex-col gap-1.5">
-      <Icon className="w-4 h-4 text-primary" />
-      <div>
-        <div className="text-[15px] font-bold tabular-nums leading-none">{value}</div>
-        <div className="text-[10px] uppercase tracking-widest text-muted-foreground mt-1">{label}</div>
-      </div>
-    </div>
-  );
-}
 
 export default Index;
