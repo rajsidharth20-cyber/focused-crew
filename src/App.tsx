@@ -61,6 +61,7 @@ const App = () => (
 
             <Route path="/social" element={<ProtectedRoute><SocialHub /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
+            <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
