@@ -69,16 +69,17 @@ export default function SocialHub() {
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
             key={tab}
-            initial={{ opacity: 0, x: tab === 'chats' ? -16 : 16 }}
+            initial={{ opacity: 0, x: 12 }}
             animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: tab === 'chats' ? 16 : -16 }}
+            exit={{ opacity: 0, x: -12 }}
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className="flex-1 min-h-0 flex flex-col"
           >
-            {tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}
+            {tab === 'feed' ? <Feed embedded /> : tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}
           </motion.div>
         </AnimatePresence>
       </div>
+
 
       <BottomNav />
     </div>
