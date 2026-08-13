@@ -9,7 +9,8 @@ import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 type Tab = 'feed' | 'chats' | 'groups';
 
-const ORDER: Tab[] = ['feed', 'chats', 'groups'];
+
+
 
 export default function SocialHub() {
   const [tab, setTab] = useState<Tab>('feed');
