@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Swords, Flame, Timer, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plane, Swords, Flame, Timer, ChevronRight, Pause, Play } from 'lucide-react';
+import { SubjectTimerList, fmtHMS } from '@/components/study/SubjectTimerList';
+import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
+import { useSubjectTimer } from '@/hooks/use-subject-timer';
+import { getEffectiveToday } from '@/lib/day-boundary';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SettingsDialog } from '@/components/SettingsDialog';
@@ -51,6 +56,56 @@ const Index = () => {
   const ThemeIcon = theme === 'war' ? Swords : Plane;
 
   const todaySessionMin = streak.todayMinutes;
+
+  // ---- subject timers ----
+  const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
+  const timer = useSubjectTimer(subjectName);
+  const [timerOpen, setTimerOpen] = useState(false);
+
+  const todayTotals = useMemo(() => {
+    const day = getEffectiveToday();
+    const map: Record<string, number> = {};
+    for (const s of studyStore.sessions) {
+      if (!s.subjectId) continue;
+      const d = new Date(s.startedAt);
+      if (d.getHours() < 3) d.setDate(d.getDate() - 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+      if (key !== day) continue;
+      map[s.subjectId] = (map[s.subjectId] ?? 0) + s.durationSeconds;
+    }
+    return map;
+  }, [studyStore.sessions]);
+
+  const activeSubject = store.subjects.find(s => s.id === timer.activeSubjectId) ?? null;
+
+  const handlePlay = async (subjectId: string) => {
+    if (timer.timer && timer.activeSubjectId !== subjectId) {
+      const finished = await timer.stop();
+      if (finished) {
+        await studyStore.addSession({
+          subjectId: finished.subjectId, type: 'stopwatch',
+          durationSeconds: finished.durationSeconds,
+          startedAt: finished.startedAt, endedAt: finished.endedAt,
+        });
+      }
+    }
+    await timer.start(subjectId);
+    setTimerOpen(true);
+  };
+
+  const handleStop = async () => {
+    const finished = await timer.stop();
+    setTimerOpen(false);
+    if (finished) {
+      await studyStore.addSession({
+        subjectId: finished.subjectId, type: 'stopwatch',
+        durationSeconds: finished.durationSeconds,
+        startedAt: finished.startedAt, endedAt: finished.endedAt,
+      });
+      toast.success(`Session saved · ${Math.round(finished.durationSeconds / 60)}m`);
+    }
+  };
+
 
 
   return (
@@ -145,6 +200,24 @@ const Index = () => {
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </Link>
 
+              {/* Subject timers */}
+              <SubjectTimerList
+                subjects={store.subjects}
+                totals={todayTotals}
+                activeSubjectId={timer.activeSubjectId}
+                isRunning={timer.isRunning}
+                liveElapsed={timer.elapsed}
+                onPlay={handlePlay}
+                onPause={timer.pause}
+                onOpenActive={() => setTimerOpen(true)}
+                onAdd={store.addSubject}
+                onRename={(id, name) => store.updateSubject(id, { name })}
+                onRecolor={(id, color) => store.updateSubject(id, { color })}
+                onReorder={store.reorderSubjects}
+                onDelete={store.removeSubject}
+              />
+
+
               {/* Today's tasks */}
               <div ref={dailyRef} className="scroll-mt-20">
                 <DailyObjectives
@@ -175,6 +248,48 @@ const Index = () => {
           <StreakCard sessions={studyStore.sessions} />
         </DialogContent>
       </Dialog>
+
+      {/* Active timer mini bar */}
+      {activeSubject && !timerOpen && (
+        <div className="fixed left-0 right-0 bottom-24 z-40 px-4 pointer-events-none">
+          <div
+            className="pointer-events-auto max-w-2xl mx-auto glass-card flex items-center gap-3 px-3 py-2.5 shadow-lg"
+            role="button"
+            onClick={() => setTimerOpen(true)}
+          >
+            <span className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: activeSubject.color || 'hsl(var(--primary))' }}>
+              <Timer className="w-4 h-4 text-white" />
+            </span>
+            <span className="flex-1 min-w-0">
+              <span className="block text-[13px] font-semibold truncate leading-tight">{activeSubject.name}</span>
+              <span className="block text-[11px] text-muted-foreground">{timer.isRunning ? 'Studying now' : 'Paused'}</span>
+            </span>
+            <span className="text-[14px] font-semibold tabular-nums">{fmtHMS(timer.elapsed)}</span>
+            <button
+              onClick={e => { e.stopPropagation(); timer.isRunning ? timer.pause() : timer.resume(); }}
+              aria-label={timer.isRunning ? 'Pause timer' : 'Resume timer'}
+              className="press h-8 w-8 rounded-full border border-border/60 grid place-items-center"
+            >
+              {timer.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {timerOpen && activeSubject && (
+          <FullScreenSubjectTimer
+            subjectName={activeSubject.name}
+            color={activeSubject.color || 'hsl(var(--primary))'}
+            elapsed={timer.elapsed}
+            isRunning={timer.isRunning}
+            onPause={timer.pause}
+            onResume={timer.resume}
+            onStop={handleStop}
+            onClose={() => setTimerOpen(false)}
+          />
+        )}
+      </AnimatePresence>
 
       <BottomNav />
     </div>

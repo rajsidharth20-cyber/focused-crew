@@ -14,6 +14,44 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_timers: {
+        Row: {
+          accumulated_seconds: number
+          created_at: string
+          is_running: boolean
+          started_at: string | null
+          subject_id: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accumulated_seconds?: number
+          created_at?: string
+          is_running?: boolean
+          started_at?: string | null
+          subject_id?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accumulated_seconds?: number
+          created_at?: string
+          is_running?: boolean
+          started_at?: string | null
+          subject_id?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_timers_subject_id_fkey"
+            columns: ["subject_id"]
+            isOneToOne: false
+            referencedRelation: "subjects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commitments: {
         Row: {
           created_at: string
@@ -966,21 +1004,27 @@ export type Database = {
       }
       subjects: {
         Row: {
+          color: string
           created_at: string
           id: string
           name: string
+          sort_order: number
           user_id: string
         }
         Insert: {
+          color?: string
           created_at?: string
           id?: string
           name: string
+          sort_order?: number
           user_id: string
         }
         Update: {
+          color?: string
           created_at?: string
           id?: string
           name?: string
+          sort_order?: number
           user_id?: string
         }
         Relationships: []

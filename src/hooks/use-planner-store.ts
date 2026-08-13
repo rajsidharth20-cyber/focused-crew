@@ -6,7 +6,14 @@ import { getEffectiveToday } from '@/lib/day-boundary';
 export interface Subject {
   id: string;
   name: string;
+  color?: string;
+  sortOrder?: number;
 }
+
+export const SUBJECT_COLORS = [
+  '#ef4444', '#f97316', '#f59e0b', '#22c55e',
+  '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
+];
 
 export interface WeeklyTarget {
   id: string;
@@ -144,7 +151,9 @@ export function usePlannerStore() {
         supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('is_template', true),
       ]);
 
-      setSubjects((sRes.data ?? []).map((s: any) => ({ id: s.id, name: s.name })));
+      setSubjects((sRes.data ?? [])
+        .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
+        .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       
       const mapWT = (t: any): WeeklyTarget => ({
         id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
@@ -200,22 +209,38 @@ export function usePlannerStore() {
     fetchAll();
   }, [user, isGuest, today, getGuestData]);
 
-  const addSubject = useCallback(async (name: string) => {
+  const addSubject = useCallback(async (name: string, color?: string) => {
+    const pick = color || SUBJECT_COLORS[Math.floor(Math.random() * SUBJECT_COLORS.length)];
     if (isGuest) {
       const id = crypto.randomUUID();
-      const newSubject = { id, name };
       setSubjects(prev => {
-        const updated = [...prev, newSubject];
+        const updated = [...prev, { id, name, color: pick, sortOrder: prev.length }];
         const data = getGuestData(); data.subjects = updated; saveGuestData(data);
         return updated;
       });
       return;
     }
     if (!user) return;
-    const { data, error } = await supabase.from('subjects')
-      .insert({ name, user_id: user.id }).select().single();
-    if (!error && data) setSubjects(prev => [...prev, { id: data.id, name: data.name }]);
-  }, [user, isGuest, getGuestData, saveGuestData]);
+    const { data, error } = await (supabase.from('subjects') as any)
+      .insert({ name, user_id: user.id, color: pick, sort_order: subjects.length }).select().single();
+    if (!error && data) setSubjects(prev => [...prev, { id: data.id, name: data.name, color: data.color, sortOrder: data.sort_order }]);
+  }, [user, isGuest, getGuestData, saveGuestData, subjects.length]);
+
+  const updateSubject = useCallback(async (id: string, patch: { name?: string; color?: string }) => {
+    setSubjects(prev => {
+      const u = prev.map(s => s.id === id ? { ...s, ...patch } : s);
+      if (isGuest) { const d = getGuestData(); d.subjects = u; saveGuestData(d); }
+      return u;
+    });
+    if (!isGuest) await (supabase.from('subjects') as any).update(patch).eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
+
+  const reorderSubjects = useCallback(async (ordered: Subject[]) => {
+    const withOrder = ordered.map((s, i) => ({ ...s, sortOrder: i }));
+    setSubjects(withOrder);
+    if (isGuest) { const d = getGuestData(); d.subjects = withOrder; saveGuestData(d); return; }
+    await Promise.all(withOrder.map(s => (supabase.from('subjects') as any).update({ sort_order: s.sortOrder }).eq('id', s.id)));
+  }, [isGuest, getGuestData, saveGuestData]);
 
   const removeSubject = useCallback(async (id: string) => {
     if (isGuest) {
@@ -581,6 +606,8 @@ export function usePlannerStore() {
     events,
     loading,
     addSubject,
+    updateSubject,
+    reorderSubjects,
     removeSubject,
     addWeeklyTarget,
     toggleWeeklyTarget,
