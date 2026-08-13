@@ -55,29 +55,8 @@ const Index = () => {
   const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const ThemeIcon = theme === 'war' ? Swords : Plane;
 
-  const totalDaily = store.dailyObjectives.length;
-  const doneDaily = store.dailyObjectives.filter(o => o.completed).length;
-  const pctDaily = totalDaily > 0 ? (doneDaily / totalDaily) * 100 : 0;
-  const highPriority = store.dailyObjectives.filter(o => !o.completed && o.priority === 'high').length;
-
-  const topTask = useMemo(() => {
-    const open = store.dailyObjectives.filter(o => !o.completed);
-    if (open.length === 0) return null;
-    return [...open].sort((a, b) => {
-      const pr = (PRIORITY_RANK[String(a.priority)] ?? 1) - (PRIORITY_RANK[String(b.priority)] ?? 1);
-      if (pr !== 0) return pr;
-      if (a.deadline && b.deadline) return a.deadline < b.deadline ? -1 : 1;
-      if (a.deadline) return -1;
-      if (b.deadline) return 1;
-      return 0;
-    })[0];
-  }, [store.dailyObjectives]);
-
-  const subjectName = topTask?.subjectId
-    ? store.subjects.find(s => s.id === topTask.subjectId)?.name
-    : undefined;
-
   const todaySessionMin = streak.todayMinutes;
+
 
   return (
     <div
