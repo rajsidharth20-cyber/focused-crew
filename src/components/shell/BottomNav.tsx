@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus, Sparkles } from 'lucide-react';
+import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus, NotebookPen } from 'lucide-react';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 export const QUICK_ADD_EVENT = 'taskpilot:quick-add';
