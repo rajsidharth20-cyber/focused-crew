@@ -10,7 +10,7 @@ import { FriendsDialog } from '@/components/social/FriendsDialog';
 import { useFeed } from '@/hooks/use-feed';
 import { useFriends } from '@/hooks/use-friends';
 
-export default function Feed() {
+export default function Feed({ embedded = false }: { embedded?: boolean } = {}) {
   const {
     loading,
     posts,
