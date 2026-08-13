@@ -10,7 +10,7 @@ import { FriendsDialog } from '@/components/social/FriendsDialog';
 import { useFeed } from '@/hooks/use-feed';
 import { useFriends } from '@/hooks/use-friends';
 
-export default function Feed() {
+export default function Feed({ embedded = false }: { embedded?: boolean } = {}) {
   const {
     loading,
     posts,
@@ -29,10 +29,9 @@ export default function Feed() {
   const [friendsOpen, setFriendsOpen] = useState(false);
 
   return (
-    <div className="min-h-screen bg-background" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/50">
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-2">
-          <h1 className="text-[17px] font-bold tracking-tight flex-1">Feed</h1>
+    <div className={embedded ? '' : 'min-h-screen bg-background'} style={embedded ? undefined : { paddingTop: 'env(safe-area-inset-top)' }}>
+      {embedded ? (
+        <div className="max-w-2xl mx-auto px-4 pt-2 flex items-center justify-end gap-1">
           <Button
             variant="ghost"
             size="icon"
@@ -51,9 +50,33 @@ export default function Feed() {
             <PenSquare className="w-5 h-5" />
           </Button>
         </div>
-      </header>
+      ) : (
+        <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/80 border-b border-border/50">
+          <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-2">
+            <h1 className="text-[17px] font-bold tracking-tight flex-1">Feed</h1>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative"
+              aria-label="Friends"
+              onClick={() => setFriendsOpen(true)}
+            >
+              <Users className="w-5 h-5" />
+              {incoming.length > 0 && (
+                <span className="absolute top-1 right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold grid place-items-center">
+                  {incoming.length > 9 ? '9+' : incoming.length}
+                </span>
+              )}
+            </Button>
+            <Button variant="ghost" size="icon" aria-label="New post" onClick={() => setCompose('post')}>
+              <PenSquare className="w-5 h-5" />
+            </Button>
+          </div>
+        </header>
+      )}
 
-      <main className="max-w-2xl mx-auto pb-28">
+      <main className={`max-w-2xl mx-auto ${embedded ? 'pb-4' : 'pb-28'}`}>
+
         <StoryBar
           groups={storyGroups}
           profiles={profiles}
@@ -94,7 +117,7 @@ export default function Feed() {
         onCreateStory={createStory}
       />
       <FriendsDialog open={friendsOpen} onOpenChange={setFriendsOpen} />
-      <BottomNav />
+      {!embedded && <BottomNav />}
     </div>
   );
 }

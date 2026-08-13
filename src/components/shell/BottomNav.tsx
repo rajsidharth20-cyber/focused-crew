@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus, Sparkles } from 'lucide-react';
+import { Home, CalendarDays, Timer, MessagesSquare, LayoutGrid, Plus, NotebookPen } from 'lucide-react';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
 export const QUICK_ADD_EVENT = 'taskpilot:quick-add';
@@ -16,7 +16,7 @@ export function BottomNav() {
     { to: '/', icon: Home, label: 'Home' },
     { to: '/planner', icon: CalendarDays, label: 'Planner' },
     { to: '/study', icon: Timer, label: 'Study' },
-    { to: '/feed', icon: Sparkles, label: 'Feed' },
+    { to: '/notes', icon: NotebookPen, label: 'Note' },
     { to: '/social', icon: MessagesSquare, label: 'Social', badge: unreadTotal },
     { to: '/more', icon: LayoutGrid, label: 'More' },
   ];
@@ -25,7 +25,7 @@ export function BottomNav() {
     to === '/'
       ? location.pathname === '/'
       : to === '/social'
-        ? ['/social', '/chat', '/groups'].some(p => location.pathname.startsWith(p))
+        ? ['/social', '/chat', '/groups', '/feed'].some(p => location.pathname.startsWith(p))
         : location.pathname.startsWith(to);
 
 
