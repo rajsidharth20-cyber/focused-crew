@@ -1,6 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Plane, Swords, Flame, Timer, ChevronRight } from 'lucide-react';
+import { toast } from 'sonner';
+import { Plane, Swords, Flame, Timer, ChevronRight, Pause, Play } from 'lucide-react';
+import { SubjectTimerList, fmtHMS } from '@/components/study/SubjectTimerList';
+import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
+import { useSubjectTimer } from '@/hooks/use-subject-timer';
+import { getEffectiveToday } from '@/lib/day-boundary';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SettingsDialog } from '@/components/SettingsDialog';
