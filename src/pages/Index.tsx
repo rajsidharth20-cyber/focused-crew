@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Plane, Swords, Flame, Timer, ChevronRight, Pause, Play } from 'lucide-react';
-import { SubjectTimerList, fmtHMS } from '@/components/study/SubjectTimerList';
+import { Plane, Swords, Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
+import { SubjectBoard, fmtHMS } from '@/components/home/SubjectBoard';
+import { TodayProgressCard } from '@/components/home/TodayProgressCard';
+import { StudyingNowSection } from '@/components/home/StudyingNowSection';
+import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
 import { getEffectiveToday } from '@/lib/day-boundary';
@@ -25,7 +28,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
 import { useNow } from '@/hooks/use-now';
 
-
+const greeting = (d: Date) => {
+  const h = d.getHours();
+  if (h < 5) return 'Still up';
+  if (h < 12) return 'Good morning';
+  if (h < 17) return 'Good afternoon';
+  return 'Good evening';
+};
 
 const Index = () => {
   const store = usePlannerStore();
@@ -36,9 +45,9 @@ const Index = () => {
   const { theme } = useTheme();
   useEventReminders(store.events, store.commitments);
   const now = useNow(30_000);
-  const clock = now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
   const [focusMode, setFocusMode] = useState(false);
   const [streakOpen, setStreakOpen] = useState(false);
+  const [startOpen, setStartOpen] = useState(false);
   const dailyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -54,8 +63,6 @@ const Index = () => {
 
   const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   const ThemeIcon = theme === 'war' ? Swords : Plane;
-
-  const todaySessionMin = streak.todayMinutes;
 
   // ---- subject timers ----
   const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
@@ -90,6 +97,7 @@ const Index = () => {
       }
     }
     await timer.start(subjectId);
+    setStartOpen(false);
     setTimerOpen(true);
   };
 
@@ -106,7 +114,8 @@ const Index = () => {
     }
   };
 
-
+  const minutesToday = streak.todayMinutes + (timer.isRunning ? Math.floor(timer.elapsed / 60) : 0);
+  const subjectsActive = Object.keys(todayTotals).length;
 
   return (
     <div
@@ -124,26 +133,18 @@ const Index = () => {
 
       {username === null && <UsernamePrompt />}
 
-      {/* Minimal app bar */}
-      <header className="sticky top-0 z-30 backdrop-blur-xl bg-background/70">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className="w-8 h-8 rounded-2xl bg-gradient-primary grid place-items-center shadow-md shrink-0">
-              <ThemeIcon className="w-4 h-4 text-primary-foreground" />
+      {/* Greeting header */}
+      <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-3 px-4">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-gradient-primary shadow-md">
+              <ThemeIcon className="h-4 w-4 text-primary-foreground" />
             </div>
-            <button
-              onClick={() => setStreakOpen(true)}
-              aria-label="Study streak details"
-              className="press inline-flex items-center gap-1 px-2 h-7 rounded-full border border-border/60 bg-background/60 text-[12px] font-bold tabular-nums"
-            >
-              <Flame className={`w-3.5 h-3.5 ${streak.streak > 0 ? 'text-destructive' : 'text-muted-foreground'}`} />
-              {streak.streak}
-            </button>
             <div className="min-w-0">
-              <p className="text-[10.5px] text-muted-foreground leading-none">{today}</p>
-              <h1 className="font-display text-[14px] font-bold tracking-tight truncate leading-tight mt-0.5">
-                {clock}
+              <h1 className="truncate font-display text-[15.5px] font-bold leading-tight tracking-tight">
+                {greeting(now)}{username ? `, ${username}` : ''} 👋
               </h1>
+              <p className="mt-0.5 truncate text-[10.5px] leading-none text-muted-foreground">{today}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
@@ -154,7 +155,7 @@ const Index = () => {
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto px-4 py-3 space-y-4">
+      <main className="mx-auto max-w-2xl space-y-6 px-4 py-4">
         <PushPermissionPrompt />
 
         <AnimatePresence mode="wait">
@@ -181,27 +182,36 @@ const Index = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.3 }}
-              className="space-y-4"
+              className="space-y-6"
             >
-              {/* Study timer */}
-              <Link
-                to="/study"
-                className="glass-card press flex items-center gap-3 px-4 py-3.5"
+              <TodayProgressCard
+                minutesToday={minutesToday}
+                goalMinutes={streak.thresholdMinutes}
+                streak={streak.streak}
+                subjectsActive={subjectsActive}
+                onOpenStreak={() => setStreakOpen(true)}
+              />
+
+              {/* Primary action */}
+              <button
+                onClick={() => (activeSubject ? setTimerOpen(true) : setStartOpen(true))}
+                className="press relative flex w-full items-center gap-3 overflow-hidden rounded-[24px] bg-gradient-primary px-5 py-4 text-left text-primary-foreground shadow-lg"
               >
-                <span className="w-9 h-9 rounded-2xl bg-gradient-primary grid place-items-center shrink-0">
-                  <Timer className="w-4 h-4 text-primary-foreground" />
-                </span>
-                <span className="flex-1 min-w-0">
-                  <span className="block text-sm font-semibold leading-tight">Study timer</span>
-                  <span className="block text-[11px] text-muted-foreground mt-0.5">
-                    Pomodoro & stopwatch · {todaySessionMin}m today
+                <Sparkles className="h-5 w-5 shrink-0 opacity-90" />
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold leading-tight">
+                    {activeSubject ? `Back to ${activeSubject.name}` : 'Start studying'}
+                  </span>
+                  <span className="mt-0.5 block text-[11.5px] opacity-85">
+                    {activeSubject ? 'Your session is still open' : 'Pick a subject and the clock starts'}
                   </span>
                 </span>
-                <ChevronRight className="w-4 h-4 text-muted-foreground" />
-              </Link>
+                <ChevronRight className="h-4 w-4 shrink-0 opacity-90" />
+              </button>
 
-              {/* Subject timers */}
-              <SubjectTimerList
+              <StudyingNowSection />
+
+              <SubjectBoard
                 subjects={store.subjects}
                 totals={todayTotals}
                 activeSubjectId={timer.activeSubjectId}
@@ -216,7 +226,6 @@ const Index = () => {
                 onReorder={store.reorderSubjects}
                 onDelete={store.removeSubject}
               />
-
 
               {/* Today's tasks */}
               <div ref={dailyRef} className="scroll-mt-20">
@@ -235,10 +244,27 @@ const Index = () => {
                   onRemoveTemplate={store.removeObjectiveTemplate}
                 />
               </div>
+
+              <Link
+                to="/study"
+                className="flex items-center gap-2 px-1 pb-2 text-[12px] text-muted-foreground"
+              >
+                <Timer className="h-3.5 w-3.5" />
+                Pomodoro & session history
+                <ChevronRight className="h-3.5 w-3.5" />
+              </Link>
             </motion.div>
           )}
         </AnimatePresence>
       </main>
+
+      <StartStudyingSheet
+        open={startOpen}
+        onOpenChange={setStartOpen}
+        subjects={store.subjects}
+        onStart={handlePlay}
+        onCreate={store.addSubject}
+      />
 
       <Dialog open={streakOpen} onOpenChange={setStreakOpen}>
         <DialogContent className="max-w-sm">
@@ -249,32 +275,37 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Active timer mini bar */}
-      {activeSubject && !timerOpen && (
-        <div className="fixed left-0 right-0 bottom-24 z-40 px-4 pointer-events-none">
-          <div
-            className="pointer-events-auto max-w-2xl mx-auto glass-card flex items-center gap-3 px-3 py-2.5 shadow-lg"
-            role="button"
-            onClick={() => setTimerOpen(true)}
+      {/* Compact floating session pill */}
+      <AnimatePresence>
+        {activeSubject && !timerOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 16 }}
+            className="pointer-events-none fixed bottom-24 left-0 right-0 z-40 flex justify-center px-4"
           >
-            <span className="h-9 w-9 rounded-full grid place-items-center shrink-0" style={{ background: activeSubject.color || 'hsl(var(--primary))' }}>
-              <Timer className="w-4 h-4 text-white" />
-            </span>
-            <span className="flex-1 min-w-0">
-              <span className="block text-[13px] font-semibold truncate leading-tight">{activeSubject.name}</span>
-              <span className="block text-[11px] text-muted-foreground">{timer.isRunning ? 'Studying now' : 'Paused'}</span>
-            </span>
-            <span className="text-[14px] font-semibold tabular-nums">{fmtHMS(timer.elapsed)}</span>
-            <button
-              onClick={e => { e.stopPropagation(); timer.isRunning ? timer.pause() : timer.resume(); }}
-              aria-label={timer.isRunning ? 'Pause timer' : 'Resume timer'}
-              className="press h-8 w-8 rounded-full border border-border/60 grid place-items-center"
+            <div
+              role="button"
+              onClick={() => setTimerOpen(true)}
+              className="pointer-events-auto flex items-center gap-2.5 rounded-full border border-border/50 bg-background/85 py-1.5 pl-3 pr-1.5 shadow-xl backdrop-blur-xl"
             >
-              {timer.isRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-            </button>
-          </div>
-        </div>
-      )}
+              <span
+                className="h-2 w-2 shrink-0 rounded-full"
+                style={{ background: activeSubject.color || 'hsl(var(--primary))' }}
+              />
+              <span className="max-w-[7.5rem] truncate text-[12.5px] font-medium">{activeSubject.name}</span>
+              <span className="text-[12.5px] font-semibold tabular-nums">{fmtHMS(timer.elapsed)}</span>
+              <button
+                onClick={e => { e.stopPropagation(); timer.isRunning ? timer.pause() : timer.resume(); }}
+                aria-label={timer.isRunning ? 'Pause timer' : 'Resume timer'}
+                className="press grid h-7 w-7 place-items-center rounded-full bg-foreground/10"
+              >
+                {timer.isRunning ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence>
         {timerOpen && activeSubject && (
@@ -295,7 +326,5 @@ const Index = () => {
     </div>
   );
 };
-
-
 
 export default Index;
