@@ -1,6 +1,6 @@
 import { motion } from 'framer-motion';
 import { ChevronDown, Pause, Play, Square } from 'lucide-react';
-import { fmtHMS } from '@/components/study/SubjectTimerList';
+import { fmtHMS } from '@/components/home/SubjectBoard';
 
 interface Props {
   subjectName: string;
