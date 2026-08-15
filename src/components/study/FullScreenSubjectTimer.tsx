@@ -78,11 +78,10 @@ export function FullScreenSubjectTimer({
       (map[m.group_id] ??= []).push(m.user_id);
     });
     setMembersByGroup(map);
-    setProfiles(prev => ({
-      ...prev,
-      ...(await fetchProfiles(Array.from(new Set((data ?? []).map(m => m.user_id))))),
-    }));
+    const profs = await fetchProfiles(Array.from(new Set((data ?? []).map(m => m.user_id))));
+    setProfiles(prev => ({ ...prev, ...profs }));
   }, [groupIds]);
+
 
   useEffect(() => {
     loadMembers();
