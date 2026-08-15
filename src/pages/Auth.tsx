@@ -52,10 +52,44 @@ export default function Auth() {
     }
   };
 
+  const handleSendCode = async () => {
+    if (!email) { toast.error('Enter your email first.'); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setCodeSent(true);
+      toast.success('Sign-in code sent. Check your inbox.');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Could not send code.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (code.trim().length < 6) { toast.error('Enter the 6-digit code.'); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
+      if (error) throw error;
+      toast.success('Welcome back, Captain!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Invalid or expired code.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'forgot') { await handleForgot(); return; }
+    if (mode === 'code') { await (codeSent ? handleVerifyCode() : handleSendCode()); return; }
     setSubmitting(true);
+
 
     try {
       if (isLogin) {
