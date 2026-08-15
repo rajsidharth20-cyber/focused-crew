@@ -8,12 +8,14 @@ import { toast } from 'sonner';
 export default function Auth() {
   const { user, loading, isGuest, enterGuestMode } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'code'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [existingEmail, setExistingEmail] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState('');
   const isLogin = mode === 'login';
 
 
