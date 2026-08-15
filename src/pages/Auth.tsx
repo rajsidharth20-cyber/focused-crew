@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Plane, Loader2, User, UserX, KeyRound } from 'lucide-react';
+import { Plane, Loader2, User, UserX, KeyRound, MailCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -8,12 +8,14 @@ import { toast } from 'sonner';
 export default function Auth() {
   const { user, loading, isGuest, enterGuestMode } = useAuth();
   const navigate = useNavigate();
-  const [mode, setMode] = useState<'login' | 'signup' | 'forgot'>('login');
+  const [mode, setMode] = useState<'login' | 'signup' | 'forgot' | 'code'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [existingEmail, setExistingEmail] = useState(false);
+  const [codeSent, setCodeSent] = useState(false);
+  const [code, setCode] = useState('');
   const isLogin = mode === 'login';
 
 
@@ -50,10 +52,44 @@ export default function Auth() {
     }
   };
 
+  const handleSendCode = async () => {
+    if (!email) { toast.error('Enter your email first.'); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email,
+        options: { shouldCreateUser: false, emailRedirectTo: window.location.origin },
+      });
+      if (error) throw error;
+      setCodeSent(true);
+      toast.success('Sign-in code sent. Check your inbox.');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Could not send code.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleVerifyCode = async () => {
+    if (code.trim().length < 6) { toast.error('Enter the 6-digit code.'); return; }
+    setSubmitting(true);
+    try {
+      const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
+      if (error) throw error;
+      toast.success('Welcome back, Captain!');
+    } catch (err: any) {
+      toast.error(err.message ?? 'Invalid or expired code.');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (mode === 'forgot') { await handleForgot(); return; }
+    if (mode === 'code') { await (codeSent ? handleVerifyCode() : handleSendCode()); return; }
     setSubmitting(true);
+
 
     try {
       if (isLogin) {
@@ -158,11 +194,35 @@ export default function Auth() {
               value={email}
               onChange={e => setEmail(e.target.value)}
               required
-              className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+              disabled={mode === 'code' && codeSent}
+              className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50 disabled:opacity-60"
               placeholder="you@example.com"
             />
           </div>
-          {mode !== 'forgot' && (
+          {mode === 'code' && codeSent && (
+            <div>
+              <label className="text-xs text-muted-foreground font-medium block mb-1.5">6-digit code</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                value={code}
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                required
+                className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-center text-lg tracking-[0.4em] text-foreground placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                placeholder="000000"
+              />
+              <button
+                type="button"
+                onClick={handleSendCode}
+                disabled={submitting}
+                className="mt-2 text-[11px] text-primary hover:underline"
+              >
+                Resend code
+              </button>
+            </div>
+          )}
+          {mode !== 'forgot' && mode !== 'code' && (
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-xs text-muted-foreground font-medium">Password</label>
@@ -189,13 +249,26 @@ export default function Auth() {
             className="w-full bg-primary text-primary-foreground py-2.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
           >
             {submitting && <Loader2 className="w-4 h-4 animate-spin" />}
-            {mode === 'login' ? 'Board Flight' : mode === 'signup' ? 'Register' : 'Send reset link'}
+            {mode === 'login' ? 'Board Flight'
+              : mode === 'signup' ? 'Register'
+              : mode === 'code' ? (codeSent ? 'Verify code' : 'Email me a code')
+              : 'Send reset link'}
           </button>
         </form>
 
+        {mode === 'login' && (
+          <button
+            onClick={() => { setMode('code'); setCodeSent(false); setCode(''); }}
+            className="mt-3 w-full flex items-center justify-center gap-2 bg-secondary/50 border border-border text-muted-foreground py-2.5 rounded-md text-sm font-medium hover:text-foreground hover:bg-secondary transition-colors"
+          >
+            <MailCheck className="w-4 h-4" />
+            Sign in with a code
+          </button>
+        )}
+
         <p className="text-center text-xs text-muted-foreground mt-4">
-          {mode === 'forgot' ? (
-            <button onClick={() => setMode('login')} className="text-primary hover:underline font-medium">Back to sign in</button>
+          {mode === 'forgot' || mode === 'code' ? (
+            <button onClick={() => { setMode('login'); setCodeSent(false); setCode(''); }} className="text-primary hover:underline font-medium">Back to sign in</button>
           ) : (
             <>
               {isLogin ? "Don't have an account?" : 'Already have an account?'}{' '}
@@ -208,6 +281,7 @@ export default function Auth() {
             </>
           )}
         </p>
+
 
 
         <div className="relative my-4">
