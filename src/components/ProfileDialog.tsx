@@ -1,3 +1,4 @@
+import { assertImageFile, MAX_AVATAR_BYTES } from '@/lib/upload-guard';
 import { useEffect, useRef, useState } from 'react';
 import { UserCircle2, Loader2, Camera, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
