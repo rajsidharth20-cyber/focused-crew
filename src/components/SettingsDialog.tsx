@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2 } from 'lucide-react';
+import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2, Trash2 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -17,6 +17,24 @@ export function SettingsDialog() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changing, setChanging] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    const typed = window.prompt('This permanently deletes your account and all your data. Type DELETE to confirm.');
+    if (typed?.trim().toUpperCase() !== 'DELETE') return;
+    setDeleting(true);
+    try {
+      const { error } = await supabase.functions.invoke('delete-account');
+      if (error) throw error;
+      await supabase.auth.signOut();
+      toast.success('Your account and data have been deleted.');
+      window.location.href = '/auth';
+    } catch (err: any) {
+      toast.error(err.message ?? 'Could not delete account.');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleChangePassword = async () => {
     if (newPassword.length < 6) { toast.error('Password must be at least 6 characters.'); return; }
@@ -108,6 +126,26 @@ export function SettingsDialog() {
               </button>
             </div>
           )}
+
+          {user && !isGuest && (
+            <div className="space-y-2 border-t border-destructive/30 pt-4">
+              <Label className="text-sm font-medium text-destructive flex items-center gap-1.5">
+                <Trash2 className="w-3.5 h-3.5" /> Delete account
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Permanently erases your profile, posts, messages, study data and photos. This cannot be undone.
+              </p>
+              <button
+                onClick={handleDeleteAccount}
+                disabled={deleting}
+                className="w-full inline-flex items-center justify-center gap-2 border border-destructive/50 text-destructive py-2 rounded-md text-sm font-semibold hover:bg-destructive/10 disabled:opacity-50"
+              >
+                {deleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                Delete my account
+              </button>
+            </div>
+          )}
+
 
           <div className="border-t border-border/50 pt-4 space-y-3">
             <Label className="text-sm font-medium text-muted-foreground">Connect with the developer</Label>

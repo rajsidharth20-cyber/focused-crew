@@ -1,3 +1,4 @@
+import { assertImageFile, MAX_AVATAR_BYTES } from '@/lib/upload-guard';
 import { useEffect, useRef, useState } from 'react';
 import { UserCircle2, Loader2, Camera, Save } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -56,7 +57,7 @@ export function ProfileDialog() {
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 4 * 1024 * 1024) { toast.error('Image must be under 4 MB.'); return; }
+    try { assertImageFile(file, MAX_AVATAR_BYTES); } catch (err: any) { toast.error(err.message); return; }
     setUploading(true);
     try {
       if (isGuest) {
