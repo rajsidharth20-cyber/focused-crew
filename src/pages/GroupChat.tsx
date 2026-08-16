@@ -218,9 +218,10 @@ export default function GroupChat() {
 
   const sendImage = async (file: File) => {
     if (!groupId || !user) return;
+    try { assertImageFile(file); } catch (err: any) { toast.error(err.message); return; }
     setUploading(true);
     const path = `${groupId}/${user.id}-${Date.now()}-${file.name.replace(/[^\w.-]/g, '')}`;
-    const { error: upErr } = await supabase.storage.from('group-images').upload(path, file);
+    const { error: upErr } = await supabase.storage.from('group-images').upload(path, file, { contentType: file.type });
     if (upErr) {
       setUploading(false);
       toast.error(upErr.message);
