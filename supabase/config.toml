@@ -1,16 +1,19 @@
 project_id = "noznnfeuifjqkhnqoooc"
 
 [functions.ai-advisor]
-verify_jwt = false
+verify_jwt = true
 
 [functions.daily-quote]
-verify_jwt = false
+verify_jwt = true
 
 [functions.daily-summary]
-verify_jwt = false
+verify_jwt = true
 
 [functions.push-config]
 verify_jwt = false
 
 [functions.send-push]
+verify_jwt = true
+
+[functions.delete-account]
 verify_jwt = true
