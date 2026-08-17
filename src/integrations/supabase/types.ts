@@ -52,6 +52,89 @@ export type Database = {
           },
         ]
       }
+      announcement_reads: {
+        Row: {
+          announcement_id: string
+          id: string
+          read_at: string
+          user_id: string
+        }
+        Insert: {
+          announcement_id: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Update: {
+          announcement_id?: string
+          id?: string
+          read_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "announcement_reads_announcement_id_fkey"
+            columns: ["announcement_id"]
+            isOneToOne: false
+            referencedRelation: "announcements"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      announcements: {
+        Row: {
+          action_text: string | null
+          action_url: string | null
+          content: string
+          created_at: string
+          created_by: string
+          id: string
+          image_url: string | null
+          is_important: boolean
+          is_published: boolean
+          published_at: string | null
+          scheduled_for: string | null
+          short_description: string | null
+          title: string
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          action_text?: string | null
+          action_url?: string | null
+          content: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          image_url?: string | null
+          is_important?: boolean
+          is_published?: boolean
+          published_at?: string | null
+          scheduled_for?: string | null
+          short_description?: string | null
+          title: string
+          type?: string
+          updated_at?: string
+        }
+        Update: {
+          action_text?: string | null
+          action_url?: string | null
+          content?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          image_url?: string | null
+          is_important?: boolean
+          is_published?: boolean
+          published_at?: string | null
+          scheduled_for?: string | null
+          short_description?: string | null
+          title?: string
+          type?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -1261,6 +1344,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      announcement_read_counts: {
+        Args: never
+        Returns: {
+          announcement_id: string
+          read_count: number
+        }[]
+      }
       consume_rate_limit: {
         Args: { _action: string; _limit: number; _window_seconds: number }
         Returns: boolean
