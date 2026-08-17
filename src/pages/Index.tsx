@@ -22,6 +22,7 @@ import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { StreakCard } from '@/components/StreakCard';
 import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { BottomNav, QUICK_ADD_EVENT } from '@/components/shell/BottomNav';
+import { DeveloperNoticeCard } from '@/components/announcements/DeveloperNoticeCard';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useStreak } from '@/hooks/use-streak';
