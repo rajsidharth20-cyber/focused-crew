@@ -96,6 +96,8 @@ const More = () => {
           <Row to="/copilot" icon={Sparkles} label="AI Copilot" />
           <Row to="/groups" icon={Users} label="Study groups" />
           <Row to="/settings/notifications" icon={Bell} label="Notification settings" />
+          <Row to="/announcements" icon={Megaphone} label="Announcements" />
+          {isStaff && <Row to="/admin/announcements" icon={Megaphone} label="Manage announcements" />}
           <DayAnalysisDialog
             username={username}
             objectives={store.dailyObjectives}
