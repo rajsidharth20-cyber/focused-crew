@@ -95,7 +95,7 @@ export async function generateDailySummaryPDF(input: SummaryInput): Promise<void
   doc.setTextColor(255, 255, 255);
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(22);
-  doc.text('Task Pilot — Daily Summary', margin, 48);
+  doc.text('Focused Crew — Daily Summary', margin, 48);
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(11);
   doc.setTextColor(200, 210, 230);
@@ -195,7 +195,7 @@ export async function generateDailySummaryPDF(input: SummaryInput): Promise<void
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Task Pilot · ${dateStr} · page ${i} of ${pageCount}`, margin, pageH - 20);
+    doc.text(`Focused Crew · ${dateStr} · page ${i} of ${pageCount}`, margin, pageH - 20);
   }
 
   const filename = `task-pilot-summary-${new Date().toISOString().slice(0, 10)}.pdf`;

@@ -1,6 +1,7 @@
 import { assertImageFile, MAX_AVATAR_BYTES } from '@/lib/upload-guard';
 import { useEffect, useRef, useState } from 'react';
-import { UserCircle2, Loader2, Camera, Save } from 'lucide-react';
+import { UserCircle2, Loader2, Camera, Save, Lock, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -25,6 +26,7 @@ export function ProfileDialog() {
   const [fullName, setFullName] = useState('');
   const [bio, setBio] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
+  const [isPrivate, setIsPrivate] = useState(false);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { setCallSign(username ?? ''); }, [username]);
@@ -43,11 +45,13 @@ export function ProfileDialog() {
     }
     if (!user) return;
     setLoading(true);
-    supabase.from('profiles').select('full_name, bio, avatar_url').eq('id', user.id).maybeSingle()
+    supabase.from('profiles').select('full_name, bio, avatar_url, is_private').eq('id', user.id).maybeSingle()
       .then(({ data }) => {
         setFullName(data?.full_name ?? '');
         setBio(data?.bio ?? '');
         setAvatarUrl(data?.avatar_url ?? '');
+        setIsPrivate(Boolean(data?.is_private));
+        setIsPrivate(Boolean(data?.is_private));
       })
       .then(() => setLoading(false));
   }, [open, user, isGuest]);
@@ -93,7 +97,7 @@ export function ProfileDialog() {
         localStorage.setItem(GUEST_KEY, JSON.stringify(g));
       } else if (user) {
         const { error } = await supabase.from('profiles').update({
-          full_name: fullName || null, bio: bio || null, avatar_url: avatarUrl || null,
+          full_name: fullName || null, bio: bio || null, avatar_url: avatarUrl || null, is_private: isPrivate,
         }).eq('id', user.id);
         if (error) throw error;
       }
@@ -169,6 +173,37 @@ export function ProfileDialog() {
               <Label className="text-xs">Bio</Label>
               <Textarea value={bio} onChange={e => setBio(e.target.value)} placeholder="A few words about you" rows={3} />
             </div>
+
+            {!isGuest && (
+              <label className="flex items-start gap-3 rounded-xl border border-border p-3">
+                <input
+                  type="checkbox"
+                  checked={isPrivate}
+                  onChange={e => setIsPrivate(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 accent-[hsl(var(--primary))]"
+                />
+                <span className="min-w-0">
+                  <span className="flex items-center gap-1.5 text-sm font-medium">
+                    <Lock className="w-3.5 h-3.5" /> Private account
+                  </span>
+                  <span className="mt-0.5 block text-[11px] text-muted-foreground">
+                    Only approved followers can see your posts, stories and study stats.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            {!isGuest && user && (
+              <Link
+                to={`/u/${user.id}`}
+                onClick={() => setOpen(false)}
+                className="flex items-center justify-between rounded-xl border border-border p-3 text-sm hover:bg-secondary/50"
+              >
+                View my public profile
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </Link>
+            )}
+
 
             <button
               onClick={handleSave}

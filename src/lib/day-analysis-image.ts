@@ -209,7 +209,7 @@ export function renderDayAnalysis(theme: CardTheme, data: DayAnalysisData): HTML
   // Footer
   ctx.fillStyle = p.muted;
   ctx.font = '600 26px Inter, system-ui, sans-serif';
-  ctx.fillText('Task Pilot', M, H - 80);
+  ctx.fillText('Focused Crew', M, H - 80);
 
   return canvas;
 }

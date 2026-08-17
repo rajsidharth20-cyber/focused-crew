@@ -27,8 +27,8 @@ export default defineConfig(({ mode }) => ({
         globIgnores: ["**/firebase-messaging-sw.js"],
       },
       manifest: {
-        name: "Task Pilot - AI Schedule Planner",
-        short_name: "Task Pilot",
+        name: "Focused Crew - AI Schedule Planner",
+        short_name: "Focused Crew",
         description: "AI-powered daily schedule organizer that helps you decide what to do next",
         theme_color: "#d4910a",
         background_color: "#171310",

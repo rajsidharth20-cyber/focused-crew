@@ -151,7 +151,7 @@ export async function generateWeeklyReportPDF(input: ReportInput): Promise<void>
   // ------ Header band ------
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, pageW, 96, 'F');
-  text('Task Pilot — Weekly Study Report', margin, 46, { size: 20, bold: true, color: [255, 255, 255] });
+  text('Focused Crew — Weekly Study Report', margin, 46, { size: 20, bold: true, color: [255, 255, 255] });
   text(`${username ? username + '  ·  ' : ''}${rangeStr}`, margin, 70, { size: 11, color: [200, 210, 230] });
   y = 124;
 
@@ -304,7 +304,7 @@ export async function generateWeeklyReportPDF(input: ReportInput): Promise<void>
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(150);
-    doc.text(`Task Pilot · Weekly Report · ${rangeStr} · generated ${generatedStr} · page ${i} of ${pageCount}`, margin, pageH - 20);
+    doc.text(`Focused Crew · Weekly Report · ${rangeStr} · generated ${generatedStr} · page ${i} of ${pageCount}`, margin, pageH - 20);
   }
 
   doc.save(`task-pilot-weekly-${isoDay(stats.thisWeekStart)}.pdf`);

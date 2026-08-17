@@ -22,7 +22,7 @@ const ready = (async () => {
     const messaging = firebase.messaging();
     messaging.onBackgroundMessage((payload) => {
       const d = payload.data || {};
-      const title = d.title || "Task Pilot";
+      const title = d.title || "Focused Crew";
       self.registration.showNotification(title, {
         body: d.body || "",
         icon: "/pwa-192x192.png",

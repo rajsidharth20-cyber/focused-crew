@@ -2,19 +2,20 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Plane, Swords, Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
-import { SubjectBoard, fmtHMS } from '@/components/home/SubjectBoard';
+import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
-import { StudyingNowSection } from '@/components/home/StudyingNowSection';
+import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
 import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
-import { getEffectiveToday } from '@/lib/day-boundary';
+import { useDayStart } from '@/hooks/use-day-start';
+import { dayKeyFor, getEffectiveToday } from '@/lib/day-boundary';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
-import { DailyObjectives } from '@/components/DailyObjectives';
+
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
@@ -43,6 +44,7 @@ const Index = () => {
   const streak = useStreak(studyStore.sessions);
   const { username } = useAuth();
   const { theme } = useTheme();
+  useDayStart();
   useEventReminders(store.events, store.commitments);
   const now = useNow(30_000);
   const [focusMode, setFocusMode] = useState(false);
@@ -74,10 +76,7 @@ const Index = () => {
     const map: Record<string, number> = {};
     for (const s of studyStore.sessions) {
       if (!s.subjectId) continue;
-      const d = new Date(s.startedAt);
-      if (d.getHours() < 3) d.setDate(d.getDate() - 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-      if (key !== day) continue;
+      if (dayKeyFor(new Date(s.startedAt)) !== day) continue;
       map[s.subjectId] = (map[s.subjectId] ?? 0) + s.durationSeconds;
     }
     return map;
@@ -209,39 +208,12 @@ const Index = () => {
                 <ChevronRight className="h-4 w-4 shrink-0 opacity-90" />
               </button>
 
-              <StudyingNowSection />
-
-              <SubjectBoard
-                subjects={store.subjects}
-                totals={todayTotals}
-                activeSubjectId={timer.activeSubjectId}
-                isRunning={timer.isRunning}
-                liveElapsed={timer.elapsed}
-                onPlay={handlePlay}
-                onPause={timer.pause}
-                onOpenActive={() => setTimerOpen(true)}
-                onAdd={store.addSubject}
-                onRename={(id, name) => store.updateSubject(id, { name })}
-                onRecolor={(id, color) => store.updateSubject(id, { color })}
-                onReorder={store.reorderSubjects}
-                onDelete={store.removeSubject}
-              />
-
-              {/* Today's tasks */}
+              {/* Today's objectives (read-only — edit in the Planner) */}
               <div ref={dailyRef} className="scroll-mt-20">
-                <DailyObjectives
+                <TodayObjectiveList
                   subjects={store.subjects}
                   objectives={store.dailyObjectives}
-                  pastObjectives={store.pastObjectives}
-                  onAdd={store.addDailyObjective}
                   onToggle={store.toggleDailyObjective}
-                  onAddNote={store.addProgressNote}
-                  onUpdateNotes={store.updateProgressNotes}
-                  onUpdatePriority={store.updateObjectivePriority}
-                  onRemove={store.removeDailyObjective}
-                  onCarryForward={store.carryForwardObjective}
-                  templates={store.objectiveTemplates}
-                  onRemoveTemplate={store.removeObjectiveTemplate}
                 />
               </div>
 

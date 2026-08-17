@@ -4,6 +4,8 @@ import { BottomNav } from '@/components/shell/BottomNav';
 import { TodayTimeline } from '@/components/TodayTimeline';
 import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
+import { DailyObjectives } from '@/components/DailyObjectives';
+import { SubjectManager } from '@/components/SubjectManager';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useNow } from '@/hooks/use-now';
@@ -58,7 +60,32 @@ const Planner = () => {
           <MiniStat icon={Target} label="Deadlines" value={String(withDeadline)} />
         </motion.section>
 
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.03 }}>
+          <DailyObjectives
+            subjects={store.subjects}
+            objectives={store.dailyObjectives}
+            pastObjectives={store.pastObjectives}
+            onAdd={store.addDailyObjective}
+            onToggle={store.toggleDailyObjective}
+            onAddNote={store.addProgressNote}
+            onUpdateNotes={store.updateProgressNotes}
+            onUpdatePriority={store.updateObjectivePriority}
+            onRemove={store.removeDailyObjective}
+            onCarryForward={store.carryForwardObjective}
+            templates={store.objectiveTemplates}
+            onRemoveTemplate={store.removeObjectiveTemplate}
+          />
+        </motion.div>
+
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.05 }}>
+          <SubjectManager
+            subjects={store.subjects}
+            onAdd={store.addSubject}
+            onRemove={store.removeSubject}
+          />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.07 }}>
           <TodayTimeline
             commitments={store.commitments}
             events={store.events}

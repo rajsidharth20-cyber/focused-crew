@@ -180,16 +180,29 @@ export function usePlannerStore() {
         t.recurringDays?.includes(todayDow) && !todaysRows.some(o => o.templateId === t.id),
       );
       if (missing.length > 0) {
-        const { data: created } = await supabase.from('daily_objectives').insert(
-          missing.map(t => ({
-            user_id: user.id, subject_id: t.subjectId, task: t.task,
-            estimated_minutes: t.estimatedMinutes, date: today, deadline: null,
-            priority: t.priority, progress_notes: [], template_id: t.id, is_template: false,
-          })),
-        ).select();
+        // Ignore duplicates: another tab/mount may have materialised the same copy.
+        const { data: created } = await supabase
+          .from('daily_objectives')
+          .upsert(
+            missing.map(t => ({
+              user_id: user.id, subject_id: t.subjectId, task: t.task,
+              estimated_minutes: t.estimatedMinutes, date: today, deadline: null,
+              priority: t.priority, progress_notes: [], template_id: t.id, is_template: false,
+            })),
+            { onConflict: 'user_id,template_id,date', ignoreDuplicates: true },
+          )
+          .select();
         (created ?? []).forEach((r: any) => todaysRows.push(mapDO(r)));
       }
-      setDailyObjectives(todaysRows);
+      // Safety net: never show the same recurring task twice on one day.
+      const seen = new Set<string>();
+      const deduped = todaysRows.filter(o => {
+        const key = o.templateId ? `t:${o.templateId}` : `i:${o.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setDailyObjectives(deduped);
       setPastObjectives((pastDoRes.data ?? []).map(mapDO).filter(o => !o.isTemplate));
 
       setCommitments((cRes.data ?? []).map((c: any) => ({

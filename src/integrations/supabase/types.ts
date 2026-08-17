@@ -241,6 +241,33 @@ export type Database = {
         }
         Relationships: []
       }
+      follows: {
+        Row: {
+          created_at: string
+          follower_id: string
+          following_id: string
+          id: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          following_id: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          following_id?: string
+          id?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       friendships: {
         Row: {
           addressee_id: string
@@ -709,24 +736,30 @@ export type Database = {
           avatar_url: string | null
           bio: string | null
           created_at: string
+          day_start_hour: number
           full_name: string | null
           id: string
+          is_private: boolean
           username: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          day_start_hour?: number
           full_name?: string | null
           id: string
+          is_private?: boolean
           username?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
           created_at?: string
+          day_start_hour?: number
           full_name?: string | null
           id?: string
+          is_private?: boolean
           username?: string | null
         }
         Relationships: []
@@ -1232,6 +1265,7 @@ export type Database = {
         Args: { _action: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
+      get_profile_overview: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

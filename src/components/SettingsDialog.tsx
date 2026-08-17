@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2, Trash2 } from 'lucide-react';
+import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2, Trash2, Sunrise } from 'lucide-react';
+import { useDayStart, DAY_START_OPTIONS } from '@/hooks/use-day-start';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { GoogleCalendarCard } from '@/components/GoogleCalendarCard';
 export function SettingsDialog() {
   const { theme, setTheme } = useTheme();
   const { user, isGuest } = useAuth();
+  const dayStart = useDayStart();
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [changing, setChanging] = useState(false);
@@ -89,6 +91,24 @@ export function SettingsDialog() {
                 </button>
               ))}
             </div>
+          </div>
+
+          <div className="border-t border-border/50 pt-4">
+            <Label className="text-sm font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+              <Sunrise className="w-3.5 h-3.5" /> New day starts at
+            </Label>
+            <p className="text-xs text-muted-foreground mb-2">
+              Tasks and study stats roll over to a fresh day at this time.
+            </p>
+            <select
+              value={dayStart.hour}
+              onChange={e => dayStart.setHour(Number(e.target.value))}
+              className="w-full rounded-md border border-border bg-background px-3 py-2 text-sm"
+            >
+              {DAY_START_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>{o.label}</option>
+              ))}
+            </select>
           </div>
 
           {user && !isGuest && (

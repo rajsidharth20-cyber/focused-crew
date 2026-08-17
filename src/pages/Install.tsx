@@ -46,7 +46,7 @@ export default function InstallPage() {
             <Smartphone className="w-8 h-8 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground mb-2">Already Installed!</h1>
-          <p className="text-sm text-muted-foreground mb-6">Task Pilot is running as an app.</p>
+          <p className="text-sm text-muted-foreground mb-6">Focused Crew is running as an app.</p>
           <button
             onClick={() => navigate('/')}
             className="bg-primary text-primary-foreground px-6 py-3 rounded-lg font-medium hover:opacity-90 transition-opacity"
@@ -69,10 +69,10 @@ export default function InstallPage() {
         <div className="text-center">
           <img
             src="/pwa-192x192.png"
-            alt="Task Pilot"
+            alt="Focused Crew"
             className="w-20 h-20 rounded-2xl mx-auto mb-4 shadow-lg"
           />
-          <h1 className="font-display text-2xl font-bold text-foreground">Task Pilot</h1>
+          <h1 className="font-display text-2xl font-bold text-foreground">Focused Crew</h1>
           <p className="text-sm text-muted-foreground mt-1">AI-Powered Schedule Planner</p>
         </div>
 
