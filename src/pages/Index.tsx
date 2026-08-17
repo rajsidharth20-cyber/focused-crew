@@ -191,6 +191,8 @@ const Index = () => {
                 onOpenStreak={() => setStreakOpen(true)}
               />
 
+              <DeveloperNoticeCard />
+
               {/* Primary action */}
               <button
                 onClick={() => (activeSubject ? setTimerOpen(true) : setStartOpen(true))}
