@@ -2,7 +2,8 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles } from 'lucide-react';
+import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles, Megaphone } from 'lucide-react';
+import { useIsStaff } from '@/hooks/use-announcements';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
@@ -22,6 +23,7 @@ const More = () => {
   const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const t = useTerms();
+  const { isStaff } = useIsStaff();
   const [downloading, setDownloading] = useState(false);
 
   const handleDownloadSummary = async () => {
@@ -96,6 +98,8 @@ const More = () => {
           <Row to="/copilot" icon={Sparkles} label="AI Copilot" />
           <Row to="/groups" icon={Users} label="Study groups" />
           <Row to="/settings/notifications" icon={Bell} label="Notification settings" />
+          <Row to="/announcements" icon={Megaphone} label="Announcements" />
+          {isStaff && <Row to="/admin/announcements" icon={Megaphone} label="Manage announcements" />}
           <DayAnalysisDialog
             username={username}
             objectives={store.dailyObjectives}

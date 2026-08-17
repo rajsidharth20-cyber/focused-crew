@@ -16,6 +16,8 @@ import Chat, { ChatThread } from "./pages/Chat";
 import SocialHub from "./pages/SocialHub";
 import Feed from "./pages/Feed";
 import Notes from "./pages/Notes";
+import Announcements from "./pages/Announcements";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";
 import GroupDashboard from "./pages/GroupDashboard";
@@ -62,6 +64,8 @@ const App = () => (
             <Route path="/social" element={<ProtectedRoute><SocialHub /></ProtectedRoute>} />
             <Route path="/feed" element={<ProtectedRoute><Feed /></ProtectedRoute>} />
             <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
+            <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
+            <Route path="/admin/announcements" element={<ProtectedRoute><AdminAnnouncements /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
