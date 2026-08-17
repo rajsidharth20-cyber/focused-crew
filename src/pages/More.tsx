@@ -23,6 +23,7 @@ const More = () => {
   const studyStore = useStudyStore();
   const { username, signOut } = useAuth();
   const t = useTerms();
+  const { isStaff } = useIsStaff();
   const [downloading, setDownloading] = useState(false);
 
   const handleDownloadSummary = async () => {
