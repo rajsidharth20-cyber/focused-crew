@@ -248,7 +248,7 @@ serve(async (req) => {
         }
         const payload = {
           summary: e.title,
-          description: [e.description, "Synced from Task Pilot"].filter(Boolean).join("\n\n"),
+          description: [e.description, "Synced from Focused Crew"].filter(Boolean).join("\n\n"),
           ...when,
           ...(recurrence ? { recurrence } : {}),
         };
@@ -270,7 +270,7 @@ serve(async (req) => {
         }
         const payload = {
           summary: c.title,
-          description: `${c.type ?? "commitment"} — synced from Task Pilot`,
+          description: `${c.type ?? "commitment"} — synced from Focused Crew`,
           ...when,
           ...(recurrence ? { recurrence } : {}),
         };
@@ -282,7 +282,7 @@ serve(async (req) => {
         if (!o.deadline || o.deadline < today || o.deadline > horizon) continue;
         const payload = {
           summary: `🎯 ${o.task}`,
-          description: `Objective deadline — synced from Task Pilot`,
+          description: `Objective deadline — synced from Focused Crew`,
           ...allDay(o.deadline),
         };
         items.push({ type: "objective", id: o.id, fingerprint: JSON.stringify(payload), payload });

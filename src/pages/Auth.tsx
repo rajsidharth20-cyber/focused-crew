@@ -148,7 +148,7 @@ export default function Auth() {
            <Plane className="w-5 h-5 text-primary" />
           </div>
           <h1 className="font-display text-xl font-bold text-foreground tracking-tight">
-            Task Pilot
+            Focused Crew
           </h1>
         </div>
 

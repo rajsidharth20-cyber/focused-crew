@@ -561,12 +561,15 @@ Deno.serve(async (req) => {
     if (!user) return json({ error: "Not authenticated" }, 401);
 
     const body = await req.json();
-    const incoming: Array<{ role: string; content: string }> = body.messages ?? [];
+    // content may be a plain string or OpenAI-style parts (text + image_url) for image uploads
+    const incoming: Array<{ role: string; content: unknown }> = body.messages ?? [];
     const today: string = typeof body.today === "string" ? body.today : isoDate(new Date());
     const localTime: string = body.localTime ?? "";
     const timeZone: string = body.timeZone ?? "";
 
-    const system = `You are Copilot, the in-app assistant for Task Pilot, a study planner. You were created by Sidharth.
+    const system = `You are Copilot, the in-app assistant for Focused Crew, a study planner. You were created by Sidharth.
+
+If the user attaches an image (timetable, syllabus, notes, handwritten plan), read it carefully and turn it into concrete planner items with the tools.
 
 You can BOTH analyze the user's data and change it for them using the provided tools: subjects, daily objectives (tasks), commitments (fixed time blocks), events/deadlines, weekly targets and daily notes.
 

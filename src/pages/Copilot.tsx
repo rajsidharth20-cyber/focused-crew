@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
-import { ArrowLeft, Bot, Loader2, Send, Sparkles, Wand2 } from 'lucide-react';
+import { ArrowLeft, Bot, ImagePlus, Loader2, Send, Sparkles, Wand2, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
 import { BottomNav } from '@/components/shell/BottomNav';
+import { assertImageFile } from '@/lib/upload-guard';
 
 interface CopilotAction {
   name: string;
@@ -18,6 +19,8 @@ interface CopilotAction {
 interface CopilotMessage {
   role: 'user' | 'assistant';
   content: string;
+  /** Data URL of an image the user attached to this message. */
+  image?: string;
   actions?: CopilotAction[];
 }
 
@@ -55,8 +58,29 @@ const Copilot = () => {
   const { user, isGuest } = useAuth();
   const [messages, setMessages] = useState<CopilotMessage[]>([]);
   const [input, setInput] = useState('');
+  const [image, setImage] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const endRef = useRef<HTMLDivElement>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const pickImage = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      assertImageFile(file);
+      const dataUrl = await new Promise<string>((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(r.result as string);
+        r.onerror = rej;
+        r.readAsDataURL(file);
+      });
+      setImage(dataUrl);
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Could not read that image');
+    } finally {
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -64,19 +88,34 @@ const Copilot = () => {
 
   const send = async (text: string) => {
     const content = text.trim();
-    if (!content || loading) return;
+    const attached = image;
+    if ((!content && !attached) || loading) return;
     if (isGuest || !user) {
       toast.error('Sign in to use Copilot — it needs your synced data.');
       return;
     }
-    const next = [...messages, { role: 'user' as const, content }];
+    const next = [
+      ...messages,
+      { role: 'user' as const, content: content || 'Look at this image.', image: attached ?? undefined },
+    ];
     setMessages(next);
     setInput('');
+    setImage(null);
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('ai-copilot', {
         body: {
-          messages: next.map(m => ({ role: m.role, content: m.content })),
+          messages: next.map(m =>
+            m.image
+              ? {
+                  role: m.role,
+                  content: [
+                    { type: 'text', text: m.content },
+                    { type: 'image_url', image_url: { url: m.image } },
+                  ],
+                }
+              : { role: m.role, content: m.content }
+          ),
           today: getEffectiveToday(),
           localTime: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -184,7 +223,16 @@ const Copilot = () => {
                   )}
                 </>
               ) : (
-                m.content
+                <>
+                  {m.image && (
+                    <img
+                      src={m.image}
+                      alt="Attached"
+                      className="mb-2 max-h-56 w-full rounded-2xl object-cover"
+                    />
+                  )}
+                  {m.content}
+                </>
               )}
             </div>
           </motion.div>
@@ -205,7 +253,30 @@ const Copilot = () => {
         className="fixed bottom-[86px] left-0 right-0 z-30 px-4"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto flex items-center gap-2 glass-card px-2 py-2 backdrop-blur-xl">
+        <div className="max-w-2xl mx-auto glass-card px-2 py-2 backdrop-blur-xl">
+          {image && (
+            <div className="relative mb-2 ml-1 w-fit">
+              <img src={image} alt="Attachment preview" className="h-16 w-16 rounded-xl object-cover" />
+              <button
+                type="button"
+                onClick={() => setImage(null)}
+                aria-label="Remove image"
+                className="press absolute -right-1.5 -top-1.5 grid h-5 w-5 place-items-center rounded-full bg-background/90 border border-border"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+          <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={pickImage} />
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            aria-label="Attach image"
+            className="press grid h-9 w-9 shrink-0 place-items-center rounded-2xl border border-border/60 text-muted-foreground"
+          >
+            <ImagePlus className="h-4 w-4" />
+          </button>
           <input
             value={input}
             onChange={e => setInput(e.target.value)}
@@ -214,7 +285,7 @@ const Copilot = () => {
           />
           <button
             type="submit"
-            disabled={loading || !input.trim()}
+            disabled={loading || (!input.trim() && !image)}
             className="press w-9 h-9 rounded-2xl bg-gradient-primary grid place-items-center disabled:opacity-40"
             aria-label="Send"
           >
@@ -224,6 +295,7 @@ const Copilot = () => {
               <Send className="w-4 h-4 text-primary-foreground" />
             )}
           </button>
+          </div>
         </div>
       </form>
 

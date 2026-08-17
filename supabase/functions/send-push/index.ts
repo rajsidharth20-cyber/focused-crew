@@ -183,7 +183,7 @@ serve(async (req) => {
     const category: Category = payload.category;
     if (!CATEGORIES.includes(category)) throw new Error("Invalid category");
 
-    const title: string = String(payload.title ?? "Task Pilot").slice(0, 120);
+    const title: string = String(payload.title ?? "Focused Crew").slice(0, 120);
     const body: string = String(payload.body ?? "").slice(0, 240);
     const url: string = String(payload.url ?? "/");
     const dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
