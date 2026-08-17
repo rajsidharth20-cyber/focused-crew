@@ -16,6 +16,8 @@ import Chat, { ChatThread } from "./pages/Chat";
 import SocialHub from "./pages/SocialHub";
 import Feed from "./pages/Feed";
 import Notes from "./pages/Notes";
+import Announcements from "./pages/Announcements";
+import AdminAnnouncements from "./pages/AdminAnnouncements";
 import UserProfile from "./pages/UserProfile";
 import StudyGroups from "./pages/StudyGroups";
 import GroupDashboard from "./pages/GroupDashboard";
