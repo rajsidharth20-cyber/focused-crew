@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Plane, Swords, Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
+import { TodayTimeline } from '@/components/TodayTimeline';
 import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
@@ -15,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
+import appLogo from '@/assets/logo.png.asset.json';
+
 
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
@@ -65,7 +68,7 @@ const Index = () => {
   }, []);
 
   const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const ThemeIcon = theme === 'war' ? Swords : Plane;
+  
 
   // ---- subject timers ----
   const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
@@ -82,6 +85,16 @@ const Index = () => {
     }
     return map;
   }, [studyStore.sessions]);
+
+  // Only today's events belong on the home schedule (store also holds upcoming ones).
+  const todayEvents = useMemo(() => {
+    const day = getEffectiveToday();
+    const dow = new Date(day + 'T00:00:00').getDay();
+    return store.events.filter(e =>
+      e.eventDate === day || (e.recurringDays?.includes(dow) ?? false)
+    );
+  }, [store.events]);
+
 
   const activeSubject = store.subjects.find(s => s.id === timer.activeSubjectId) ?? null;
 
@@ -137,9 +150,12 @@ const Index = () => {
       <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-gradient-primary shadow-md">
-              <ThemeIcon className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <img
+              src={appLogo.url}
+              alt="Focused Crew logo"
+              className="h-9 w-9 shrink-0 rounded-2xl object-cover shadow-md"
+            />
+
             <div className="min-w-0">
               <h1 className="truncate font-display text-[15.5px] font-bold leading-tight tracking-tight">
                 {greeting(now)}{username ? `, ${username}` : ''} 👋
@@ -219,6 +235,24 @@ const Index = () => {
                   onToggle={store.toggleDailyObjective}
                 />
               </div>
+
+              {/* Today's schedule & events (read-only — edit in the Planner) */}
+              <section className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Today's schedule
+                  </h2>
+                  <Link to="/planner" className="flex items-center gap-1 text-[11.5px] text-muted-foreground">
+                    Edit in Planner <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                <TodayTimeline
+                  commitments={store.commitments}
+                  events={todayEvents}
+                  objectives={store.dailyObjectives}
+                />
+              </section>
+
 
               <Link
                 to="/study"

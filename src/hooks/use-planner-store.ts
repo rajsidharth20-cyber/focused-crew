@@ -134,10 +134,29 @@ export function usePlannerStore() {
     }
 
     if (!user) return;
-    setLoading(true);
+    const cacheKey = `fc_planner_cache_${user.id}_${today}`;
+
+    // Instant paint from the last snapshot while the network request runs.
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const c = JSON.parse(cached);
+        setSubjects(c.subjects ?? []);
+        setWeeklyTargets(c.weeklyTargets ?? []);
+        setDailyObjectives(c.dailyObjectives ?? []);
+        setCommitments(c.commitments ?? []);
+        setEvents(c.events ?? []);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    } catch {
+      setLoading(true);
+    }
 
     const fetchAll = async () => {
       const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes, tplRes] = await Promise.all([
+
         supabase.from('subjects').select('*').eq('user_id', user.id),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
@@ -205,19 +224,34 @@ export function usePlannerStore() {
       setDailyObjectives(deduped);
       setPastObjectives((pastDoRes.data ?? []).map(mapDO).filter(o => !o.isTemplate));
 
-      setCommitments((cRes.data ?? []).map((c: any) => ({
+      const nextCommitments = (cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
         recurringDays: c.recurring_days ?? null,
-      })));
+      }));
+      setCommitments(nextCommitments);
 
-      setEvents((evRes.data ?? []).map((e: any) => ({
+      const nextEvents = (evRes.data ?? []).map((e: any) => ({
         id: e.id, title: e.title, eventDate: e.event_date,
         startTime: e.start_time, endTime: e.end_time, description: e.description,
         recurringDays: e.recurring_days ?? null,
-      })));
+      }));
+      setEvents(nextEvents);
       setLoading(false);
+
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          subjects: (sRes.data ?? [])
+            .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
+            .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+          weeklyTargets: (wtRes.data ?? []).map(mapWT),
+          dailyObjectives: deduped,
+          commitments: nextCommitments,
+          events: nextEvents,
+        }));
+      } catch { /* cache is best-effort */ }
     };
+
 
     fetchAll();
   }, [user, isGuest, today, getGuestData]);
