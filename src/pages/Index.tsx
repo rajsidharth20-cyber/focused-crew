@@ -68,7 +68,7 @@ const Index = () => {
   }, []);
 
   const today = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
-  const ThemeIcon = theme === 'war' ? Swords : Plane;
+  
 
   // ---- subject timers ----
   const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
