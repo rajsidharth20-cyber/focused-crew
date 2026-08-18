@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Settings, Swords, Plane, Sparkles, Cloud, Instagram, Mail, KeyRound, Loader2, Trash2, Sunrise } from 'lucide-react';
+import { Settings, Instagram, Mail, KeyRound, Loader2, Trash2, Sunrise } from 'lucide-react';
 import { useDayStart, DAY_START_OPTIONS } from '@/hooks/use-day-start';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -13,7 +13,7 @@ import { Bell } from 'lucide-react';
 import { GoogleCalendarCard } from '@/components/GoogleCalendarCard';
 
 export function SettingsDialog() {
-  const { theme, setTheme } = useTheme();
+  const { theme, setTheme, themes } = useTheme();
   const { user, isGuest } = useAuth();
   const dayStart = useDayStart();
   const [newPassword, setNewPassword] = useState('');
