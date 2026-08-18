@@ -140,9 +140,12 @@ const Index = () => {
       <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-2xl items-center justify-between gap-3 px-4">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="grid h-9 w-9 shrink-0 place-items-center rounded-2xl bg-gradient-primary shadow-md">
-              <ThemeIcon className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <img
+              src={appLogo.url}
+              alt="Focused Crew logo"
+              className="h-9 w-9 shrink-0 rounded-2xl object-cover shadow-md"
+            />
+
             <div className="min-w-0">
               <h1 className="truncate font-display text-[15.5px] font-bold leading-tight tracking-tight">
                 {greeting(now)}{username ? `, ${username}` : ''} 👋
