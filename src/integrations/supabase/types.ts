@@ -823,6 +823,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_private: boolean
+          theme: string | null
           username: string | null
         }
         Insert: {
@@ -833,6 +834,7 @@ export type Database = {
           full_name?: string | null
           id: string
           is_private?: boolean
+          theme?: string | null
           username?: string | null
         }
         Update: {
@@ -843,6 +845,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_private?: boolean
+          theme?: string | null
           username?: string | null
         }
         Relationships: []
