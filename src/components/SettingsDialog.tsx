@@ -68,26 +68,33 @@ export function SettingsDialog() {
         </DialogHeader>
         <div className="space-y-6 pt-2">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground mb-3 block">Theme</Label>
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { key: 'cirrus', Icon: Cloud, name: 'Cirrus', desc: 'Soft white & lavender' },
-                { key: 'flight', Icon: Plane, name: 'Flight', desc: 'Sky blue cockpit' },
-                { key: 'war', Icon: Swords, name: 'War', desc: 'Tactical fire ops' },
-                { key: 'premium', Icon: Sparkles, name: 'Premium', desc: 'Light indigo' },
-              ].map(({ key, Icon, name, desc }) => (
+            <Label className="text-sm font-medium text-muted-foreground mb-1 block">Theme</Label>
+            <p className="text-xs text-muted-foreground mb-3">Saved to your account and synced across devices.</p>
+            <div className="grid grid-cols-2 gap-2.5">
+              {themes.map(t => (
                 <button
-                  key={key}
-                  onClick={() => setTheme(key as any)}
-                  className={`flex flex-col items-center gap-2 p-4 rounded-2xl border-2 transition-all ${
-                    theme === key
+                  key={t.key}
+                  onClick={() => setTheme(t.key)}
+                  className={`press flex items-center gap-3 p-3 rounded-2xl border-2 text-left transition-all ${
+                    theme === t.key
                       ? 'border-primary bg-primary/10 text-foreground'
                       : 'border-border bg-card text-muted-foreground hover:border-muted-foreground'
                   }`}
                 >
-                  <Icon className="w-6 h-6" />
-                  <span className="text-sm font-semibold">{name}</span>
-                  <span className="text-[10px] text-muted-foreground text-center">{desc}</span>
+                  <span
+                    className="h-9 w-9 shrink-0 rounded-xl border border-border/60 overflow-hidden flex flex-col"
+                    aria-hidden
+                    style={{ background: t.swatch[0] }}
+                  >
+                    <span className="flex-1" style={{ background: t.swatch[1] }} />
+                    <span className="h-2.5 w-full" style={{ background: t.swatch[2] }} />
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-semibold text-foreground truncate">
+                      {t.emoji} {t.name}
+                    </span>
+                    <span className="block text-[10px] text-muted-foreground truncate">{t.desc}</span>
+                  </span>
                 </button>
               ))}
             </div>
