@@ -226,6 +226,24 @@ const Index = () => {
                 />
               </div>
 
+              {/* Today's schedule & events (read-only — edit in the Planner) */}
+              <section className="space-y-2">
+                <div className="flex items-center justify-between px-1">
+                  <h2 className="font-display text-[13px] font-semibold uppercase tracking-wider text-muted-foreground">
+                    Today's schedule
+                  </h2>
+                  <Link to="/planner" className="flex items-center gap-1 text-[11.5px] text-muted-foreground">
+                    Edit in Planner <ChevronRight className="h-3 w-3" />
+                  </Link>
+                </div>
+                <TodayTimeline
+                  commitments={store.commitments}
+                  events={todayEvents}
+                  objectives={store.dailyObjectives}
+                />
+              </section>
+
+
               <Link
                 to="/study"
                 className="flex items-center gap-2 px-1 pb-2 text-[12px] text-muted-foreground"
