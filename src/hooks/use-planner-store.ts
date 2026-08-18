@@ -224,19 +224,34 @@ export function usePlannerStore() {
       setDailyObjectives(deduped);
       setPastObjectives((pastDoRes.data ?? []).map(mapDO).filter(o => !o.isTemplate));
 
-      setCommitments((cRes.data ?? []).map((c: any) => ({
+      const nextCommitments = (cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
         recurringDays: c.recurring_days ?? null,
-      })));
+      }));
+      setCommitments(nextCommitments);
 
-      setEvents((evRes.data ?? []).map((e: any) => ({
+      const nextEvents = (evRes.data ?? []).map((e: any) => ({
         id: e.id, title: e.title, eventDate: e.event_date,
         startTime: e.start_time, endTime: e.end_time, description: e.description,
         recurringDays: e.recurring_days ?? null,
-      })));
+      }));
+      setEvents(nextEvents);
       setLoading(false);
+
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify({
+          subjects: (sRes.data ?? [])
+            .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
+            .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
+          weeklyTargets: (wtRes.data ?? []).map(mapWT),
+          dailyObjectives: deduped,
+          commitments: nextCommitments,
+          events: nextEvents,
+        }));
+      } catch { /* cache is best-effort */ }
     };
+
 
     fetchAll();
   }, [user, isGuest, today, getGuestData]);
