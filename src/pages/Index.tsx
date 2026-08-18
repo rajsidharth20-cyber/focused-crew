@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Plane, Swords, Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
+import { TodayTimeline } from '@/components/TodayTimeline';
 import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
@@ -15,6 +16,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { SettingsDialog } from '@/components/SettingsDialog';
 import { ProfileDialog } from '@/components/ProfileDialog';
 import { useTheme } from '@/hooks/use-theme';
+import appLogo from '@/assets/logo.png.asset.json';
+
 
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
