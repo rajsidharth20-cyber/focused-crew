@@ -134,10 +134,29 @@ export function usePlannerStore() {
     }
 
     if (!user) return;
-    setLoading(true);
+    const cacheKey = `fc_planner_cache_${user.id}_${today}`;
+
+    // Instant paint from the last snapshot while the network request runs.
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const c = JSON.parse(cached);
+        setSubjects(c.subjects ?? []);
+        setWeeklyTargets(c.weeklyTargets ?? []);
+        setDailyObjectives(c.dailyObjectives ?? []);
+        setCommitments(c.commitments ?? []);
+        setEvents(c.events ?? []);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    } catch {
+      setLoading(true);
+    }
 
     const fetchAll = async () => {
       const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes, tplRes] = await Promise.all([
+
         supabase.from('subjects').select('*').eq('user_id', user.id),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
