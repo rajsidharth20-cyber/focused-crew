@@ -86,6 +86,16 @@ const Index = () => {
     return map;
   }, [studyStore.sessions]);
 
+  // Only today's events belong on the home schedule (store also holds upcoming ones).
+  const todayEvents = useMemo(() => {
+    const day = getEffectiveToday();
+    const dow = new Date(day + 'T00:00:00').getDay();
+    return store.events.filter(e =>
+      e.eventDate === day || (e.recurringDays?.includes(dow) ?? false)
+    );
+  }, [store.events]);
+
+
   const activeSubject = store.subjects.find(s => s.id === timer.activeSubjectId) ?? null;
 
   const handlePlay = async (subjectId: string) => {
