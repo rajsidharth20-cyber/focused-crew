@@ -233,6 +233,407 @@
     --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
+
+  [data-theme="forest"] {
+    --background: 150 30% 6%;
+    --foreground: 80 20% 94%;
+    --card: 152 24% 10%;
+    --card-foreground: 80 20% 94%;
+    --popover: 152 24% 10%;
+    --popover-foreground: 80 20% 94%;
+    --primary: 140 55% 52%;
+    --primary-foreground: 150 40% 6%;
+    --primary-glow: 96 60% 60%;
+    --secondary: 152 18% 15%;
+    --secondary-foreground: 90 15% 82%;
+    --muted: 152 16% 13%;
+    --muted-foreground: 140 10% 62%;
+    --accent: 96 55% 58%;
+    --accent-foreground: 150 40% 6%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 152 16% 19%;
+    --input: 152 16% 19%;
+    --ring: 140 55% 52%;
+    --radius: 1.25rem;
+    --sidebar-background: 150 30% 6%;
+    --sidebar-foreground: 80 20% 94%;
+    --sidebar-primary: 140 55% 52%;
+    --sidebar-primary-foreground: 150 40% 6%;
+    --sidebar-accent: 152 18% 15%;
+    --sidebar-accent-foreground: 90 15% 82%;
+    --sidebar-border: 152 16% 19%;
+    --sidebar-ring: 140 55% 52%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 140 55% 52%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 96 55% 58%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(140 55% 52% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(96 55% 58% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(150 30% 6%), hsl(150 30% 6%));
+    --gradient-primary: linear-gradient(135deg, hsl(140 55% 52%), hsl(96 55% 58%));
+    --gradient-card: linear-gradient(180deg, hsl(152 24% 10% / 0.94), hsl(152 24% 10% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(140 55% 52% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(140 55% 52% / 0.16);
+    --shadow-glow: 0 0 36px hsl(140 55% 52% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="ocean"] {
+    --background: 208 60% 7%;
+    --foreground: 195 30% 95%;
+    --card: 204 44% 11%;
+    --card-foreground: 195 30% 95%;
+    --popover: 204 44% 11%;
+    --popover-foreground: 195 30% 95%;
+    --primary: 188 85% 52%;
+    --primary-foreground: 208 60% 7%;
+    --primary-glow: 196 90% 62%;
+    --secondary: 204 34% 16%;
+    --secondary-foreground: 195 20% 84%;
+    --muted: 204 30% 14%;
+    --muted-foreground: 196 15% 64%;
+    --accent: 172 70% 50%;
+    --accent-foreground: 208 60% 7%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 204 28% 20%;
+    --input: 204 28% 20%;
+    --ring: 188 85% 52%;
+    --radius: 1.25rem;
+    --sidebar-background: 208 60% 7%;
+    --sidebar-foreground: 195 30% 95%;
+    --sidebar-primary: 188 85% 52%;
+    --sidebar-primary-foreground: 208 60% 7%;
+    --sidebar-accent: 204 34% 16%;
+    --sidebar-accent-foreground: 195 20% 84%;
+    --sidebar-border: 204 28% 20%;
+    --sidebar-ring: 188 85% 52%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 188 85% 52%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 172 70% 50%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(188 85% 52% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(172 70% 50% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(208 60% 7%), hsl(208 60% 7%));
+    --gradient-primary: linear-gradient(135deg, hsl(188 85% 52%), hsl(172 70% 50%));
+    --gradient-card: linear-gradient(180deg, hsl(204 44% 11% / 0.94), hsl(204 44% 11% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(188 85% 52% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(188 85% 52% / 0.16);
+    --shadow-glow: 0 0 36px hsl(188 85% 52% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="mountain"] {
+    --background: 215 22% 10%;
+    --foreground: 210 20% 95%;
+    --card: 215 16% 15%;
+    --card-foreground: 210 20% 95%;
+    --popover: 215 16% 15%;
+    --popover-foreground: 210 20% 95%;
+    --primary: 202 80% 62%;
+    --primary-foreground: 215 30% 10%;
+    --primary-glow: 196 70% 72%;
+    --secondary: 215 14% 20%;
+    --secondary-foreground: 210 14% 84%;
+    --muted: 215 12% 18%;
+    --muted-foreground: 212 10% 64%;
+    --accent: 196 62% 70%;
+    --accent-foreground: 215 30% 10%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 215 12% 24%;
+    --input: 215 12% 24%;
+    --ring: 202 80% 62%;
+    --radius: 0.9rem;
+    --sidebar-background: 215 22% 10%;
+    --sidebar-foreground: 210 20% 95%;
+    --sidebar-primary: 202 80% 62%;
+    --sidebar-primary-foreground: 215 30% 10%;
+    --sidebar-accent: 215 14% 20%;
+    --sidebar-accent-foreground: 210 14% 84%;
+    --sidebar-border: 215 12% 24%;
+    --sidebar-ring: 202 80% 62%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 202 80% 62%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 196 62% 70%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(202 80% 62% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(196 62% 70% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(215 22% 10%), hsl(215 22% 10%));
+    --gradient-primary: linear-gradient(135deg, hsl(202 80% 62%), hsl(196 62% 70%));
+    --gradient-card: linear-gradient(180deg, hsl(215 16% 15% / 0.94), hsl(215 16% 15% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(202 80% 62% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(202 80% 62% / 0.16);
+    --shadow-glow: 0 0 36px hsl(202 80% 62% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="cosmos"] {
+    --background: 232 48% 6%;
+    --foreground: 225 30% 95%;
+    --card: 232 36% 11%;
+    --card-foreground: 225 30% 95%;
+    --popover: 232 36% 11%;
+    --popover-foreground: 225 30% 95%;
+    --primary: 248 85% 68%;
+    --primary-foreground: 232 48% 6%;
+    --primary-glow: 212 90% 66%;
+    --secondary: 232 28% 16%;
+    --secondary-foreground: 225 18% 84%;
+    --muted: 232 24% 14%;
+    --muted-foreground: 228 14% 64%;
+    --accent: 212 88% 62%;
+    --accent-foreground: 232 48% 6%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 232 24% 21%;
+    --input: 232 24% 21%;
+    --ring: 248 85% 68%;
+    --radius: 1.25rem;
+    --sidebar-background: 232 48% 6%;
+    --sidebar-foreground: 225 30% 95%;
+    --sidebar-primary: 248 85% 68%;
+    --sidebar-primary-foreground: 232 48% 6%;
+    --sidebar-accent: 232 28% 16%;
+    --sidebar-accent-foreground: 225 18% 84%;
+    --sidebar-border: 232 24% 21%;
+    --sidebar-ring: 248 85% 68%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 248 85% 68%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 212 88% 62%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(248 85% 68% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(212 88% 62% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(232 48% 6%), hsl(232 48% 6%));
+    --gradient-primary: linear-gradient(135deg, hsl(248 85% 68%), hsl(212 88% 62%));
+    --gradient-card: linear-gradient(180deg, hsl(232 36% 11% / 0.94), hsl(232 36% 11% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(248 85% 68% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(248 85% 68% / 0.16);
+    --shadow-glow: 0 0 36px hsl(248 85% 68% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="sunset"] {
+    --background: 18 32% 8%;
+    --foreground: 28 30% 94%;
+    --card: 16 26% 13%;
+    --card-foreground: 28 30% 94%;
+    --popover: 16 26% 13%;
+    --popover-foreground: 28 30% 94%;
+    --primary: 20 92% 60%;
+    --primary-foreground: 18 40% 8%;
+    --primary-glow: 340 80% 66%;
+    --secondary: 16 22% 18%;
+    --secondary-foreground: 28 20% 84%;
+    --muted: 16 20% 16%;
+    --muted-foreground: 22 14% 64%;
+    --accent: 340 76% 64%;
+    --accent-foreground: 18 40% 8%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 16 20% 22%;
+    --input: 16 20% 22%;
+    --ring: 20 92% 60%;
+    --radius: 1.25rem;
+    --sidebar-background: 18 32% 8%;
+    --sidebar-foreground: 28 30% 94%;
+    --sidebar-primary: 20 92% 60%;
+    --sidebar-primary-foreground: 18 40% 8%;
+    --sidebar-accent: 16 22% 18%;
+    --sidebar-accent-foreground: 28 20% 84%;
+    --sidebar-border: 16 20% 22%;
+    --sidebar-ring: 20 92% 60%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 20 92% 60%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 340 76% 64%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(20 92% 60% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(340 76% 64% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(18 32% 8%), hsl(18 32% 8%));
+    --gradient-primary: linear-gradient(135deg, hsl(20 92% 60%), hsl(340 76% 64%));
+    --gradient-card: linear-gradient(180deg, hsl(16 26% 13% / 0.94), hsl(16 26% 13% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(20 92% 60% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(20 92% 60% / 0.16);
+    --shadow-glow: 0 0 36px hsl(20 92% 60% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="matcha"] {
+    --background: 44 44% 96%;
+    --foreground: 146 32% 16%;
+    --card: 48 40% 99%;
+    --card-foreground: 146 32% 16%;
+    --popover: 48 40% 99%;
+    --popover-foreground: 146 32% 16%;
+    --primary: 132 34% 40%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 96 40% 56%;
+    --secondary: 96 26% 91%;
+    --secondary-foreground: 146 26% 22%;
+    --muted: 54 28% 92%;
+    --muted-foreground: 140 12% 40%;
+    --accent: 96 38% 48%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 356 74% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 96 20% 85%;
+    --input: 96 20% 85%;
+    --ring: 132 34% 40%;
+    --radius: 1.25rem;
+    --sidebar-background: 44 44% 96%;
+    --sidebar-foreground: 146 32% 16%;
+    --sidebar-primary: 132 34% 40%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 96 26% 91%;
+    --sidebar-accent-foreground: 146 26% 22%;
+    --sidebar-border: 96 20% 85%;
+    --sidebar-ring: 132 34% 40%;
+    --success: 152 58% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 94% 48%;
+    --warning-foreground: 0 0% 100%;
+    --runway: 132 34% 40%;
+    --priority-high: 356 74% 52%;
+    --priority-med: 36 92% 48%;
+    --priority-low: 96 38% 48%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(132 34% 40% / 0.1), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(96 38% 48% / 0.09), transparent 58%),
+                     linear-gradient(180deg, hsl(44 44% 96%), hsl(44 44% 96%));
+    --gradient-primary: linear-gradient(135deg, hsl(132 34% 40%), hsl(96 38% 48%));
+    --gradient-card: linear-gradient(180deg, hsl(48 40% 99% / 1), hsl(48 40% 99% / 1));
+    --shadow-elev: 0 1px 2px hsl(146 32% 16% / 0.05), 0 10px 28px -16px hsl(132 34% 40% / 0.20);
+    --shadow-glow: 0 0 36px hsl(132 34% 40% / 0.2);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="daylight"] {
+    --background: 40 40% 98%;
+    --foreground: 220 18% 14%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 18% 14%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 18% 14%;
+    --primary: 212 90% 48%;
+    --primary-foreground: 0 0% 100%;
+    --primary-glow: 196 90% 58%;
+    --secondary: 40 30% 94%;
+    --secondary-foreground: 220 16% 24%;
+    --muted: 40 26% 94%;
+    --muted-foreground: 220 8% 45%;
+    --accent: 196 82% 52%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 356 74% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 38 22% 88%;
+    --input: 38 22% 88%;
+    --ring: 212 90% 48%;
+    --radius: 1rem;
+    --sidebar-background: 40 40% 98%;
+    --sidebar-foreground: 220 18% 14%;
+    --sidebar-primary: 212 90% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 40 30% 94%;
+    --sidebar-accent-foreground: 220 16% 24%;
+    --sidebar-border: 38 22% 88%;
+    --sidebar-ring: 212 90% 48%;
+    --success: 152 58% 38%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 94% 48%;
+    --warning-foreground: 0 0% 100%;
+    --runway: 212 90% 48%;
+    --priority-high: 356 74% 52%;
+    --priority-med: 36 92% 48%;
+    --priority-low: 196 82% 52%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(212 90% 48% / 0.1), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(196 82% 52% / 0.09), transparent 58%),
+                     linear-gradient(180deg, hsl(40 40% 98%), hsl(40 40% 98%));
+    --gradient-primary: linear-gradient(135deg, hsl(212 90% 48%), hsl(196 82% 52%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 100% / 1), hsl(0 0% 100% / 1));
+    --shadow-elev: 0 1px 2px hsl(220 18% 14% / 0.05), 0 10px 28px -16px hsl(212 90% 48% / 0.20);
+    --shadow-glow: 0 0 36px hsl(212 90% 48% / 0.2);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
+  [data-theme="midnight"] {
+    --background: 0 0% 3%;
+    --foreground: 0 0% 96%;
+    --card: 0 0% 8%;
+    --card-foreground: 0 0% 96%;
+    --popover: 0 0% 8%;
+    --popover-foreground: 0 0% 96%;
+    --primary: 0 0% 92%;
+    --primary-foreground: 0 0% 6%;
+    --primary-glow: 220 12% 70%;
+    --secondary: 0 0% 13%;
+    --secondary-foreground: 0 0% 86%;
+    --muted: 0 0% 11%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 220 14% 70%;
+    --accent-foreground: 0 0% 6%;
+    --destructive: 0 74% 58%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+    --ring: 0 0% 92%;
+    --radius: 0.9rem;
+    --sidebar-background: 0 0% 3%;
+    --sidebar-foreground: 0 0% 96%;
+    --sidebar-primary: 0 0% 92%;
+    --sidebar-primary-foreground: 0 0% 6%;
+    --sidebar-accent: 0 0% 13%;
+    --sidebar-accent-foreground: 0 0% 86%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 92%;
+    --success: 152 60% 48%;
+    --success-foreground: 0 0% 8%;
+    --warning: 38 94% 60%;
+    --warning-foreground: 0 0% 8%;
+    --runway: 0 0% 92%;
+    --priority-high: 0 74% 60%;
+    --priority-med: 36 92% 58%;
+    --priority-low: 220 14% 70%;
+    --gradient-hero: radial-gradient(1100px 560px at 8% -10%, hsl(0 0% 92% / 0.16), transparent 60%),
+                     radial-gradient(900px 480px at 96% 0%, hsl(220 14% 70% / 0.13), transparent 58%),
+                     linear-gradient(180deg, hsl(0 0% 3%), hsl(0 0% 3%));
+    --gradient-primary: linear-gradient(135deg, hsl(0 0% 92%), hsl(220 14% 70%));
+    --gradient-card: linear-gradient(180deg, hsl(0 0% 8% / 0.94), hsl(0 0% 8% / 0.88));
+    --shadow-elev: 0 1px 0 hsl(0 0% 92% / 0.06) inset, 0 18px 38px -22px hsl(0 0% 0% / 0.75), 0 6px 20px -14px hsl(0 0% 92% / 0.16);
+    --shadow-glow: 0 0 36px hsl(0 0% 92% / 0.22);
+    --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+    --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Text', system-ui, sans-serif;
+    --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  }
+
 }
 
 @layer base {
@@ -449,3 +850,95 @@
   }
 }
 
+
+@layer utilities {
+  /* ===== Premium theme system: shared dark-surface treatment ===== */
+  [data-theme="forest"] .glass-card,
+  [data-theme="ocean"] .glass-card,
+  [data-theme="mountain"] .glass-card,
+  [data-theme="cosmos"] .glass-card,
+  [data-theme="sunset"] .glass-card,
+  [data-theme="midnight"] .glass-card {
+    backdrop-filter: blur(20px) saturate(160%);
+    -webkit-backdrop-filter: blur(20px) saturate(160%);
+  }
+  [data-theme="forest"] .dock,
+  [data-theme="ocean"] .dock,
+  [data-theme="mountain"] .dock,
+  [data-theme="cosmos"] .dock,
+  [data-theme="sunset"] .dock,
+  [data-theme="midnight"] .dock {
+    background: hsl(var(--card) / 0.66);
+    box-shadow: 0 12px 40px -18px hsl(0 0% 0% / 0.8);
+  }
+  [data-theme="matcha"] .aurora,
+  [data-theme="daylight"] .aurora { opacity: 0.22; }
+
+  /* ===== Very subtle theme signatures (fixed, non-interactive, low opacity) ===== */
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background-image: var(--theme-texture, none);
+    background-repeat: var(--theme-texture-repeat, no-repeat);
+    background-size: var(--theme-texture-size, cover);
+    background-position: var(--theme-texture-position, bottom center);
+    opacity: var(--theme-texture-opacity, 0);
+  }
+
+  /* Forest — faint canopy light shafts */
+  [data-theme="forest"] {
+    --theme-texture: repeating-linear-gradient(102deg, hsl(96 55% 58% / 0.5) 0 2px, transparent 2px 140px);
+    --theme-texture-opacity: 0.05;
+  }
+  /* Ocean — soft wave bands along the bottom */
+  [data-theme="ocean"] {
+    --theme-texture:
+      radial-gradient(140% 60% at 50% 118%, hsl(188 85% 52% / 0.5), transparent 60%),
+      radial-gradient(120% 50% at 20% 126%, hsl(172 70% 50% / 0.45), transparent 60%);
+    --theme-texture-opacity: 0.10;
+  }
+  /* Mountain — minimal ridge silhouette */
+  [data-theme="mountain"] {
+    --theme-texture: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 300' preserveAspectRatio='none'%3E%3Cpath d='M0 300 L220 120 L340 200 L520 60 L700 220 L860 130 L1020 230 L1200 150 L1200 300 Z' fill='%23ffffff'/%3E%3C/svg%3E");
+    --theme-texture-size: 100% 220px;
+    --theme-texture-position: bottom center;
+    --theme-texture-opacity: 0.05;
+  }
+  /* Cosmos — sparse starfield */
+  [data-theme="cosmos"] {
+    --theme-texture:
+      radial-gradient(1.4px 1.4px at 18% 22%, hsl(0 0% 100%) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 72% 14%, hsl(0 0% 100%) 50%, transparent 51%),
+      radial-gradient(1.6px 1.6px at 42% 68%, hsl(0 0% 100%) 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 88% 58%, hsl(0 0% 100%) 50%, transparent 51%),
+      radial-gradient(1.3px 1.3px at 8% 82%, hsl(0 0% 100%) 50%, transparent 51%);
+    --theme-texture-repeat: repeat;
+    --theme-texture-size: 340px 340px;
+    --theme-texture-position: top left;
+    --theme-texture-opacity: 0.22;
+  }
+  /* Sunset — warm horizon glow */
+  [data-theme="sunset"] {
+    --theme-texture: radial-gradient(120% 60% at 50% 116%, hsl(20 92% 60% / 0.6), hsl(340 76% 64% / 0.25) 45%, transparent 70%);
+    --theme-texture-opacity: 0.14;
+  }
+  /* Matcha — soft paper grain */
+  [data-theme="matcha"] {
+    --theme-texture: radial-gradient(1px 1px at 12% 24%, hsl(132 34% 40%) 50%, transparent 51%),
+                     radial-gradient(1px 1px at 64% 72%, hsl(132 34% 40%) 50%, transparent 51%);
+    --theme-texture-repeat: repeat;
+    --theme-texture-size: 120px 120px;
+    --theme-texture-opacity: 0.05;
+  }
+  /* Daylight — clean, no texture */
+  [data-theme="daylight"] { --theme-texture-opacity: 0; }
+  /* Midnight — pure, no texture */
+  [data-theme="midnight"] { --theme-texture-opacity: 0; }
+
+  @media (prefers-reduced-motion: reduce) {
+    body::after { opacity: calc(var(--theme-texture-opacity, 0) * 0.6); }
+  }
+}
