@@ -126,7 +126,9 @@ const Index = () => {
         subjectId: finished.subjectId, type: 'stopwatch',
         durationSeconds: finished.durationSeconds,
         startedAt: finished.startedAt, endedAt: finished.endedAt,
+        delayMinutes: delayRef.current,
       });
+      delayRef.current = null;
       toast.success(`Session saved · ${Math.round(finished.durationSeconds / 60)}m`);
     }
   };
