@@ -7,6 +7,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   username: string | null;
+  /** True until the profile's username has been resolved (prevents a false "set your call sign" prompt). */
+  usernameLoading: boolean;
   isGuest: boolean;
   setUsername: (name: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -18,6 +20,7 @@ const AuthContext = createContext<AuthContextType>({
   session: null,
   loading: true,
   username: null,
+  usernameLoading: true,
   isGuest: false,
   setUsername: async () => {},
   signOut: async () => {},
@@ -30,6 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [username, setUsernameState] = useState<string | null>(null);
   const [isGuest, setIsGuest] = useState(false);
+  const [usernameLoading, setUsernameLoading] = useState(true);
   const isGuestRef = useRef(false);
 
   const fetchUsername = async (userId: string) => {
@@ -39,6 +43,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('id', userId)
       .single();
     setUsernameState(data?.username ?? null);
+    setUsernameLoading(false);
   };
 
   useEffect(() => {
@@ -48,6 +53,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       isGuestRef.current = true;
       setIsGuest(true);
       setUsernameState(localStorage.getItem('taskpilot_guest_username') || 'Guest');
+      setUsernameLoading(false);
       setLoading(false);
     }
 
@@ -61,6 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setTimeout(() => fetchUsername(session.user.id), 0);
       } else if (!isGuestRef.current) {
         setUsernameState(null);
+        setUsernameLoading(false);
       }
       setLoading(false);
     });
@@ -86,6 +93,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     isGuestRef.current = true;
     setIsGuest(true);
     setUsernameState('Guest');
+    setUsernameLoading(false);
   };
 
   const setUsername = async (name: string) => {
@@ -118,7 +126,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, username, isGuest, setUsername, signOut, enterGuestMode }}>
+    <AuthContext.Provider value={{ user, session, loading, username, usernameLoading, isGuest, setUsername, signOut, enterGuestMode }}>
       {children}
     </AuthContext.Provider>
   );

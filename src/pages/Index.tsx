@@ -8,6 +8,7 @@ import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
 import { TodayTimeline } from '@/components/TodayTimeline';
 import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
+import { DelayPromptHost, promptDelay } from '@/components/study/DelayPromptDialog';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
 import { useDayStart } from '@/hooks/use-day-start';
 import { dayKeyFor, getEffectiveToday } from '@/lib/day-boundary';
@@ -46,7 +47,7 @@ const Index = () => {
   useNotificationTriggers();
   const studyStore = useStudyStore();
   const streak = useStreak(studyStore.sessions);
-  const { username } = useAuth();
+  const { username, usernameLoading } = useAuth();
   const { theme } = useTheme();
   useDayStart();
   useEventReminders(store.events, store.commitments);
@@ -98,6 +99,8 @@ const Index = () => {
 
   const activeSubject = store.subjects.find(s => s.id === timer.activeSubjectId) ?? null;
 
+  const delayRef = useRef<number | null>(null);
+
   const handlePlay = async (subjectId: string) => {
     if (timer.timer && timer.activeSubjectId !== subjectId) {
       const finished = await timer.stop();
@@ -109,6 +112,7 @@ const Index = () => {
         });
       }
     }
+    delayRef.current = await promptDelay();
     await timer.start(subjectId);
     setStartOpen(false);
     setTimerOpen(true);
@@ -122,7 +126,9 @@ const Index = () => {
         subjectId: finished.subjectId, type: 'stopwatch',
         durationSeconds: finished.durationSeconds,
         startedAt: finished.startedAt, endedAt: finished.endedAt,
+        delayMinutes: delayRef.current,
       });
+      delayRef.current = null;
       toast.success(`Session saved · ${Math.round(finished.durationSeconds / 60)}m`);
     }
   };
@@ -144,7 +150,8 @@ const Index = () => {
         <div className="aurora animate-float" style={{ width: 400, height: 400, background: 'hsl(var(--accent) / 0.22)', top: 240, right: -140, animationDelay: '1.5s' }} />
       </div>
 
-      {username === null && <UsernamePrompt />}
+      <DelayPromptHost />
+      {!usernameLoading && username === null && <UsernamePrompt />}
 
       {/* Greeting header */}
       <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">

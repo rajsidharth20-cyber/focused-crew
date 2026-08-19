@@ -62,24 +62,51 @@ export function ManualSessionDialog({ tags, subjects, onSave }: Props) {
           <span className="xs:hidden sm:hidden">Add</span>
         </button>
       </DialogTrigger>
-      <DialogContent className="glass-card border-border/40 max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Log a study session</DialogTitle></DialogHeader>
-        <div className="space-y-3">
+      <DialogContent className="glass-card border-border/40 max-w-md max-h-[88vh] overflow-y-auto rounded-[28px] p-5">
+        <DialogHeader className="text-left">
+          <div className="mb-1 flex items-center gap-2.5">
+            <span className="grid h-9 w-9 place-items-center rounded-2xl bg-primary/15 text-primary">
+              <Plus className="h-4.5 w-4.5" />
+            </span>
+            <div>
+              <DialogTitle className="text-[16px]">Add a missed session</DialogTitle>
+              <p className="text-[11.5px] text-muted-foreground">Log study time you forgot to track.</p>
+            </div>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-3.5">
+          <div className="flex flex-wrap gap-1.5">
+            {[15, 25, 30, 45, 60, 90].map(m => (
+              <button
+                key={m}
+                type="button"
+                onClick={() => setMinutes(m)}
+                className={`press rounded-full border px-3 py-1.5 text-[12px] font-medium transition ${
+                  minutes === m
+                    ? 'border-primary bg-primary text-primary-foreground'
+                    : 'border-border/60 text-muted-foreground hover:bg-secondary/60'
+                }`}
+              >
+                {m}m
+              </button>
+            ))}
+          </div>
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">Topic</label>
-            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What did you study?" className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1" />
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Topic</label>
+            <input value={topic} onChange={e => setTopic(e.target.value)} placeholder="What did you study?" className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50" />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">Tag</label>
-              <select value={tagId} onChange={e => setTagId(e.target.value)} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Tag</label>
+              <select value={tagId} onChange={e => setTagId(e.target.value)} className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50">
                 <option value="">—</option>
                 {tags.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">Subject</label>
-              <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1">
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Subject</label>
+              <select value={subjectId} onChange={e => setSubjectId(e.target.value)} className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50">
                 <option value="">—</option>
                 {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
               </select>
@@ -87,23 +114,23 @@ export function ManualSessionDialog({ tags, subjects, onSave }: Props) {
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">Started at</label>
-              <input type="datetime-local" value={startedAt} onChange={e => setStartedAt(e.target.value)} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1" />
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Started at</label>
+              <input type="datetime-local" value={startedAt} onChange={e => setStartedAt(e.target.value)} className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50" />
             </div>
             <div>
-              <label className="text-xs uppercase tracking-widest text-muted-foreground">Minutes</label>
-              <input type="number" min={1} value={minutes} onChange={e => setMinutes(Math.max(1, Number(e.target.value) || 1))} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1 tabular-nums" />
+              <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Minutes</label>
+              <input type="number" min={1} value={minutes} onChange={e => setMinutes(Math.max(1, Number(e.target.value) || 1))} className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50 tabular-nums" />
             </div>
           </div>
           <div>
-            <label className="text-xs uppercase tracking-widest text-muted-foreground">Notes</label>
-            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-background border border-border/60 rounded-md px-3 py-2 text-sm mt-1" />
+            <label className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">Notes</label>
+            <textarea value={notes} onChange={e => setNotes(e.target.value)} rows={2} className="w-full bg-background/70 border border-border/60 rounded-xl px-3 py-2.5 text-sm mt-1.5 outline-none focus:ring-1 focus:ring-primary/50" />
           </div>
         </div>
-        <DialogFooter className="gap-2">
-          <button onClick={() => setOpen(false)} className="px-3 py-2 rounded-md border border-border/60 text-sm hover:bg-secondary transition">Cancel</button>
-          <button onClick={submit} className="px-5 py-2 rounded-lg bg-gradient-primary text-primary-foreground text-sm font-semibold inline-flex items-center gap-1.5">
-            <Plus className="w-4 h-4" />Add
+        <DialogFooter className="mt-1 gap-2 sm:justify-between">
+          <button onClick={() => setOpen(false)} className="press rounded-xl border border-border/60 px-4 py-2.5 text-sm hover:bg-secondary transition">Cancel</button>
+          <button onClick={submit} className="press inline-flex items-center justify-center gap-1.5 rounded-xl bg-gradient-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground shadow-md">
+            <Plus className="w-4 h-4" />Save session
           </button>
         </DialogFooter>
       </DialogContent>
