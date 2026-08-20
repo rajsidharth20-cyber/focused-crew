@@ -70,6 +70,7 @@ const Planner = () => {
             onAddNote={store.addProgressNote}
             onUpdateNotes={store.updateProgressNotes}
             onUpdatePriority={store.updateObjectivePriority}
+            onUpdate={store.updateDailyObjective}
             onRemove={store.removeDailyObjective}
             onCarryForward={store.carryForwardObjective}
             templates={store.objectiveTemplates}

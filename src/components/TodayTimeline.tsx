@@ -51,6 +51,8 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
       out.push({ id: `c-${c.id}`, kind: 'commitment', title: c.title, start: s, end: Math.max(e, s + 15), meta: c.type });
     }
     for (const ev of events) {
+      // Only show items that actually land on today (dated or recurring on this weekday).
+      if (!matchesRange({ eventDate: ev.eventDate, recurringDays: ev.recurringDays }, 'today')) continue;
       const s = toMinutes(ev.startTime);
       if (s == null) continue;
       const e = toMinutes(ev.endTime) ?? s + 30;
