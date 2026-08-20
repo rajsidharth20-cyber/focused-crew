@@ -3,13 +3,41 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 
-const cache = new Map<string, string>();
+const TTL_MS = 55 * 60 * 1000; // signed URLs live 1h — refresh slightly early
+const cache = new Map<string, { url: string; expires: number }>();
+const inFlight = new Map<string, Promise<string>>();
+
+function cachedUrl(path: string): string {
+  const hit = cache.get(path);
+  if (hit && hit.expires > Date.now()) return hit.url;
+  if (hit) cache.delete(path);
+  return '';
+}
+
+function signAvatar(path: string): Promise<string> {
+  const pending = inFlight.get(path);
+  if (pending) return pending;
+  const p = supabase.storage
+    .from('avatars')
+    .createSignedUrl(path, 60 * 60)
+    .then(({ data }) => {
+      const signed = data?.signedUrl ?? '';
+      if (signed) cache.set(path, { url: signed, expires: Date.now() + TTL_MS });
+      return signed;
+    })
+    .catch(() => '')
+    .finally(() => { inFlight.delete(path); });
+  inFlight.set(path, p);
+  return p;
+}
 
 /** Resolves an avatar value (storage path, data URL or absolute URL) to a displayable URL. */
 export function useSignedAvatar(pathOrUrl?: string | null) {
-  const [url, setUrl] = useState<string>(() =>
-    pathOrUrl ? cache.get(pathOrUrl) ?? '' : ''
-  );
+  const [url, setUrl] = useState<string>(() => {
+    if (!pathOrUrl) return '';
+    if (pathOrUrl.startsWith('data:') || pathOrUrl.startsWith('http')) return pathOrUrl;
+    return cachedUrl(pathOrUrl);
+  });
 
   useEffect(() => {
     let cancelled = false;
@@ -21,20 +49,14 @@ export function useSignedAvatar(pathOrUrl?: string | null) {
       setUrl(pathOrUrl);
       return;
     }
-    const cached = cache.get(pathOrUrl);
+    const cached = cachedUrl(pathOrUrl);
     if (cached) {
       setUrl(cached);
       return;
     }
-    supabase.storage
-      .from('avatars')
-      .createSignedUrl(pathOrUrl, 60 * 60)
-      .then(({ data }) => {
-        if (cancelled) return;
-        const signed = data?.signedUrl ?? '';
-        if (signed) cache.set(pathOrUrl, signed);
-        setUrl(signed);
-      });
+    signAvatar(pathOrUrl).then(signed => {
+      if (!cancelled) setUrl(signed);
+    });
     return () => {
       cancelled = true;
     };
