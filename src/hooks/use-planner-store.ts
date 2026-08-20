@@ -475,6 +475,28 @@ export function usePlannerStore() {
     await supabase.from('daily_objectives').update({ priority }).eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
+  const updateDailyObjective = useCallback(async (
+    id: string,
+    patch: { task?: string; estimatedMinutes?: number; subjectId?: string; deadline?: string | null },
+  ) => {
+    const updater = (prev: DailyObjective[]) => prev.map(o => o.id === id ? { ...o, ...patch } : o);
+    setDailyObjectives(updater);
+    setPastObjectives(updater);
+    if (isGuest) {
+      const data = getGuestData();
+      data.dailyObjectives = (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, ...patch } : o);
+      saveGuestData(data);
+      return;
+    }
+    const row: Record<string, unknown> = {};
+    if (patch.task !== undefined) row.task = patch.task;
+    if (patch.estimatedMinutes !== undefined) row.estimated_minutes = patch.estimatedMinutes;
+    if (patch.subjectId !== undefined) row.subject_id = patch.subjectId;
+    if (patch.deadline !== undefined) row.deadline = patch.deadline;
+    if (Object.keys(row).length === 0) return;
+    await supabase.from('daily_objectives').update(row).eq('id', id);
+  }, [isGuest, getGuestData, saveGuestData]);
+
   const removeDailyObjective = useCallback(async (id: string) => {
     setDailyObjectives(prev => prev.filter(o => o.id !== id));
     setPastObjectives(prev => prev.filter(o => o.id !== id));
@@ -664,6 +686,7 @@ export function usePlannerStore() {
     addProgressNote,
     updateProgressNotes,
     updateObjectivePriority,
+    updateDailyObjective,
     removeDailyObjective,
     removeObjectiveTemplate,
     addCommitment,
