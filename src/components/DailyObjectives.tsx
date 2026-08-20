@@ -15,6 +15,7 @@ interface DailyObjectivesProps {
   onAddNote: (id: string, note: string) => void;
   onUpdateNotes: (id: string, notes: string[]) => void;
   onUpdatePriority: (id: string, priority: Priority) => void;
+  onUpdate?: (id: string, patch: { task?: string; estimatedMinutes?: number; subjectId?: string; deadline?: string | null }) => void;
   onRemove: (id: string) => void;
   onCarryForward: (id: string, targetDate?: string) => void;
 }
@@ -50,7 +51,7 @@ const formatTimestamp = (iso: string) => {
   });
 };
 
-export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onRemove, onCarryForward, templates = [], onRemoveTemplate }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onUpdate, onRemove, onCarryForward, templates = [], onRemoveTemplate }: DailyObjectivesProps) {
   const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
@@ -66,6 +67,32 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [carryForwardDate, setCarryForwardDate] = useState('');
   const [editingNoteIdx, setEditingNoteIdx] = useState<{ id: string; idx: number } | null>(null);
   const [editNoteValue, setEditNoteValue] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState({ task: '', minutes: '30', subjectId: '', deadline: '' });
+  const [deleteState, setDeleteState] = useState<{ id: string; stage: 1 | 2 } | null>(null);
+
+  const startEdit = (o: DailyObjective) => {
+    setEditingId(o.id);
+    setDeleteState(null);
+    setEditDraft({
+      task: o.task,
+      minutes: String(o.estimatedMinutes),
+      subjectId: o.subjectId,
+      deadline: o.deadline ?? '',
+    });
+  };
+
+  const saveEdit = () => {
+    if (!editingId || !onUpdate) { setEditingId(null); return; }
+    if (!editDraft.task.trim()) return;
+    onUpdate(editingId, {
+      task: editDraft.task.trim(),
+      estimatedMinutes: parseInt(editDraft.minutes) || 30,
+      subjectId: editDraft.subjectId || undefined,
+      deadline: editDraft.deadline || null,
+    });
+    setEditingId(null);
+  };
 
   const handleAdd = () => {
     if (subjectId && task.trim()) {
@@ -201,10 +228,94 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
               <ArrowRight className="w-3.5 h-3.5" />
             </button>
           )}
-          <button onClick={() => onRemove(o.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+          {onUpdate && (
+            <button
+              onClick={() => (editingId === o.id ? setEditingId(null) : startEdit(o))}
+              className="text-muted-foreground hover:text-primary transition-colors"
+              title="Edit objective"
+            >
+              <Pencil className="w-3.5 h-3.5" />
+            </button>
+          )}
+          <button
+            onClick={() => setDeleteState({ id: o.id, stage: 1 })}
+            className="text-muted-foreground hover:text-destructive transition-colors"
+            title="Delete objective"
+          >
             <X className="w-3.5 h-3.5" />
           </button>
         </div>
+
+        <AnimatePresence>
+          {editingId === o.id && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-border/50 overflow-hidden"
+            >
+              <div className="px-3 py-2.5 flex flex-wrap gap-2 items-center">
+                <select
+                  value={editDraft.subjectId}
+                  onChange={e => setEditDraft(d => ({ ...d, subjectId: e.target.value }))}
+                  className="bg-secondary/50 border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                >
+                  {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+                <input
+                  value={editDraft.task}
+                  onChange={e => setEditDraft(d => ({ ...d, task: e.target.value }))}
+                  onKeyDown={e => e.key === 'Enter' && saveEdit()}
+                  className="flex-1 min-w-[120px] bg-secondary/50 border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                  autoFocus
+                />
+                <input
+                  type="number" min="5" step="5"
+                  value={editDraft.minutes}
+                  onChange={e => setEditDraft(d => ({ ...d, minutes: e.target.value }))}
+                  className="w-16 bg-secondary/50 border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                <input
+                  type="date"
+                  value={editDraft.deadline}
+                  onChange={e => setEditDraft(d => ({ ...d, deadline: e.target.value }))}
+                  className="bg-secondary/50 border border-border rounded-md px-2 py-1.5 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
+                />
+                <button onClick={saveEdit} className="text-xs bg-primary text-primary-foreground px-3 py-1.5 rounded-md hover:opacity-90">Save</button>
+                <button onClick={() => setEditingId(null)} className="text-xs text-muted-foreground hover:text-foreground px-2">Cancel</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {deleteState?.id === o.id && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="border-t border-destructive/40 bg-destructive/5 overflow-hidden"
+            >
+              <div className="px-3 py-2.5 flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground flex-1 min-w-[140px]">
+                  {deleteState.stage === 1
+                    ? 'Delete this objective?'
+                    : 'Are you sure? This cannot be undone.'}
+                </span>
+                <button
+                  onClick={() => {
+                    if (deleteState.stage === 1) setDeleteState({ id: o.id, stage: 2 });
+                    else { onRemove(o.id); setDeleteState(null); }
+                  }}
+                  className="text-xs bg-destructive text-destructive-foreground px-3 py-1.5 rounded-md hover:opacity-90"
+                >
+                  {deleteState.stage === 1 ? 'Delete' : 'Yes, delete it'}
+                </button>
+                <button onClick={() => setDeleteState(null)} className="text-xs text-muted-foreground hover:text-foreground px-2">Cancel</button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         <AnimatePresence>
           {activeNote === o.id && (
