@@ -488,13 +488,13 @@ export function usePlannerStore() {
       saveGuestData(data);
       return;
     }
-    const row: Record<string, unknown> = {};
+    const row: Record<string, any> = {};
     if (patch.task !== undefined) row.task = patch.task;
     if (patch.estimatedMinutes !== undefined) row.estimated_minutes = patch.estimatedMinutes;
     if (patch.subjectId !== undefined) row.subject_id = patch.subjectId;
     if (patch.deadline !== undefined) row.deadline = patch.deadline;
     if (Object.keys(row).length === 0) return;
-    await supabase.from('daily_objectives').update(row).eq('id', id);
+    await (supabase.from('daily_objectives') as any).update(row).eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
   const removeDailyObjective = useCallback(async (id: string) => {
