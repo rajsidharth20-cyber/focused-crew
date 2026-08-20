@@ -4,6 +4,7 @@ import { Clock, MapPin, Calendar as CalendarIcon, Target } from 'lucide-react';
 import { useNow } from '@/hooks/use-now';
 import type { Commitment, DailyObjective, PlannerEvent } from '@/hooks/use-planner-store';
 import { EmptyState } from '@/components/EmptyState';
+import { matchesRange } from '@/lib/schedule-filter';
 
 type Item = {
   id: string;
@@ -45,6 +46,7 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
     for (const c of commitments) {
+      if (c.recurringDays && c.recurringDays.length > 0 && !c.recurringDays.includes(new Date().getDay())) continue;
       const s = toMinutes(c.startTime);
       const e = toMinutes(c.endTime);
       if (s == null || e == null) continue;
