@@ -125,7 +125,7 @@ export function usePlannerStore() {
       setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today));
       setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today));
       setCommitments((data.commitments || []).filter((c: any) =>
-        (c.recurringDays && c.recurringDays.includes(todayDow)) || c.date === today || (!c.date && !c.recurringDays)
+        (c.recurringDays && c.recurringDays.length > 0) || c.date === today || (!c.date && !c.recurringDays)
       ));
       setEvents(data.events || []);
       setProtocols(data.protocols || []);
