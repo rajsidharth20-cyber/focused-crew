@@ -46,7 +46,7 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
     for (const c of commitments) {
-      if (c.recurringDays && c.recurringDays.length > 0 && !c.recurringDays.includes(new Date().getDay())) continue;
+      if (!matchesRange({ recurringDays: c.recurringDays }, 'today')) continue;
       const s = toMinutes(c.startTime);
       const e = toMinutes(c.endTime);
       if (s == null || e == null) continue;
