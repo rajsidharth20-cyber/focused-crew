@@ -108,7 +108,7 @@ export function useEventReminders(events: PlannerEvent[], commitments: Commitmen
           const rec = c.recurringDays;
           const matchesToday = rec && rec.length > 0
             ? rec.includes(todayDow)
-            : (!c.date || c.date === todayStr);
+            : true; // non-recurring commitments are only loaded for today
           if (!matchesToday) return;
           checkOne(c.id, c.title, c.startTime, 'schedule', now, todayStr);
         });
