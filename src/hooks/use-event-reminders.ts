@@ -103,8 +103,13 @@ export function useEventReminders(events: PlannerEvent[], commitments: Commitmen
           checkOne(event.id, event.title, event.startTime, 'event', now, todayStr);
         });
 
-        // Commitments loaded by the store already apply to today.
+        // The store loads all recurring commitments, so filter to today here.
         commitmentsRef.current.forEach(c => {
+          const rec = c.recurringDays;
+          const matchesToday = rec && rec.length > 0
+            ? rec.includes(todayDow)
+            : (!c.date || c.date === todayStr);
+          if (!matchesToday) return;
           checkOne(c.id, c.title, c.startTime, 'schedule', now, todayStr);
         });
       } catch (e) {
