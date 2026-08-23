@@ -266,12 +266,15 @@ export function usePlannerStore() {
         const data = getGuestData(); data.subjects = updated; saveGuestData(data);
         return updated;
       });
-      return;
+      return id;
     }
     if (!user) return;
     const { data, error } = await (supabase.from('subjects') as any)
       .insert({ name, user_id: user.id, color: pick, sort_order: subjects.length }).select().single();
-    if (!error && data) setSubjects(prev => [...prev, { id: data.id, name: data.name, color: data.color, sortOrder: data.sort_order }]);
+    if (!error && data) {
+      setSubjects(prev => [...prev, { id: data.id, name: data.name, color: data.color, sortOrder: data.sort_order }]);
+      return data.id as string;
+    }
   }, [user, isGuest, getGuestData, saveGuestData, subjects.length]);
 
   const updateSubject = useCallback(async (id: string, patch: { name?: string; color?: string }) => {
