@@ -150,16 +150,18 @@ serve(async (req) => {
         return_url: returnUrl,
         credentials_configuration: { scopes: SCOPES },
       };
+      const authHeaders: Record<string, string> = {
+        Authorization: `Bearer ${LOVABLE_API_KEY}`,
+        "X-Client-Api-Key": CLIENT_API_KEY,
+        "Content-Type": "application/json",
+      };
       if (conn?.connection_key_enc) {
-        payload.connection_key = await decrypt(conn.connection_key_enc);
+        // Reconnect: the gateway expects the stored per-user key as a header.
+        authHeaders["X-Connection-Api-Key"] = await decrypt(conn.connection_key_enc);
       }
       const res = await fetch(`${GATEWAY}/api/v1/app-users/oauth2/authorize`, {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${LOVABLE_API_KEY}`,
-          "X-Client-Api-Key": CLIENT_API_KEY,
-          "Content-Type": "application/json",
-        },
+        headers: authHeaders,
         body: JSON.stringify(payload),
       });
       const text = await res.text();
