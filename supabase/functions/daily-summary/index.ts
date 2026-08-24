@@ -1,6 +1,22 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { corsHeaders, requireUser } from "../_shared/guard.ts";
 
+const SYSTEM = `You write the "AI Daily Review" block of a productivity report. You receive a JSON snapshot of one user's day.
+
+Rules:
+- Use ONLY facts present in the JSON. Never invent activities, attendance, emotions, achievements, or progress.
+- If a value is null or empty, say so plainly or omit the point.
+- No motivational fluff, no metaphors, no exaggeration. Direct, factual, second person.
+- Cite concrete numbers from the data (minutes, counts, percentages).
+- Never treat 0 objectives as 0% performance; say "no objectives were set".
+
+Respond with STRICT JSON only, no markdown:
+{
+  "well": ["1-3 short factual sentences about what actually went well"],
+  "attention": ["1-2 short sentences naming the most important gap"],
+  "priority": "ONE specific actionable recommendation for tomorrow, with a number or time in it"
+}`;
+
 serve(async (req) => {
   const cors = corsHeaders(req);
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
@@ -23,12 +39,8 @@ serve(async (req) => {
       body: JSON.stringify({
         model: "google/gemini-3-flash-preview",
         messages: [
-          {
-            role: "system",
-            content:
-              "You are a productivity coach writing a concise daily reflection (150-220 words). Given the user's objectives, targets, and commitments, write in warm second person. Structure: 1) One-sentence acknowledgement of progress. 2) Highlight the biggest win. 3) Call out 1-2 things left undone with a specific next step. 4) End with a one-line motivating close. No markdown headers, no bullet lists — just clean paragraphs. Plain text only.",
-          },
-          { role: "user", content: `Here is today's snapshot as JSON:\n${JSON.stringify(state)}` },
+          { role: "system", content: SYSTEM },
+          { role: "user", content: `Snapshot JSON:\n${JSON.stringify(state)}` },
         ],
       }),
     });
@@ -40,8 +52,19 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    const summary: string = data?.choices?.[0]?.message?.content?.trim() ?? "Keep flying. Tomorrow is another runway.";
-    return new Response(JSON.stringify({ summary }), { headers: { ...cors, "Content-Type": "application/json" } });
+    const raw: string = data?.choices?.[0]?.message?.content?.trim() ?? "";
+    const jsonText = raw.replace(/^```(?:json)?/i, "").replace(/```$/, "").trim();
+
+    let review: unknown = null;
+    try {
+      review = JSON.parse(jsonText);
+    } catch {
+      review = null;
+    }
+
+    return new Response(JSON.stringify({ review, summary: raw }), {
+      headers: { ...cors, "Content-Type": "application/json" },
+    });
   } catch (e) {
     console.error("daily-summary error:", e);
     return new Response(JSON.stringify({ error: e instanceof Error ? e.message : "Unknown error" }), {
