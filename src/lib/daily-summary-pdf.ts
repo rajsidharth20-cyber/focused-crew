@@ -289,7 +289,7 @@ export async function generateDailySummaryPDF(input: SummaryInput): Promise<void
     const { data, error } = await supabase.functions.invoke('daily-summary', { body: { state: facts } });
     if (!error && data) {
       const parsed = normaliseAI(data);
-      if (parsed) ai = parsed;
+      if (parsed) ai = { ...parsed, priority: parsed.priority || derivePriority() };
     }
   } catch (e) {
     console.warn('AI review unavailable, using data-derived review', e);
