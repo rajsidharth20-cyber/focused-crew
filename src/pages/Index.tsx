@@ -73,6 +73,8 @@ const Index = () => {
   // ---- subject timers ----
   const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
   const timer = useSubjectTimer(subjectName);
+  const timerRef = useRef(timer);
+  timerRef.current = timer;
   const [timerOpen, setTimerOpen] = useState(false);
 
   const todayTotals = useMemo(() => {
