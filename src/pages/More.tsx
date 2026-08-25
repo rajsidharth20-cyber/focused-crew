@@ -64,32 +64,10 @@ const More = () => {
       </header>
 
       <main className="max-w-2xl mx-auto px-4 py-3 space-y-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35 }}>
-          <QuoteCard />
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.04 }}>
-          <DailyNote />
-        </motion.div>
-
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.08 }}>
           <FlightProtocols protocols={store.protocols} onAdd={store.addProtocol} onRemove={store.removeProtocol} />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.12 }}>
-          <SubjectManager subjects={store.subjects} onAdd={store.addSubject} onRemove={store.removeSubject} />
-        </motion.div>
-
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, delay: 0.16 }}>
-          <WeeklyTargets
-            subjects={store.subjects}
-            targets={store.weeklyTargets}
-            pastTargets={store.pastWeeklyTargets}
-            onAdd={store.addWeeklyTarget}
-            onToggle={store.toggleWeeklyTarget}
-            onRemove={store.removeWeeklyTarget}
-          />
-        </motion.div>
 
         <section className="glass-card overflow-hidden divide-y divide-border/50">
           <Row to="/copilot" icon={Sparkles} label="AI Copilot" />
