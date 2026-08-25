@@ -21,6 +21,7 @@ import appLogo from '@/assets/logo.png.asset.json';
 
 
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
+import { QuoteCard } from '@/components/QuoteCard';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { StreakCard } from '@/components/StreakCard';
@@ -180,7 +181,9 @@ const Index = () => {
       </header>
 
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-4">
+        <QuoteCard />
         <PushPermissionPrompt />
+
 
         <AnimatePresence mode="wait">
           {focusMode ? (
