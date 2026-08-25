@@ -6,6 +6,7 @@ import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { SubjectManager } from '@/components/SubjectManager';
+import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useNow } from '@/hooks/use-now';
@@ -85,6 +86,18 @@ const Planner = () => {
             onRemove={store.removeSubject}
           />
         </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.06 }}>
+          <WeeklyTargets
+            subjects={store.subjects}
+            targets={store.weeklyTargets}
+            pastTargets={store.pastWeeklyTargets}
+            onAdd={store.addWeeklyTarget}
+            onToggle={store.toggleWeeklyTarget}
+            onRemove={store.removeWeeklyTarget}
+          />
+        </motion.div>
+
 
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.07 }}>
           <TodayTimeline

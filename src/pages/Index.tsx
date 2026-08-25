@@ -21,6 +21,7 @@ import appLogo from '@/assets/logo.png.asset.json';
 
 
 import { PushPermissionPrompt } from '@/components/PushPermissionPrompt';
+import { QuoteCard } from '@/components/QuoteCard';
 import { useNotificationTriggers } from '@/hooks/use-notification-triggers';
 import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { StreakCard } from '@/components/StreakCard';
@@ -60,9 +61,8 @@ const Index = () => {
   useEffect(() => {
     const handler = () => {
       setFocusMode(false);
-      requestAnimationFrame(() =>
-        dailyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      );
+      if (timerRef.current?.activeSubjectId) setTimerOpen(true);
+      else setStartOpen(true);
     };
     window.addEventListener(QUICK_ADD_EVENT, handler);
     return () => window.removeEventListener(QUICK_ADD_EVENT, handler);
@@ -74,6 +74,8 @@ const Index = () => {
   // ---- subject timers ----
   const subjectName = (id: string | null) => store.subjects.find(s => s.id === id)?.name ?? null;
   const timer = useSubjectTimer(subjectName);
+  const timerRef = useRef(timer);
+  timerRef.current = timer;
   const [timerOpen, setTimerOpen] = useState(false);
 
   const todayTotals = useMemo(() => {
@@ -179,7 +181,9 @@ const Index = () => {
       </header>
 
       <main className="mx-auto max-w-2xl space-y-6 px-4 py-4">
+        <QuoteCard />
         <PushPermissionPrompt />
+
 
         <AnimatePresence mode="wait">
           {focusMode ? (
