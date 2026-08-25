@@ -48,7 +48,7 @@ export function BottomNav() {
         <nav className="dock pointer-events-auto relative grid grid-cols-6 items-center h-[62px] px-1.5">
           <button
             onClick={quickAdd}
-            aria-label="Add task"
+            aria-label="Start studying"
             className="absolute left-1/2 -translate-x-1/2 -top-7 w-[52px] h-[52px] rounded-full m3-fab text-primary-foreground grid place-items-center active:scale-90 transition-transform"
           >
             <Plus className="w-6 h-6" />

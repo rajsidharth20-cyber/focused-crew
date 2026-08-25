@@ -60,9 +60,8 @@ const Index = () => {
   useEffect(() => {
     const handler = () => {
       setFocusMode(false);
-      requestAnimationFrame(() =>
-        dailyRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      );
+      if (timerRef.current?.activeSubjectId) setTimerOpen(true);
+      else setStartOpen(true);
     };
     window.addEventListener(QUICK_ADD_EVENT, handler);
     return () => window.removeEventListener(QUICK_ADD_EVENT, handler);

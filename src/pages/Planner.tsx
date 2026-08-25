@@ -87,6 +87,18 @@ const Planner = () => {
           />
         </motion.div>
 
+        <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.06 }}>
+          <WeeklyTargets
+            subjects={store.subjects}
+            targets={store.weeklyTargets}
+            pastTargets={store.pastWeeklyTargets}
+            onAdd={store.addWeeklyTarget}
+            onToggle={store.toggleWeeklyTarget}
+            onRemove={store.removeWeeklyTarget}
+          />
+        </motion.div>
+
+
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4, delay: 0.07 }}>
           <TodayTimeline
             commitments={store.commitments}

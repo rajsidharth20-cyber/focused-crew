@@ -18,6 +18,7 @@ import { useTerms } from '@/lib/terms';
 const More = () => {
   const store = usePlannerStore();
   const studyStore = useStudyStore();
+  const streak = useStreak(studyStore.sessions);
   const { username, signOut } = useAuth();
   const t = useTerms();
   const { isStaff } = useIsStaff();
@@ -34,6 +35,8 @@ const More = () => {
         weeklyTargets: store.weeklyTargets,
         commitments: store.commitments,
         events: store.events,
+        sessions: studyStore.sessions,
+        streak: streak.streak,
       });
       toast.success('Summary downloaded', { id: toastId });
     } catch (e) {
