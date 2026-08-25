@@ -6,6 +6,7 @@ import { Commitments } from '@/components/Commitments';
 import { UpcomingEvents } from '@/components/UpcomingEvents';
 import { DailyObjectives } from '@/components/DailyObjectives';
 import { SubjectManager } from '@/components/SubjectManager';
+import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useNow } from '@/hooks/use-now';

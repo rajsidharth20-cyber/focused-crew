@@ -7,14 +7,11 @@ import { useIsStaff } from '@/hooks/use-announcements';
 import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
-import { QuoteCard } from '@/components/QuoteCard';
-import { DailyNote } from '@/components/DailyNote';
 import { FlightProtocols } from '@/components/FlightProtocols';
-import { SubjectManager } from '@/components/SubjectManager';
-import { WeeklyTargets } from '@/components/WeeklyTargets';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
+import { useStreak } from '@/hooks/use-streak';
 import { useAuth } from '@/hooks/useAuth';
 import { useTerms } from '@/lib/terms';
 
