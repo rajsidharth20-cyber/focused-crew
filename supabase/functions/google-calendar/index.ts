@@ -130,44 +130,106 @@ serve(async (req) => {
       return data;
     };
 
+    // Returns the decrypted key, or null when the stored value is unusable.
+    const loadKey = async (conn: { connection_key_enc?: string | null } | null) => {
+      if (!conn?.connection_key_enc) return null;
+      try {
+        return await decrypt(conn.connection_key_enc);
+      } catch (e) {
+        console.error("connection key could not be decrypted", e);
+        return null;
+      }
+    };
+
+    // Best-effort gateway disconnect so the gateway does not keep a dangling
+    // connection that later forces a reconnect we have no key for.
+    const gatewayDisconnect = async (connectionKey: string) => {
+      try {
+        const res = await fetch(`${GATEWAY}/api/v1/app-users/connection`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "X-Connection-Api-Key": connectionKey,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ connector_id: CONNECTOR_ID }),
+        });
+        if (!res.ok) console.error(`gateway disconnect failed [${res.status}]: ${await res.text()}`);
+      } catch (e) {
+        console.error("gateway disconnect error", e);
+      }
+    };
+
     if (action === "status") {
       const conn = await loadConnection();
+      if (!conn) return json({ state: "disconnected", connected: false, email: null, lastSyncedAt: null });
+      const key = await loadKey(conn);
+      if (!key) {
+        return json({
+          state: "reconnect_required",
+          connected: false,
+          email: conn.google_email ?? null,
+          lastSyncedAt: conn.last_synced_at ?? null,
+        });
+      }
       return json({
-        connected: !!conn,
-        email: conn?.google_email ?? null,
-        lastSyncedAt: conn?.last_synced_at ?? null,
+        state: "connected",
+        connected: true,
+        email: conn.google_email ?? null,
+        lastSyncedAt: conn.last_synced_at ?? null,
       });
     }
 
     if (action === "start") {
-      if (!CLIENT_API_KEY) return json({ error: "Google Calendar connector is not configured." }, 500);
+      if (!CLIENT_API_KEY) return json({ error: "Google Calendar isn't set up for this app yet." }, 500);
       const returnUrl = String(body.returnUrl ?? "");
       if (!/^https?:\/\//.test(returnUrl)) return json({ error: "Invalid return URL" }, 400);
       const conn = await loadConnection();
-      const payload: Record<string, unknown> = {
-        connector_id: CONNECTOR_ID,
-        app_user_id: user.id,
-        return_url: returnUrl,
-        credentials_configuration: { scopes: SCOPES },
+      const storedKey = await loadKey(conn);
+
+      const authorize = async (connectionKey: string | null) => {
+        const headers: Record<string, string> = {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Client-Api-Key": CLIENT_API_KEY,
+          "Content-Type": "application/json",
+        };
+        // Reconnect: the gateway requires the stored per-user key as a header.
+        if (connectionKey) headers["X-Connection-Api-Key"] = connectionKey;
+        const res = await fetch(`${GATEWAY}/api/v1/app-users/oauth2/authorize`, {
+          method: "POST",
+          headers,
+          body: JSON.stringify({
+            connector_id: CONNECTOR_ID,
+            app_user_id: user.id,
+            return_url: returnUrl,
+            credentials_configuration: { scopes: SCOPES },
+          }),
+        });
+        return { res, text: await res.text() };
       };
-      const authHeaders: Record<string, string> = {
-        Authorization: `Bearer ${LOVABLE_API_KEY}`,
-        "X-Client-Api-Key": CLIENT_API_KEY,
-        "Content-Type": "application/json",
-      };
-      if (conn?.connection_key_enc) {
-        // Reconnect: the gateway expects the stored per-user key as a header.
-        authHeaders["X-Connection-Api-Key"] = await decrypt(conn.connection_key_enc);
+
+      let { res, text } = await authorize(storedKey);
+
+      // The gateway still holds a connection for this user but our stored key is
+      // gone/unreadable. Drop the stale local row and surface an actionable state.
+      if (!res.ok && !storedKey && /X-Connection-Api-Key/i.test(text)) {
+        if (conn) await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
+        return json({
+          error:
+            "Your previous Google connection can't be reused. Disconnect Google Calendar and connect again to start fresh.",
+          code: "reconnect_key_missing",
+        }, 409);
       }
-      const res = await fetch(`${GATEWAY}/api/v1/app-users/oauth2/authorize`, {
-        method: "POST",
-        headers: authHeaders,
-        body: JSON.stringify(payload),
-      });
-      const text = await res.text();
+
+      // Stored key is no longer valid at the gateway — retry as a first connect.
+      if (!res.ok && storedKey && (res.status === 401 || res.status === 403 || res.status === 404)) {
+        await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
+        ({ res, text } = await authorize(null));
+      }
+
       if (!res.ok) {
         console.error(`authorize failed [${res.status}]: ${text}`);
-        return json({ error: "Could not start Google authorization", details: text }, res.status);
+        return json({ error: "We couldn't open the Google sign-in window. Please try again." }, 502);
       }
       return json(JSON.parse(text));
     }
