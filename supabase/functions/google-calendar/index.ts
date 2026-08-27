@@ -411,7 +411,7 @@ serve(async (req) => {
           const errText = await res.text();
           console.error(`google event sync failed [${res.status}]: ${errText}`);
           if (res.status === 401 || res.status === 403) {
-            return json({ error: "Google access expired. Please reconnect your Google account.", details: errText }, res.status);
+            return json({ error: "Your Google access expired. Please reconnect Google Calendar.", code: "reconnect_required" }, 400);
           }
           failed++;
           continue;
