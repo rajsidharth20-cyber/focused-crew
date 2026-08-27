@@ -249,41 +249,62 @@ serve(async (req) => {
       const text = await res.text();
       if (!res.ok) {
         console.error(`exchange failed [${res.status}]: ${text}`);
-        return json({ error: "Could not finish Google authorization", details: text }, res.status);
+        return json({ error: "We couldn't finish connecting your Google account. Please try again." }, 502);
       }
       const data = JSON.parse(text);
       const key = data.connection_key ?? data.connection_api_key ?? data.key ?? data.api_key;
-      if (!key) return json({ error: "No connection key returned", details: text }, 502);
+      if (!key) {
+        console.error(`exchange returned no connection key: ${text}`);
+        return json({
+          error: "Google approved access but didn't return a usable connection. Please try connecting again.",
+        }, 502);
+      }
 
+      // Verify we can actually read the user's calendar before saving.
       let email: string | null = null;
-      try {
-        const me = await gatewayCall(key, "/calendar/v3/users/me/calendarList/primary");
-        if (me.ok) {
-          const cal = await me.json();
-          email = cal.id ?? null;
-        }
-      } catch (_) { /* non-fatal */ }
+      const verify = await gatewayCall(key, "/calendar/v3/users/me/calendarList/primary");
+      if (!verify.ok) {
+        console.error(`calendar verification failed [${verify.status}]: ${await verify.text()}`);
+        return json({
+          error: "Connected to Google, but we couldn't read your calendar. Please reconnect and allow calendar access.",
+        }, 502);
+      }
+      const cal = await verify.json();
+      email = cal.id ?? null;
+      const calendarId = cal.id ?? "primary";
 
       const { error } = await admin.from("google_calendar_connections").upsert({
         user_id: user.id,
         connection_key_enc: await encrypt(key),
         google_email: email,
+        calendar_id: calendarId,
         updated_at: new Date().toISOString(),
-      });
+      }, { onConflict: "user_id" });
       if (error) throw error;
-      return json({ connected: true, email });
+      return json({ connected: true, state: "connected", email });
     }
 
     if (action === "disconnect") {
+      const conn = await loadConnection();
+      const key = await loadKey(conn);
+      // Release the connection at the gateway first so a later Connect is a
+      // clean first-time authorization instead of a keyless reconnect.
+      if (key) await gatewayDisconnect(key);
       await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
       await admin.from("google_calendar_sync_map").delete().eq("user_id", user.id);
-      return json({ connected: false });
+      return json({ connected: false, state: "disconnected" });
     }
 
     if (action === "sync") {
       const conn = await loadConnection();
-      if (!conn) return json({ error: "Google Calendar is not connected." }, 400);
-      const connectionKey = await decrypt(conn.connection_key_enc);
+      if (!conn) return json({ error: "Google Calendar isn't connected yet.", code: "disconnected" }, 400);
+      const connectionKey = await loadKey(conn);
+      if (!connectionKey) {
+        return json({
+          error: "Your Google connection expired. Please reconnect Google Calendar.",
+          code: "reconnect_required",
+        }, 400);
+      }
       const timeZone = String(body.timeZone || "UTC");
       const today = String(body.today || toISO(new Date()));
       const horizon = addDays(today, 60);
