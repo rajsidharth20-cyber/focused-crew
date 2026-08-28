@@ -48,7 +48,7 @@ const Index = () => {
   useNotificationTriggers();
   const studyStore = useStudyStore();
   const streak = useStreak(studyStore.sessions);
-  const { username, usernameLoading } = useAuth();
+  const { username, usernameLoading, user, isGuest } = useAuth();
   const { theme } = useTheme();
   useDayStart();
   useEventReminders(store.events, store.commitments);
@@ -153,7 +153,7 @@ const Index = () => {
       </div>
 
       <DelayPromptHost />
-      {!usernameLoading && username === null && <UsernamePrompt />}
+      {(user || isGuest) && !usernameLoading && username === null && <UsernamePrompt />}
 
       {/* Greeting header */}
       <header className="sticky top-0 z-30 bg-background/70 backdrop-blur-xl">
