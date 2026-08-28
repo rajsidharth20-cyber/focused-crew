@@ -36,12 +36,28 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usernameLoading, setUsernameLoading] = useState(true);
   const isGuestRef = useRef(false);
 
-  const fetchUsername = async (userId: string) => {
-    const { data } = await supabase
+  /**
+   * Resolves the profile username. A failed request (offline, transient) must
+   * NOT be treated as "no call sign" — otherwise the prompt pops up on refresh
+   * for users who already have one. Retries once, then stays in loading state.
+   */
+  const fetchUsername = async (userId: string, attempt = 0) => {
+    const { data, error } = await supabase
       .from('profiles')
       .select('username')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
+
+    if (error) {
+      if (attempt < 2) {
+        setTimeout(() => fetchUsername(userId, attempt + 1), 800 * (attempt + 1));
+        return;
+      }
+      // Give up quietly: keep the prompt hidden rather than nagging the user.
+      setUsernameLoading(true);
+      return;
+    }
+
     setUsernameState(data?.username ?? null);
     setUsernameLoading(false);
   };
