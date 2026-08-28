@@ -48,7 +48,7 @@ const Index = () => {
   useNotificationTriggers();
   const studyStore = useStudyStore();
   const streak = useStreak(studyStore.sessions);
-  const { username, usernameLoading } = useAuth();
+  const { username, usernameLoading, user, isGuest } = useAuth();
   const { theme } = useTheme();
   useDayStart();
   useEventReminders(store.events, store.commitments);
