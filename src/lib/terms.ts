@@ -36,7 +36,7 @@ export type TermSet = {
 };
 
 const flight: TermSet = {
-  appTagline: 'Your daily flight deck',
+  appTagline: 'Get your focused crew',
   protocols: 'Flight Protocols',
   protocolsHint: 'Rules to follow throughout the day',
   protocolsPlaceholder: 'e.g. No phone during study...',
@@ -71,7 +71,7 @@ const flight: TermSet = {
 };
 
 const war: TermSet = {
-  appTagline: 'Your ops command deck',
+  appTagline: 'Get your focused crew',
   protocols: 'Ops Protocols',
   protocolsHint: 'Rules to follow throughout the day',
   protocolsPlaceholder: 'e.g. No phone during study...',
@@ -106,7 +106,7 @@ const war: TermSet = {
 };
 
 const plain: TermSet = {
-  appTagline: 'Your daily planner',
+  appTagline: 'Get your focused crew',
   protocols: 'Daily Rules',
   protocolsHint: 'Rules to follow throughout the day',
   protocolsPlaceholder: 'e.g. No phone during study...',

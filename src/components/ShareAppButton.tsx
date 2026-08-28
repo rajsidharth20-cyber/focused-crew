@@ -2,7 +2,7 @@ import { Share2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 const SHARE_URL = 'https://schedule-whisperer-89.lovable.app';
-const SHARE_TEXT = 'Focused Crew — an AI-powered daily planner. Try it:';
+const SHARE_TEXT = 'Focused Crew — get your focused crew. Try it:';
 
 export function ShareAppButton() {
   const handleShare = async () => {
