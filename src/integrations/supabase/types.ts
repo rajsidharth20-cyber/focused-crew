@@ -1375,6 +1375,10 @@ export type Database = {
           username: string
         }[]
       }
+      set_group_message_pinned: {
+        Args: { _message_id: string; _pinned: boolean }
+        Returns: undefined
+      }
       suggest_usernames: {
         Args: { _base?: string }
         Returns: {

@@ -251,11 +251,11 @@ export default function GroupChat() {
   };
 
   const togglePin = async (m: GroupMessage) => {
-    const { error } = await supabase
-      .from('group_messages')
-      .update({ pinned: !m.pinned })
-      .eq('id', m.id);
-    if (error) toast.error('Only group admins can pin messages');
+    const { error } = await supabase.rpc('set_group_message_pinned', {
+      _message_id: m.id,
+      _pinned: !m.pinned,
+    });
+    if (error) toast.error('Could not update pin');
   };
 
   if (isGuest || !user) {
