@@ -98,6 +98,7 @@ export function useGoogleCalendar() {
       }
       setError(e.message);
       if (!silent) toast.error(e.message || 'Sync failed.');
+      return undefined;
     } finally {
       setSyncing(false);
     }
