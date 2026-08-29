@@ -98,6 +98,7 @@ export function useGoogleCalendar() {
       }
       setError(e.message);
       if (!silent) toast.error(e.message || 'Sync failed.');
+      return undefined;
     } finally {
       setSyncing(false);
     }
@@ -146,8 +147,12 @@ export function useGoogleCalendar() {
         setError(null);
         toast.success('Google Calendar connected.');
         await refresh();
-        await sync(true);
-        toast.success('Your schedule was pushed to Google Calendar.');
+        const result = await sync(true);
+        if (result) {
+          toast.success('Your schedule was pushed to Google Calendar.');
+        } else {
+          toast.error('Connected, but the first sync failed — use "Sync now" to try again.');
+        }
       } catch (err) {
         const msg = (err as Error).message || 'Could not finish connecting.';
         setError(msg);
