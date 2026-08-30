@@ -38,6 +38,8 @@ export interface DailyObjective {
   recurringDays: number[] | null;
   isTemplate: boolean;
   templateId: string | null;
+  /** Occurrence of a recurring objective hidden for this day only. */
+  skipped: boolean;
 }
 
 export interface Commitment {
@@ -109,11 +111,12 @@ export function usePlannerStore() {
       const generated: DailyObjective[] = [];
       templates.forEach((t: DailyObjective) => {
         if (!t.recurringDays || !t.recurringDays.includes(todayDow)) return;
+        // Skipped occurrences count as existing: deleting one day must not resurrect it.
         const exists = allDO.some((o: DailyObjective) => o.templateId === t.id && o.date === today);
         if (exists) return;
         generated.push({
           ...t, id: crypto.randomUUID(), date: today, completed: false,
-          progressNotes: [], isTemplate: false, templateId: t.id, recurringDays: t.recurringDays,
+          progressNotes: [], isTemplate: false, templateId: t.id, recurringDays: t.recurringDays, skipped: false,
         });
       });
       if (generated.length) {
@@ -122,8 +125,8 @@ export function usePlannerStore() {
         saveGuestData(data);
       }
       setObjectiveTemplates(templates);
-      setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today));
-      setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today));
+      setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today && !o.skipped));
+      setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today && !o.skipped));
       setCommitments((data.commitments || []).filter((c: any) =>
         (c.recurringDays && c.recurringDays.length > 0) || c.date === today || (!c.date && !c.recurringDays)
       ));
