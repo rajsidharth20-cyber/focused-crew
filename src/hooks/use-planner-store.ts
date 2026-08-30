@@ -199,9 +199,10 @@ export function usePlannerStore() {
       const templates = (tplRes.data ?? []).map(mapDO);
       setObjectiveTemplates(templates);
       const todayDow = new Date(today + 'T00:00:00').getDay();
-      const todaysRows = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const todayAll = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const todaysRows = todayAll.filter(o => !o.skipped);
       const missing = templates.filter(t =>
-        t.recurringDays?.includes(todayDow) && !todaysRows.some(o => o.templateId === t.id),
+        t.recurringDays?.includes(todayDow) && !todayAll.some(o => o.templateId === t.id),
       );
       if (missing.length > 0) {
         // Ignore duplicates: another tab/mount may have materialised the same copy.
