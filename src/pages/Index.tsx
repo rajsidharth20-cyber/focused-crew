@@ -240,11 +240,27 @@ const Index = () => {
 
               {/* Today's objectives (read-only — edit in the Planner) */}
               <div ref={dailyRef} className="scroll-mt-20">
-                <TodayObjectiveList
-                  subjects={store.subjects}
-                  objectives={store.dailyObjectives}
-                  onToggle={store.toggleDailyObjective}
-                />
+                {store.loading ? (
+                  <section className="rounded-[24px] border border-border/50 bg-card/60 p-4 backdrop-blur" aria-busy="true">
+                    <div className="flex items-center gap-2">
+                      <ListChecks className="h-4 w-4 text-primary" />
+                      <h2 className="font-display text-[13px] font-bold uppercase tracking-widest text-primary/80">
+                        Today's objectives
+                      </h2>
+                    </div>
+                    <div className="mt-3 space-y-1.5">
+                      {[0, 1, 2].map(i => (
+                        <div key={i} className="h-11 animate-pulse rounded-2xl border border-border/40 bg-secondary/30" />
+                      ))}
+                    </div>
+                  </section>
+                ) : (
+                  <TodayObjectiveList
+                    subjects={store.subjects}
+                    objectives={store.dailyObjectives}
+                    onToggle={store.toggleDailyObjective}
+                  />
+                )}
               </div>
 
               {/* Today's schedule & events (read-only — edit in the Planner) */}
