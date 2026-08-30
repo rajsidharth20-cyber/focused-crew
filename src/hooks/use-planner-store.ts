@@ -636,14 +636,17 @@ export function usePlannerStore() {
     setCommitments([]);
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.date !== today);
+      data.dailyObjectives = (data.dailyObjectives || [])
+        .map((o: DailyObjective) => o.date === today && o.templateId ? { ...o, skipped: true } : o)
+        .filter((o: DailyObjective) => o.date !== today || o.templateId);
       data.commitments = (data.commitments || []).filter((c: any) => c.date !== today);
       saveGuestData(data);
       return;
     }
     if (!user) return;
     await Promise.all([
-      supabase.from('daily_objectives').delete().eq('user_id', user.id).eq('date', today),
+      supabase.from('daily_objectives').delete().eq('user_id', user.id).eq('date', today).is('template_id', null),
+      supabase.from('daily_objectives').update({ skipped: true }).eq('user_id', user.id).eq('date', today).not('template_id', 'is', null),
       supabase.from('commitments').delete().eq('user_id', user.id).eq('date', today),
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
