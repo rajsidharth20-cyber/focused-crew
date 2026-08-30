@@ -192,6 +192,7 @@ export function usePlannerStore() {
         recurringDays: o.recurring_days ?? null,
         isTemplate: !!o.is_template,
         templateId: o.template_id ?? null,
+        skipped: !!o.skipped,
       });
 
       // Recurring objectives: create today's copy for each template that matches today.
