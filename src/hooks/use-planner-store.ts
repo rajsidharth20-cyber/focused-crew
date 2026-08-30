@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
@@ -70,7 +70,7 @@ export interface PlannerState {
   events: PlannerEvent[];
 }
 
-export function usePlannerStore() {
+function usePlannerStoreInternal() {
   const { user, isGuest } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
