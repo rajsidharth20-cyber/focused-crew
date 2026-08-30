@@ -364,7 +364,7 @@ export function usePlannerStore() {
       ? [JSON.stringify({ text: initialNote.trim(), timestamp: new Date().toISOString() })]
       : [];
     if (isGuest) {
-      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority };
+      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority, skipped: false };
       const data = getGuestData();
       const rows: DailyObjective[] = [];
       let template: DailyObjective | null = null;
@@ -392,6 +392,7 @@ export function usePlannerStore() {
       recurringDays: d.recurring_days ?? null,
       isTemplate: !!d.is_template,
       templateId: d.template_id ?? null,
+      skipped: !!d.skipped,
     });
 
     let templateId: string | null = null;
