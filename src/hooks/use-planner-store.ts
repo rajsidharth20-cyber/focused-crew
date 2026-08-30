@@ -722,3 +722,22 @@ function usePlannerStoreInternal() {
     clearDay,
   };
 }
+
+export type PlannerStore = ReturnType<typeof usePlannerStoreInternal>;
+
+const PlannerContext = createContext<PlannerStore | null>(null);
+
+/**
+ * One shared planner store for the whole app: a single fetch batch per user/day,
+ * and mutations made on one screen are immediately visible on every other screen.
+ */
+export function PlannerProvider({ children }: { children: ReactNode }) {
+  const store = usePlannerStoreInternal();
+  return <PlannerContext.Provider value={store}>{children}</PlannerContext.Provider>;
+}
+
+export function usePlannerStore(): PlannerStore {
+  const ctx = useContext(PlannerContext);
+  if (!ctx) throw new Error('usePlannerStore must be used within <PlannerProvider>');
+  return ctx;
+}
