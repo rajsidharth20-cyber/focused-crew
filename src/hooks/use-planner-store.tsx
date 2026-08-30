@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
@@ -38,6 +38,8 @@ export interface DailyObjective {
   recurringDays: number[] | null;
   isTemplate: boolean;
   templateId: string | null;
+  /** Occurrence of a recurring objective hidden for this day only. */
+  skipped: boolean;
 }
 
 export interface Commitment {
@@ -68,7 +70,7 @@ export interface PlannerState {
   events: PlannerEvent[];
 }
 
-export function usePlannerStore() {
+function usePlannerStoreInternal() {
   const { user, isGuest } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
@@ -109,11 +111,12 @@ export function usePlannerStore() {
       const generated: DailyObjective[] = [];
       templates.forEach((t: DailyObjective) => {
         if (!t.recurringDays || !t.recurringDays.includes(todayDow)) return;
+        // Skipped occurrences count as existing: deleting one day must not resurrect it.
         const exists = allDO.some((o: DailyObjective) => o.templateId === t.id && o.date === today);
         if (exists) return;
         generated.push({
           ...t, id: crypto.randomUUID(), date: today, completed: false,
-          progressNotes: [], isTemplate: false, templateId: t.id, recurringDays: t.recurringDays,
+          progressNotes: [], isTemplate: false, templateId: t.id, recurringDays: t.recurringDays, skipped: false,
         });
       });
       if (generated.length) {
@@ -122,8 +125,8 @@ export function usePlannerStore() {
         saveGuestData(data);
       }
       setObjectiveTemplates(templates);
-      setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today));
-      setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today));
+      setDailyObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date === today && !o.skipped));
+      setPastObjectives(allDO.filter((o: DailyObjective) => !o.isTemplate && o.date < today && !o.skipped));
       setCommitments((data.commitments || []).filter((c: any) =>
         (c.recurringDays && c.recurringDays.length > 0) || c.date === today || (!c.date && !c.recurringDays)
       ));
@@ -189,15 +192,17 @@ export function usePlannerStore() {
         recurringDays: o.recurring_days ?? null,
         isTemplate: !!o.is_template,
         templateId: o.template_id ?? null,
+        skipped: !!o.skipped,
       });
 
       // Recurring objectives: create today's copy for each template that matches today.
       const templates = (tplRes.data ?? []).map(mapDO);
       setObjectiveTemplates(templates);
       const todayDow = new Date(today + 'T00:00:00').getDay();
-      const todaysRows = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const todayAll = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const todaysRows = todayAll.filter(o => !o.skipped);
       const missing = templates.filter(t =>
-        t.recurringDays?.includes(todayDow) && !todaysRows.some(o => o.templateId === t.id),
+        t.recurringDays?.includes(todayDow) && !todayAll.some(o => o.templateId === t.id),
       );
       if (missing.length > 0) {
         // Ignore duplicates: another tab/mount may have materialised the same copy.
@@ -359,7 +364,7 @@ export function usePlannerStore() {
       ? [JSON.stringify({ text: initialNote.trim(), timestamp: new Date().toISOString() })]
       : [];
     if (isGuest) {
-      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority };
+      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority, skipped: false };
       const data = getGuestData();
       const rows: DailyObjective[] = [];
       let template: DailyObjective | null = null;
@@ -387,6 +392,7 @@ export function usePlannerStore() {
       recurringDays: d.recurring_days ?? null,
       isTemplate: !!d.is_template,
       templateId: d.template_id ?? null,
+      skipped: !!d.skipped,
     });
 
     let templateId: string | null = null;
@@ -502,16 +508,26 @@ export function usePlannerStore() {
   }, [isGuest, getGuestData, saveGuestData]);
 
   const removeDailyObjective = useCallback(async (id: string) => {
+    const obj = [...dailyObjectives, ...pastObjectives].find(o => o.id === id);
+    // Recurring occurrence: mark this day as skipped so materialization never brings it back,
+    // while the template keeps generating future days. One-off objectives are deleted outright.
+    const skipOnly = !!obj?.templateId;
     setDailyObjectives(prev => prev.filter(o => o.id !== id));
     setPastObjectives(prev => prev.filter(o => o.id !== id));
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
+      data.dailyObjectives = skipOnly
+        ? (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, skipped: true } : o)
+        : (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
       saveGuestData(data);
       return;
     }
-    await supabase.from('daily_objectives').delete().eq('id', id);
-  }, [isGuest, getGuestData, saveGuestData]);
+    if (skipOnly) {
+      await supabase.from('daily_objectives').update({ skipped: true }).eq('id', id);
+    } else {
+      await supabase.from('daily_objectives').delete().eq('id', id);
+    }
+  }, [dailyObjectives, pastObjectives, isGuest, getGuestData, saveGuestData]);
 
   const carryForwardObjective = useCallback(async (id: string, targetDate?: string) => {
     const newDate = targetDate || (() => {
@@ -620,14 +636,17 @@ export function usePlannerStore() {
     setCommitments([]);
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.date !== today);
+      data.dailyObjectives = (data.dailyObjectives || [])
+        .map((o: DailyObjective) => o.date === today && o.templateId ? { ...o, skipped: true } : o)
+        .filter((o: DailyObjective) => o.date !== today || o.templateId);
       data.commitments = (data.commitments || []).filter((c: any) => c.date !== today);
       saveGuestData(data);
       return;
     }
     if (!user) return;
     await Promise.all([
-      supabase.from('daily_objectives').delete().eq('user_id', user.id).eq('date', today),
+      supabase.from('daily_objectives').delete().eq('user_id', user.id).eq('date', today).is('template_id', null),
+      supabase.from('daily_objectives').update({ skipped: true }).eq('user_id', user.id).eq('date', today).not('template_id', 'is', null),
       supabase.from('commitments').delete().eq('user_id', user.id).eq('date', today),
     ]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
@@ -702,4 +721,23 @@ export function usePlannerStore() {
     carryForwardObjective,
     clearDay,
   };
+}
+
+export type PlannerStore = ReturnType<typeof usePlannerStoreInternal>;
+
+const PlannerContext = createContext<PlannerStore | null>(null);
+
+/**
+ * One shared planner store for the whole app: a single fetch batch per user/day,
+ * and mutations made on one screen are immediately visible on every other screen.
+ */
+export function PlannerProvider({ children }: { children: ReactNode }) {
+  const store = usePlannerStoreInternal();
+  return <PlannerContext.Provider value={store}>{children}</PlannerContext.Provider>;
+}
+
+export function usePlannerStore(): PlannerStore {
+  const ctx = useContext(PlannerContext);
+  if (!ctx) throw new Error('usePlannerStore must be used within <PlannerProvider>');
+  return ctx;
 }

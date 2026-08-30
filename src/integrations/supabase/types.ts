@@ -231,6 +231,7 @@ export type Database = {
           priority: string
           progress_notes: string[]
           recurring_days: number[] | null
+          skipped: boolean
           subject_id: string
           task: string
           template_id: string | null
@@ -247,6 +248,7 @@ export type Database = {
           priority?: string
           progress_notes?: string[]
           recurring_days?: number[] | null
+          skipped?: boolean
           subject_id: string
           task: string
           template_id?: string | null
@@ -263,6 +265,7 @@ export type Database = {
           priority?: string
           progress_notes?: string[]
           recurring_days?: number[] | null
+          skipped?: boolean
           subject_id?: string
           task?: string
           template_id?: string | null
