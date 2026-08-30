@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Timer, ChevronRight, Pause, Play, Sparkles } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks } from 'lucide-react';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
