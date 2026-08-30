@@ -508,16 +508,26 @@ export function usePlannerStore() {
   }, [isGuest, getGuestData, saveGuestData]);
 
   const removeDailyObjective = useCallback(async (id: string) => {
+    const obj = [...dailyObjectives, ...pastObjectives].find(o => o.id === id);
+    // Recurring occurrence: mark this day as skipped so materialization never brings it back,
+    // while the template keeps generating future days. One-off objectives are deleted outright.
+    const skipOnly = !!obj?.templateId;
     setDailyObjectives(prev => prev.filter(o => o.id !== id));
     setPastObjectives(prev => prev.filter(o => o.id !== id));
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
+      data.dailyObjectives = skipOnly
+        ? (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, skipped: true } : o)
+        : (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
       saveGuestData(data);
       return;
     }
-    await supabase.from('daily_objectives').delete().eq('id', id);
-  }, [isGuest, getGuestData, saveGuestData]);
+    if (skipOnly) {
+      await supabase.from('daily_objectives').update({ skipped: true }).eq('id', id);
+    } else {
+      await supabase.from('daily_objectives').delete().eq('id', id);
+    }
+  }, [dailyObjectives, pastObjectives, isGuest, getGuestData, saveGuestData]);
 
   const carryForwardObjective = useCallback(async (id: string, targetDate?: string) => {
     const newDate = targetDate || (() => {
