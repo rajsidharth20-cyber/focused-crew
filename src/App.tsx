@@ -50,6 +50,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <PlannerProvider>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -76,6 +77,7 @@ const App = () => (
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </PlannerProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>
