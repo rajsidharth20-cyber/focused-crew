@@ -160,6 +160,27 @@ serve(async (req) => {
       }
     };
 
+    // Release a gateway connection when the per-user connection key is gone —
+    // authenticated with the client key + app_user_id instead.
+    const gatewayDisconnectByClient = async (appUserId: string) => {
+      try {
+        const res = await fetch(`${GATEWAY}/api/v1/app-users/connection`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "X-Client-Api-Key": CLIENT_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ connector_id: CONNECTOR_ID, app_user_id: appUserId }),
+        });
+        if (!res.ok) console.error(`gateway client disconnect failed [${res.status}]: ${await res.text()}`);
+        return res.ok;
+      } catch (e) {
+        console.error("gateway client disconnect error", e);
+        return false;
+      }
+    };
+
     if (action === "status") {
       const conn = await loadConnection();
       if (!conn) return json({ state: "disconnected", connected: false, email: null, lastSyncedAt: null });
@@ -185,9 +206,10 @@ serve(async (req) => {
       const returnUrl = String(body.returnUrl ?? "");
       if (!/^https?:\/\//.test(returnUrl)) return json({ error: "Invalid return URL" }, 400);
       const conn = await loadConnection();
-      const storedKey = await loadKey(conn);
+      let storedKey = await loadKey(conn);
+      let appUserId = conn?.app_user_id || user.id;
 
-      const authorize = async (connectionKey: string | null) => {
+      const authorize = async (connectionKey: string | null, asAppUserId: string) => {
         const headers: Record<string, string> = {
           Authorization: `Bearer ${LOVABLE_API_KEY}`,
           "X-Client-Api-Key": CLIENT_API_KEY,
@@ -200,7 +222,7 @@ serve(async (req) => {
           headers,
           body: JSON.stringify({
             connector_id: CONNECTOR_ID,
-            app_user_id: user.id,
+            app_user_id: asAppUserId,
             return_url: returnUrl,
             credentials_configuration: { scopes: SCOPES },
           }),
@@ -208,29 +230,50 @@ serve(async (req) => {
         return { res, text: await res.text() };
       };
 
-      let { res, text } = await authorize(storedKey);
-
-      // The gateway still holds a connection for this user but our stored key is
-      // gone/unreadable. Drop the stale local row and surface an actionable state.
-      if (!res.ok && !storedKey && /X-Connection-Api-Key/i.test(text)) {
-        if (conn) await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
-        return json({
-          error:
-            "Your previous Google connection can't be reused. Disconnect Google Calendar and connect again to start fresh.",
-          code: "reconnect_key_missing",
-        }, 409);
-      }
+      let { res, text } = await authorize(storedKey, appUserId);
 
       // Stored key is no longer valid at the gateway — retry as a first connect.
       if (!res.ok && storedKey && (res.status === 401 || res.status === 403 || res.status === 404)) {
         await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
-        ({ res, text } = await authorize(null));
+        storedKey = null;
+        appUserId = user.id;
+        ({ res, text } = await authorize(null, appUserId));
+      }
+
+      // The gateway still holds a connection for this user but our stored key is
+      // gone/unreadable. Release it server-side, then retry as a first connect.
+      if (!res.ok && !storedKey && /X-Connection-Api-Key/i.test(text)) {
+        if (conn) await admin.from("google_calendar_connections").delete().eq("user_id", user.id);
+        await gatewayDisconnectByClient(appUserId);
+        appUserId = user.id;
+        ({ res, text } = await authorize(null, appUserId));
+      }
+
+      // Still treated as a keyless reconnect: authorize under a fresh connection
+      // identity so the dangling gateway record no longer collides with us.
+      if (!res.ok && /X-Connection-Api-Key/i.test(text)) {
+        appUserId = `${user.id}:${Date.now()}`;
+        ({ res, text } = await authorize(null, appUserId));
       }
 
       if (!res.ok) {
         console.error(`authorize failed [${res.status}]: ${text}`);
-        return json({ error: "We couldn't open the Google sign-in window. Please try again." }, 502);
+        return json({
+          error: "We couldn't open the Google sign-in window. Please try again in a moment.",
+          code: "authorize_failed",
+        }, 502);
       }
+
+      // Remember the identity that worked so exchange/future reconnects reuse it.
+      await admin.from("google_calendar_connections").upsert({
+        user_id: user.id,
+        app_user_id: appUserId,
+        connection_key_enc: storedKey ? conn!.connection_key_enc : "",
+        google_email: conn?.google_email ?? null,
+        calendar_id: conn?.calendar_id ?? "primary",
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id" });
+
       return json(JSON.parse(text));
     }
 

@@ -383,6 +383,7 @@ export type Database = {
       }
       google_calendar_connections: {
         Row: {
+          app_user_id: string | null
           calendar_id: string
           connection_key_enc: string
           created_at: string
@@ -392,6 +393,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          app_user_id?: string | null
           calendar_id?: string
           connection_key_enc: string
           created_at?: string
@@ -401,6 +403,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          app_user_id?: string | null
           calendar_id?: string
           connection_key_enc?: string
           created_at?: string
