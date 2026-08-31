@@ -160,6 +160,27 @@ serve(async (req) => {
       }
     };
 
+    // Release a gateway connection when the per-user connection key is gone —
+    // authenticated with the client key + app_user_id instead.
+    const gatewayDisconnectByClient = async (appUserId: string) => {
+      try {
+        const res = await fetch(`${GATEWAY}/api/v1/app-users/connection`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${LOVABLE_API_KEY}`,
+            "X-Client-Api-Key": CLIENT_API_KEY,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ connector_id: CONNECTOR_ID, app_user_id: appUserId }),
+        });
+        if (!res.ok) console.error(`gateway client disconnect failed [${res.status}]: ${await res.text()}`);
+        return res.ok;
+      } catch (e) {
+        console.error("gateway client disconnect error", e);
+        return false;
+      }
+    };
+
     if (action === "status") {
       const conn = await loadConnection();
       if (!conn) return json({ state: "disconnected", connected: false, email: null, lastSyncedAt: null });
