@@ -303,9 +303,11 @@ serve(async (req) => {
         }, 502);
       }
 
-      // Verify we can actually read the user's calendar before saving.
+      // Verify we can actually use the user's calendar before saving.
+      // NOTE: only the `calendar.events` scope is requested, which does not
+      // permit calendarList.get — probe the events collection instead.
       let email: string | null = null;
-      const verify = await gatewayCall(key, "/calendar/v3/users/me/calendarList/primary");
+      const verify = await gatewayCall(key, "/calendar/v3/calendars/primary/events?maxResults=1");
       if (!verify.ok) {
         console.error(`calendar verification failed [${verify.status}]: ${await verify.text()}`);
         return json({
@@ -313,8 +315,10 @@ serve(async (req) => {
         }, 502);
       }
       const cal = await verify.json();
-      email = cal.id ?? null;
-      const calendarId = cal.id ?? "primary";
+      // events.list returns the calendar's own id/summary in `summary`.
+      email = typeof cal.summary === "string" && cal.summary.includes("@") ? cal.summary : null;
+      const calendarId = "primary";
+
 
       const { error } = await admin.from("google_calendar_connections").upsert({
         user_id: user.id,
