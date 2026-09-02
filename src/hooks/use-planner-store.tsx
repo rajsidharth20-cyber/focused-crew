@@ -205,19 +205,32 @@ function usePlannerStoreInternal() {
         t.recurringDays?.includes(todayDow) && !todayAll.some(o => o.templateId === t.id),
       );
       if (missing.length > 0) {
-        // Ignore duplicates: another tab/mount may have materialised the same copy.
-        const { data: created } = await supabase
+        // The uniqueness guard on (user_id, template_id, date) is a *partial*
+        // index, which ON CONFLICT cannot target through the client — so use a
+        // plain insert and treat a duplicate (another tab/mount raced us) as a
+        // signal to re-read today's rows instead.
+        const { data: created, error: insertErr } = await supabase
           .from('daily_objectives')
-          .upsert(
+          .insert(
             missing.map(t => ({
               user_id: user.id, subject_id: t.subjectId, task: t.task,
               estimated_minutes: t.estimatedMinutes, date: today, deadline: null,
               priority: t.priority, progress_notes: [], template_id: t.id, is_template: false,
             })),
-            { onConflict: 'user_id,template_id,date', ignoreDuplicates: true },
           )
           .select();
-        (created ?? []).forEach((r: any) => todaysRows.push(mapDO(r)));
+        if (insertErr) {
+          if (insertErr.code === '23505') {
+            const { data: refetched } = await supabase
+              .from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today).eq('is_template', false);
+            todaysRows.length = 0;
+            (refetched ?? []).map(mapDO).filter(o => !o.skipped).forEach(o => todaysRows.push(o));
+          } else {
+            console.error('Failed to materialise recurring objectives', insertErr);
+          }
+        } else {
+          (created ?? []).forEach((r: any) => todaysRows.push(mapDO(r)));
+        }
       }
       // Safety net: never show the same recurring task twice on one day.
       const seen = new Set<string>();
