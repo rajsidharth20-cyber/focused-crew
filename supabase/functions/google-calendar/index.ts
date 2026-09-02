@@ -348,7 +348,9 @@ serve(async (req) => {
 
     if (action === "sync") {
       const conn = await loadConnection();
-      if (!conn) return json({ error: "Google Calendar isn't connected yet.", code: "disconnected" }, 400);
+      if (!conn || (!conn.connection_key_enc && !conn.last_synced_at)) {
+        return json({ error: "Google Calendar isn't connected yet.", code: "disconnected" }, 400);
+      }
       const connectionKey = await loadKey(conn);
       if (!connectionKey) {
         return json({
