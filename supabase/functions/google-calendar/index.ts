@@ -183,7 +183,11 @@ serve(async (req) => {
 
     if (action === "status") {
       const conn = await loadConnection();
-      if (!conn) return json({ state: "disconnected", connected: false, email: null, lastSyncedAt: null });
+      // No row, or a placeholder row written by "start" whose OAuth flow was
+      // never completed (empty key, never synced) → simply not connected.
+      if (!conn || (!conn.connection_key_enc && !conn.last_synced_at)) {
+        return json({ state: "disconnected", connected: false, email: null, lastSyncedAt: null });
+      }
       const key = await loadKey(conn);
       if (!key) {
         return json({
