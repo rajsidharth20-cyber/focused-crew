@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame } from 'lucide-react';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
+import { WeeklyTargetsHome } from '@/components/home/WeeklyTargetsHome';
 import { TodayTimeline } from '@/components/TodayTimeline';
 import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
 import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
@@ -173,6 +174,18 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <button
+              onClick={() => setStreakOpen(true)}
+              aria-label={`Study streak: ${streak.streak} day${streak.streak === 1 ? '' : 's'}. Tap for details`}
+              className={`press mr-1 inline-flex h-8 items-center gap-1 rounded-full border px-2.5 text-[13px] font-bold tabular-nums ${
+                streak.streak > 0
+                  ? 'border-destructive/30 bg-destructive/10 text-destructive'
+                  : 'border-border/60 bg-background/60 text-muted-foreground'
+              }`}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              {streak.streak}
+            </button>
             <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
             <ProfileDialog />
             <SettingsDialog />
@@ -216,7 +229,6 @@ const Index = () => {
                 goalMinutes={streak.thresholdMinutes}
                 streak={streak.streak}
                 subjectsActive={subjectsActive}
-                onOpenStreak={() => setStreakOpen(true)}
               />
 
               <DeveloperNoticeCard />
@@ -262,6 +274,15 @@ const Index = () => {
                   />
                 )}
               </div>
+
+              {/* Weekly targets (edit in the Planner) */}
+              {!store.loading && (
+                <WeeklyTargetsHome
+                  subjects={store.subjects}
+                  targets={store.weeklyTargets}
+                  onToggle={store.toggleWeeklyTarget}
+                />
+              )}
 
               {/* Today's schedule & events (read-only — edit in the Planner) */}
               <section className="space-y-2">
