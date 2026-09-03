@@ -363,10 +363,11 @@ serve(async (req) => {
       const horizon = addDays(today, 60);
       const calendarId = conn.calendar_id || "primary";
 
-      const [eventsRes, commitmentsRes, objectivesRes] = await Promise.all([
+      const [eventsRes, commitmentsRes, objectivesRes, targetsRes] = await Promise.all([
         admin.from("events").select("*").eq("user_id", user.id),
         admin.from("commitments").select("*").eq("user_id", user.id),
         admin.from("daily_objectives").select("*").eq("user_id", user.id).not("deadline", "is", null),
+        admin.from("weekly_targets").select("*").eq("user_id", user.id).not("deadline", "is", null),
       ]);
 
       type Item = { type: string; id: string; fingerprint: string; payload: Record<string, unknown> };
@@ -424,6 +425,17 @@ serve(async (req) => {
           ...allDay(o.deadline),
         };
         items.push({ type: "objective", id: o.id, fingerprint: JSON.stringify(payload), payload });
+      }
+
+      // Weekly targets with a deadline show up as all-day events on that day.
+      for (const t of targetsRes.data ?? []) {
+        if (!t.deadline || t.deadline < today || t.deadline > horizon) continue;
+        const payload = {
+          summary: `${t.completed ? "✅" : "📌"} ${t.target}`,
+          description: `Weekly target deadline — synced from Focused Crew`,
+          ...allDay(t.deadline),
+        };
+        items.push({ type: "weekly_target", id: t.id, fingerprint: JSON.stringify(payload), payload });
       }
 
       const { data: existing } = await admin
