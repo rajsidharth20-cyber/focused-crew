@@ -28,7 +28,7 @@ import { UsernamePrompt } from '@/components/UsernamePrompt';
 import { StreakCard } from '@/components/StreakCard';
 import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { BottomNav, QUICK_ADD_EVENT } from '@/components/shell/BottomNav';
-import { DeveloperNoticeCard } from '@/components/announcements/DeveloperNoticeCard';
+import { AnnouncementsButton } from '@/components/announcements/AnnouncementsButton';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useStreak } from '@/hooks/use-streak';
@@ -165,6 +165,7 @@ const Index = () => {
               alt="Focused Crew logo"
               className="h-9 w-9 shrink-0 rounded-2xl object-cover shadow-md"
             />
+            <AnnouncementsButton />
 
             <div className="min-w-0">
               <h1 className="truncate font-display text-[15.5px] font-bold leading-tight tracking-tight">
@@ -227,11 +228,10 @@ const Index = () => {
               <TodayProgressCard
                 minutesToday={minutesToday}
                 goalMinutes={streak.thresholdMinutes}
+                onGoalChange={streak.setThreshold}
                 streak={streak.streak}
                 subjectsActive={subjectsActive}
               />
-
-              <DeveloperNoticeCard />
 
               {/* Primary action */}
               <button
@@ -271,6 +271,7 @@ const Index = () => {
                     subjects={store.subjects}
                     objectives={store.dailyObjectives}
                     onToggle={store.toggleDailyObjective}
+                    onCancelToday={store.removeDailyObjective}
                   />
                 )}
               </div>
