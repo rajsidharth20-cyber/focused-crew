@@ -1,12 +1,19 @@
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ListChecks, Pencil } from 'lucide-react';
+import { Check, ChevronRight, ListChecks, Pencil, Repeat, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { DailyObjective, Subject } from '@/hooks/use-planner-store';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface Props {
   subjects: Subject[];
   objectives: DailyObjective[];
   onToggle: (id: string) => void;
+  /** Cancels the objective for today only (recurring series stay intact). */
+  onCancelToday?: (id: string) => void;
 }
 
 const priorityTint: Record<string, string> = {
@@ -16,11 +23,12 @@ const priorityTint: Record<string, string> = {
 };
 
 /** Read-only view of today's objectives. Adding & editing happens in the Planner. */
-export function TodayObjectiveList({ subjects, objectives, onToggle }: Props) {
+export function TodayObjectiveList({ subjects, objectives, onToggle, onCancelToday }: Props) {
   const subjectName = (id: string) => subjects.find(s => s.id === id)?.name ?? '';
   const done = objectives.filter(o => o.completed).length;
   const total = objectives.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
+  const [pending, setPending] = useState<DailyObjective | null>(null);
 
   return (
     <section className="rounded-[24px] border border-border/50 bg-card/60 p-4 backdrop-blur">
@@ -89,16 +97,50 @@ export function TodayObjectiveList({ subjects, objectives, onToggle }: Props) {
                   <div className={`truncate text-[13.5px] ${o.completed ? 'text-muted-foreground line-through' : ''}`}>
                     {o.task}
                   </div>
-                  <div className="truncate text-[10.5px] text-muted-foreground">
-                    {[subjectName(o.subjectId), `${o.estimatedMinutes}m`].filter(Boolean).join(' · ')}
+                  <div className="flex items-center gap-1 truncate text-[10.5px] text-muted-foreground">
+                    {o.templateId && <Repeat className="h-2.5 w-2.5 shrink-0" aria-label="Recurring" />}
+                    <span className="truncate">
+                      {[subjectName(o.subjectId), `${o.estimatedMinutes}m`].filter(Boolean).join(' · ')}
+                    </span>
                   </div>
                 </div>
                 <span className={`h-2 w-2 shrink-0 rounded-full ${priorityTint[o.priority] ?? priorityTint.low}`} />
+                {onCancelToday && (
+                  <button
+                    onClick={() => setPending(o)}
+                    aria-label={`Cancel "${o.task}" for today`}
+                    className="press grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
       )}
+
+      <AlertDialog open={!!pending} onOpenChange={v => !v && setPending(null)}>
+        <AlertDialogContent className="max-w-sm rounded-3xl">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel for today?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {pending?.templateId
+                ? <>“{pending?.task}” will be removed from today only. It keeps repeating on its usual days.</>
+                : <>“{pending?.task}” will be removed from today's list.</>}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { if (pending) onCancelToday?.(pending.id); setPending(null); }}
+            >
+              Cancel for today
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </section>
   );
 }

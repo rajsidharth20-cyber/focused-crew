@@ -64,10 +64,12 @@ export function QuoteCard() {
   }, [user, isGuest]);
 
   const fetchAIQuote = useCallback(async (): Promise<DisplayQuote> => {
+    // AI quotes need a signed-in account; guests keep the built-in quote.
+    if (isGuest || !user) return FALLBACK;
     const { data, error } = await supabase.functions.invoke('daily-quote', { body: { theme } });
     if (error || !data?.text) throw error ?? new Error('No quote');
     return { text: data.text, author: data.author || 'Unknown', source: 'ai' };
-  }, [theme]);
+  }, [theme, isGuest, user]);
 
   const refresh = useCallback(async (list?: UserQuote[], silent = false) => {
     setLoading(true);
