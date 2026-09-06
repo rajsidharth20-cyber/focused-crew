@@ -48,16 +48,61 @@ const mapSession = (r: any): StudySession => ({
   delayMinutes: r.delay_minutes ?? null,
 });
 
+// Shared in-memory cache so every screen using this hook shows data instantly
+// (stale-while-revalidate) instead of re-downloading everything on mount.
+type Snapshot = { tags: StudyTag[]; sessions: StudySession[]; at: number };
+const memCache = new Map<string, Snapshot>();
+const pendingLoads = new Map<string, Promise<Snapshot>>();
+const FRESH_MS = 30 * 1000;
+const lsKey = (uid: string) => `fc_study_cache_${uid}`;
+
+function readSnapshot(uid: string): Snapshot | null {
+  const m = memCache.get(uid);
+  if (m) return m;
+  try {
+    const raw = localStorage.getItem(lsKey(uid));
+    if (!raw) return null;
+    const s = JSON.parse(raw) as Snapshot;
+    memCache.set(uid, s);
+    return s;
+  } catch { return null; }
+}
+
+function writeSnapshot(uid: string, tags: StudyTag[], sessions: StudySession[]) {
+  const s: Snapshot = { tags, sessions, at: Date.now() };
+  memCache.set(uid, s);
+  try { localStorage.setItem(lsKey(uid), JSON.stringify(s)); } catch { /* quota */ }
+  return s;
+}
+
+function fetchSnapshot(uid: string): Promise<Snapshot> {
+  const pending = pendingLoads.get(uid);
+  if (pending) return pending;
+  const p = Promise.all([
+    db.from('study_tags').select('*').eq('user_id', uid).order('created_at', { ascending: true }),
+    db.from('study_sessions').select('*').eq('user_id', uid).order('started_at', { ascending: false }),
+  ]).then(([tRes, sRes]: any[]) => {
+    if (tRes.error || sRes.error) {
+      const prev = readSnapshot(uid);
+      if (prev) return prev;
+      throw tRes.error ?? sRes.error;
+    }
+    return writeSnapshot(uid, (tRes.data ?? []).map(mapTag), (sRes.data ?? []).map(mapSession));
+  }).finally(() => { pendingLoads.delete(uid); });
+  pendingLoads.set(uid, p);
+  return p;
+}
+
 export function useStudyStore() {
   const { user, isGuest } = useAuth();
-  const [tags, setTags] = useState<StudyTag[]>([]);
-  const [sessions, setSessions] = useState<StudySession[]>([]);
-  const [loading, setLoading] = useState(true);
+  const initial = !isGuest && user ? readSnapshot(user.id) : null;
+  const [tags, setTags] = useState<StudyTag[]>(initial?.tags ?? []);
+  const [sessions, setSessions] = useState<StudySession[]>(initial?.sessions ?? []);
+  const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      setLoading(true);
       if (isGuest) {
         setTags(readLS<StudyTag>(GUEST_TAGS));
         setSessions(readLS<StudySession>(GUEST_SESSIONS));
@@ -65,18 +110,36 @@ export function useStudyStore() {
         return;
       }
       if (!user) return;
-      const [tRes, sRes] = await Promise.all([
-        db.from('study_tags').select('*').eq('user_id', user.id).order('created_at', { ascending: true }),
-        db.from('study_sessions').select('*').eq('user_id', user.id).order('started_at', { ascending: false }),
-      ]);
-      if (cancelled) return;
-      setTags((tRes.data ?? []).map(mapTag));
-      setSessions((sRes.data ?? []).map(mapSession));
-      setLoading(false);
+      const cached = readSnapshot(user.id);
+      if (cached) {
+        setTags(cached.tags);
+        setSessions(cached.sessions);
+        setLoading(false);
+        if (Date.now() - cached.at < FRESH_MS) return;
+      } else {
+        setLoading(true);
+      }
+      try {
+        const snap = await fetchSnapshot(user.id);
+        if (cancelled) return;
+        setTags(snap.tags);
+        setSessions(snap.sessions);
+      } catch (e) {
+        console.error('[study-store] load failed', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
     load();
     return () => { cancelled = true; };
   }, [user, isGuest]);
+
+  // Keep the shared cache in step with local edits so other screens see them.
+  useEffect(() => {
+    if (isGuest || !user || loading) return;
+    const cur = memCache.get(user.id);
+    writeSnapshot(user.id, tags, sessions).at = cur?.at ?? Date.now();
+  }, [tags, sessions, user, isGuest, loading]);
 
   const addTag = useCallback(async (name: string, color: string) => {
     if (isGuest) {

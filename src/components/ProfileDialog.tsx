@@ -10,6 +10,8 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UsernameField } from '@/components/UsernameField';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
+import { compressImage } from '@/lib/image-compress';
+import { useSignedAvatar } from '@/components/UserAvatar';
 import { toast } from 'sonner';
 
 const GUEST_KEY = 'taskpilot_guest_profile';
@@ -71,9 +73,10 @@ export function ProfileDialog() {
         setAvatarUrl(dataUrl);
         toast.success('Photo ready — remember to save.');
       } else if (user) {
-        const ext = file.name.split('.').pop() || 'png';
+        const small = await compressImage(file, { maxSize: 320, quality: 0.82 });
+        const ext = small.name.split('.').pop() || 'jpg';
         const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(path, file, { upsert: true, contentType: file.type });
+        const { error } = await supabase.storage.from('avatars').upload(path, small, { upsert: true, contentType: small.type, cacheControl: '31536000' });
         if (error) throw error;
         setAvatarUrl(path);
         toast.success('Photo uploaded — remember to save.');
@@ -220,16 +223,3 @@ export function ProfileDialog() {
   );
 }
 
-function useSignedAvatar(pathOrUrl: string) {
-  const [url, setUrl] = useState<string>('');
-  useEffect(() => {
-    let cancelled = false;
-    if (!pathOrUrl) { setUrl(''); return; }
-    if (pathOrUrl.startsWith('data:') || pathOrUrl.startsWith('http')) { setUrl(pathOrUrl); return; }
-    supabase.storage.from('avatars').createSignedUrl(pathOrUrl, 60 * 60).then(({ data }) => {
-      if (!cancelled) setUrl(data?.signedUrl ?? '');
-    });
-    return () => { cancelled = true; };
-  }, [pathOrUrl]);
-  return url;
-}
