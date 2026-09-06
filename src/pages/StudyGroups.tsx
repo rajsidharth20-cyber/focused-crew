@@ -177,7 +177,7 @@ export default function StudyGroups({ embedded = false }: { embedded?: boolean }
               <button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                className={`relative flex items-center justify-center gap-1.5 h-8.5 py-2 rounded-xl text-[12.5px] font-semibold transition-colors ${
+                className={`relative flex items-center justify-center gap-1.5 h-9 rounded-xl text-[12.5px] font-semibold transition-colors ${
                   active ? 'text-primary-foreground' : 'text-muted-foreground'
                 }`}
               >
