@@ -234,14 +234,7 @@ const StudyTimer = () => {
                 {downloadingReport ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileDown className="w-3.5 h-3.5" />}
                 <span className="hidden sm:inline">Weekly</span>
               </button>
-              <ManualSessionDialog
-                tags={study.tags}
-                subjects={planner.subjects}
-                onSave={(input) => {
-                  study.addSession({ ...input, type: 'manual', plannedSeconds: null });
-                  toast.success('Session added');
-                }}
-              />
+              <ManualSessionDialog tags={study.tags} subjects={planner.subjects} />
             </div>
           )}
         </div>
