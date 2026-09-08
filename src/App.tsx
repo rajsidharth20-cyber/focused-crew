@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Install from "./pages/Install";
 import StudyTimer from "./pages/StudyTimer";
+import AddSession from "./pages/AddSession";
 import Planner from "./pages/Planner";
 import More from "./pages/More";
 import Copilot from "./pages/Copilot";
@@ -59,6 +60,7 @@ const App = () => (
             <Route path="/google-callback" element={<GoogleCallback />} />
             <Route path="/" element={<ProtectedRoute><Index /></ProtectedRoute>} />
             <Route path="/study" element={<ProtectedRoute><StudyTimer /></ProtectedRoute>} />
+            <Route path="/study/add-session" element={<ProtectedRoute><AddSession /></ProtectedRoute>} />
             <Route path="/planner" element={<ProtectedRoute><Planner /></ProtectedRoute>} />
             <Route path="/copilot" element={<ProtectedRoute><Copilot /></ProtectedRoute>} />
             <Route path="/more" element={<ProtectedRoute><More /></ProtectedRoute>} />
