@@ -144,12 +144,16 @@ export function buildDailyReport(data: ReportData): jsPDF {
   doc.rect(0, 116, W, 3, 'F');
 
   // logo mark
-  setFill(GREEN);
-  doc.roundedRect(M, 30, 30, 30, 9, 9, 'F');
-  doc.setFont('helvetica', 'bold');
-  doc.setFontSize(13);
-  setText(FOREST_DEEP);
-  doc.text('FC', M + 15, 50, { align: 'center' });
+  try {
+    doc.addImage(BRAND_LOGO_DATA_URL, 'PNG', M, 30, 30, 30);
+  } catch {
+    setFill(GREEN);
+    doc.roundedRect(M, 30, 30, 30, 9, 9, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(13);
+    setText(FOREST_DEEP);
+    doc.text('FC', M + 15, 50, { align: 'center' });
+  }
 
   doc.setFont('helvetica', 'bold');
   doc.setFontSize(10);
