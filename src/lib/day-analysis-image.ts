@@ -206,10 +206,29 @@ export function renderDayAnalysis(theme: CardTheme, data: DayAnalysisData): HTML
     ctx.fillText(`Weekly targets · ${data.weeklyDone ?? 0}/${data.weeklyTotal} done`, M, H - 150);
   }
 
-  // Footer
+  // Footer with brand mark
+  const mark = brandLogo();
+  let textX = M;
+  if (mark?.complete && mark.naturalWidth) {
+    const s = 44;
+    ctx.save();
+    ctx.beginPath();
+    const r = 12;
+    const bx = M, by = H - 80 - s + 10;
+    ctx.moveTo(bx + r, by);
+    ctx.arcTo(bx + s, by, bx + s, by + s, r);
+    ctx.arcTo(bx + s, by + s, bx, by + s, r);
+    ctx.arcTo(bx, by + s, bx, by, r);
+    ctx.arcTo(bx, by, bx + s, by, r);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(mark, bx, by, s, s);
+    ctx.restore();
+    textX = M + s + 14;
+  }
   ctx.fillStyle = p.muted;
   ctx.font = '600 26px Inter, system-ui, sans-serif';
-  ctx.fillText('Focused Crew', M, H - 80);
+  ctx.fillText('Focused Crew', textX, H - 80);
 
   return canvas;
 }
