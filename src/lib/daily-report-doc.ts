@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { BRAND_LOGO_DATA_URL } from './brand-logo';
 
 /* ------------------------------------------------------------------ *
  * Focused Crew — Daily Focus Report renderer (pure, no network/IO)

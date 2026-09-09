@@ -1,4 +1,5 @@
 import { jsPDF } from 'jspdf';
+import { BRAND_LOGO_DATA_URL } from './brand-logo';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
 
@@ -151,8 +152,15 @@ export async function generateWeeklyReportPDF(input: ReportInput): Promise<void>
   // ------ Header band ------
   doc.setFillColor(15, 23, 42);
   doc.rect(0, 0, pageW, 96, 'F');
-  text('Focused Crew — Weekly Study Report', margin, 46, { size: 20, bold: true, color: [255, 255, 255] });
-  text(`${username ? username + '  ·  ' : ''}${rangeStr}`, margin, 70, { size: 11, color: [200, 210, 230] });
+  let headX = margin;
+  try {
+    doc.addImage(BRAND_LOGO_DATA_URL, 'PNG', margin, 26, 44, 44);
+    headX = margin + 58;
+  } catch {
+    /* fall back to text-only header */
+  }
+  text('Focused Crew — Weekly Study Report', headX, 46, { size: 20, bold: true, color: [255, 255, 255] });
+  text(`${username ? username + '  ·  ' : ''}${rangeStr}`, headX, 70, { size: 11, color: [200, 210, 230] });
   y = 124;
 
   // ------ Headline stat block ------
