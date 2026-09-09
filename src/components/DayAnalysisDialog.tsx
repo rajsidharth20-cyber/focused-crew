@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Button } from '@/components/ui/button';
 import { Download, Share2, ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { CARD_THEMES, canvasToBlob, renderDayAnalysis, type CardTheme } from '@/lib/day-analysis-image';
+import { CARD_THEMES, canvasToBlob, preloadBrandLogo, renderDayAnalysis, type CardTheme } from '@/lib/day-analysis-image';
 import type { DailyObjective, WeeklyTarget } from '@/hooks/use-planner-store';
 import type { StudySession } from '@/hooks/use-study-store';
 import { cn } from '@/lib/utils';
@@ -46,9 +46,15 @@ export function DayAnalysisDialog({ username, objectives, weeklyTargets, session
 
   useEffect(() => {
     if (!open) return;
-    const canvas = renderDayAnalysis(theme, data);
-    canvasRef.current = canvas;
-    setPreview(canvas.toDataURL('image/png'));
+    let cancelled = false;
+    (async () => {
+      await preloadBrandLogo();
+      if (cancelled) return;
+      const canvas = renderDayAnalysis(theme, data);
+      canvasRef.current = canvas;
+      setPreview(canvas.toDataURL('image/png'));
+    })();
+    return () => { cancelled = true; };
   }, [open, theme, data]);
 
   const fileName = `day-analysis-${new Date().toISOString().slice(0, 10)}.png`;

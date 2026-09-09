@@ -3,6 +3,29 @@
  * Pure presentation — no data fetching happens here.
  */
 
+import { BRAND_LOGO_DATA_URL } from './brand-logo';
+
+let logoImg: HTMLImageElement | null = null;
+function brandLogo(): HTMLImageElement | null {
+  if (typeof Image === 'undefined') return null;
+  if (!logoImg) {
+    logoImg = new Image();
+    logoImg.src = BRAND_LOGO_DATA_URL;
+  }
+  return logoImg;
+}
+
+/** Ensures the brand mark is decoded before rendering a card. */
+export async function preloadBrandLogo(): Promise<void> {
+  const img = brandLogo();
+  if (!img || img.complete) return;
+  try {
+    await img.decode();
+  } catch {
+    /* ignore */
+  }
+}
+
 export type CardTheme = 'midnight' | 'aurora' | 'sunset' | 'paper' | 'carbon';
 
 export const CARD_THEMES: { id: CardTheme; label: string; swatch: string[] }[] = [
