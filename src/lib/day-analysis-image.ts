@@ -3,6 +3,29 @@
  * Pure presentation — no data fetching happens here.
  */
 
+import { BRAND_LOGO_DATA_URL } from './brand-logo';
+
+let logoImg: HTMLImageElement | null = null;
+function brandLogo(): HTMLImageElement | null {
+  if (typeof Image === 'undefined') return null;
+  if (!logoImg) {
+    logoImg = new Image();
+    logoImg.src = BRAND_LOGO_DATA_URL;
+  }
+  return logoImg;
+}
+
+/** Ensures the brand mark is decoded before rendering a card. */
+export async function preloadBrandLogo(): Promise<void> {
+  const img = brandLogo();
+  if (!img || img.complete) return;
+  try {
+    await img.decode();
+  } catch {
+    /* ignore */
+  }
+}
+
 export type CardTheme = 'midnight' | 'aurora' | 'sunset' | 'paper' | 'carbon';
 
 export const CARD_THEMES: { id: CardTheme; label: string; swatch: string[] }[] = [
@@ -206,10 +229,29 @@ export function renderDayAnalysis(theme: CardTheme, data: DayAnalysisData): HTML
     ctx.fillText(`Weekly targets · ${data.weeklyDone ?? 0}/${data.weeklyTotal} done`, M, H - 150);
   }
 
-  // Footer
+  // Footer with brand mark
+  const mark = brandLogo();
+  let textX = M;
+  if (mark?.complete && mark.naturalWidth) {
+    const s = 44;
+    ctx.save();
+    ctx.beginPath();
+    const r = 12;
+    const bx = M, by = H - 80 - s + 10;
+    ctx.moveTo(bx + r, by);
+    ctx.arcTo(bx + s, by, bx + s, by + s, r);
+    ctx.arcTo(bx + s, by + s, bx, by + s, r);
+    ctx.arcTo(bx, by + s, bx, by, r);
+    ctx.arcTo(bx, by, bx + s, by, r);
+    ctx.closePath();
+    ctx.clip();
+    ctx.drawImage(mark, bx, by, s, s);
+    ctx.restore();
+    textX = M + s + 14;
+  }
   ctx.fillStyle = p.muted;
   ctx.font = '600 26px Inter, system-ui, sans-serif';
-  ctx.fillText('Focused Crew', M, H - 80);
+  ctx.fillText('Focused Crew', textX, H - 80);
 
   return canvas;
 }
