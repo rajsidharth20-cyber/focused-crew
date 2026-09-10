@@ -167,7 +167,9 @@ function usePlannerStoreInternal() {
         // Today's dated stops + every recurring stop (the UI filters by day/range).
         supabase.from('commitments').select('*').eq('user_id', user.id)
           .or(`date.eq.${today},recurring_days.not.is.null`),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today).eq('is_template', false),
+        supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today)
+          .gte('date', new Date(Date.parse(today + 'T00:00:00') - 90 * 86400000).toISOString().slice(0, 10))
+          .eq('is_template', false).order('date', { ascending: false }).limit(500),
         supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
         supabase.from('events').select('*').eq('user_id', user.id)
           .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
