@@ -88,6 +88,7 @@ const App = () => (
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </PlannerProvider>
         </BrowserRouter>
       </TooltipProvider>
