@@ -1,3 +1,4 @@
+import { Suspense, lazy } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,31 +8,37 @@ import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PlannerProvider } from "@/hooks/use-planner-store";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
-import Install from "./pages/Install";
-import StudyTimer from "./pages/StudyTimer";
-import AddSession from "./pages/AddSession";
-import Planner from "./pages/Planner";
-import More from "./pages/More";
-import Copilot from "./pages/Copilot";
 
-import Chat, { ChatThread } from "./pages/Chat";
-import SocialHub from "./pages/SocialHub";
-import Feed from "./pages/Feed";
-import Notes from "./pages/Notes";
-import Announcements from "./pages/Announcements";
-import AdminAnnouncements from "./pages/AdminAnnouncements";
-import UserProfile from "./pages/UserProfile";
-import StudyGroups from "./pages/StudyGroups";
-import GroupDashboard from "./pages/GroupDashboard";
-import GroupChat from "./pages/GroupChat";
-
-import ResetPassword from "./pages/ResetPassword";
-import GoogleCallback from "./pages/GoogleCallback";
-import NotificationSettings from "./pages/NotificationSettings";
-import NotFound from "./pages/NotFound";
+const Install = lazy(() => import("./pages/Install"));
+const StudyTimer = lazy(() => import("./pages/StudyTimer"));
+const AddSession = lazy(() => import("./pages/AddSession"));
+const Planner = lazy(() => import("./pages/Planner"));
+const More = lazy(() => import("./pages/More"));
+const Copilot = lazy(() => import("./pages/Copilot"));
+const Chat = lazy(() => import("./pages/Chat"));
+const ChatThread = lazy(() => import("./pages/Chat").then(m => ({ default: m.ChatThread })));
+const SocialHub = lazy(() => import("./pages/SocialHub"));
+const Feed = lazy(() => import("./pages/Feed"));
+const Notes = lazy(() => import("./pages/Notes"));
+const Announcements = lazy(() => import("./pages/Announcements"));
+const AdminAnnouncements = lazy(() => import("./pages/AdminAnnouncements"));
+const UserProfile = lazy(() => import("./pages/UserProfile"));
+const StudyGroups = lazy(() => import("./pages/StudyGroups"));
+const GroupDashboard = lazy(() => import("./pages/GroupDashboard"));
+const GroupChat = lazy(() => import("./pages/GroupChat"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
+const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
+const NotFound = lazy(() => import("./pages/NotFound"));
 import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient();
+
+const PageFallback = () => (
+  <div className="min-h-screen bg-background flex items-center justify-center">
+    <Loader2 className="w-6 h-6 animate-spin text-primary" />
+  </div>
+);
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading, isGuest } = useAuth();
@@ -53,6 +60,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <PlannerProvider>
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -80,6 +88,7 @@ const App = () => (
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
           </PlannerProvider>
         </BrowserRouter>
       </TooltipProvider>

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { generateWeeklyReportPDF } from '@/lib/weekly-report-pdf';
 import { PomodoroTimer } from '@/components/study/PomodoroTimer';
 import { StopwatchTimer } from '@/components/study/StopwatchTimer';
 import { TagManager } from '@/components/study/TagManager';
@@ -45,6 +44,7 @@ const StudyTimer = () => {
     setDownloadingReport(true);
     const t = toast.loading('Building your weekly report…');
     try {
+      const { generateWeeklyReportPDF } = await import('@/lib/weekly-report-pdf');
       await generateWeeklyReportPDF({
         username,
         sessions: study.sessions,
