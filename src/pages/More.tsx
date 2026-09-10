@@ -4,7 +4,6 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles, Megaphone } from 'lucide-react';
 import { useIsStaff } from '@/hooks/use-announcements';
-import { generateDailySummaryPDF } from '@/lib/daily-summary-pdf';
 import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
 import { FlightProtocols } from '@/components/FlightProtocols';
@@ -28,6 +27,7 @@ const More = () => {
     setDownloading(true);
     const toastId = toast.loading('Preparing your daily summary…');
     try {
+      const { generateDailySummaryPDF } = await import('@/lib/daily-summary-pdf');
       await generateDailySummaryPDF({
         username,
         subjects: store.subjects,
