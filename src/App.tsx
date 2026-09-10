@@ -60,6 +60,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <PlannerProvider>
+          <Suspense fallback={<PageFallback />}>
           <Routes>
             <Route path="/auth" element={<Auth />} />
             <Route path="/reset-password" element={<ResetPassword />} />
