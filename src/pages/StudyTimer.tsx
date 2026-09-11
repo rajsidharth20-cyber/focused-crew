@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2 } from 'lucide-react';
+import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2, Palette, Check } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
 import { PomodoroTimer } from '@/components/study/PomodoroTimer';
@@ -16,6 +16,7 @@ import { LiveStudyPanel } from '@/components/study/LiveStudyPanel';
 import { useStudyStore, type StudySession } from '@/hooks/use-study-store';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { BottomNav } from '@/components/shell/BottomNav';
+import { useTheme } from '@/hooks/use-theme';
 
 type Mode = 'pomodoro' | 'stopwatch';
 
@@ -25,6 +26,7 @@ const StudyTimer = () => {
   const study = useStudyStore();
   const planner = usePlannerStore();
   const { username } = useAuth();
+  const { theme, setTheme, themes } = useTheme();
   const [mode, setMode] = useState<Mode>('pomodoro');
   const [tagId, setTagId] = useState<string>('');
   const [subjectId, setSubjectId] = useState<string>('');
@@ -33,11 +35,17 @@ const StudyTimer = () => {
   const [noteSession, setNoteSession] = useState<StudySession | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
   const [fullscreen, setFullscreen] = useState(() => localStorage.getItem(FULLSCREEN_KEY) === '1');
-  const immersive = mode === 'pomodoro' && timerRunning;
+  const [themePickerOpen, setThemePickerOpen] = useState(false);
+  const immersive = timerRunning;
 
   useEffect(() => {
     localStorage.setItem(FULLSCREEN_KEY, fullscreen ? '1' : '0');
   }, [fullscreen]);
+
+  // Starting or restoring either timer should immediately enter the immersive view.
+  useEffect(() => {
+    if (timerRunning) setFullscreen(true);
+  }, [timerRunning]);
 
 
   const handleDownloadWeekly = async () => {
@@ -139,16 +147,61 @@ const StudyTimer = () => {
         </div>
 
         <div className="max-w-md mx-auto px-5 pt-4 pb-10">
-          <div className="flex items-center justify-between gap-3">
+          <div className="relative flex items-center justify-between gap-3">
             <span className="text-[10px] uppercase tracking-[0.3em] text-muted-foreground">Study room</span>
-            <button
-              onClick={() => setFullscreen(false)}
-              className="press inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] text-muted-foreground hover:text-foreground transition"
-              aria-label="Exit full screen study mode"
-            >
-              <Minimize2 className="w-3.5 h-3.5" />
-              Exit
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setThemePickerOpen(open => !open)}
+                className="press grid h-8 w-8 place-items-center rounded-full border border-foreground/10 bg-foreground/[0.04] text-muted-foreground transition hover:text-foreground"
+                aria-label="Choose study theme"
+                aria-expanded={themePickerOpen}
+              >
+                <Palette className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => setFullscreen(false)}
+                className="press inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] text-muted-foreground hover:text-foreground transition"
+                aria-label="Exit full screen study mode"
+              >
+                <Minimize2 className="w-3.5 h-3.5" />
+                Exit
+              </button>
+            </div>
+
+            <AnimatePresence>
+              {themePickerOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8, scale: 0.98 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -8, scale: 0.98 }}
+                  transition={{ duration: 0.18 }}
+                  className="absolute right-0 top-11 z-20 w-[min(19rem,calc(100vw-2.5rem))] rounded-2xl border border-border/60 bg-popover/95 p-2.5 shadow-xl backdrop-blur-xl"
+                >
+                  <p className="px-1 pb-2 text-[10px] uppercase tracking-[0.2em] text-muted-foreground">Study theme</p>
+                  <div className="grid grid-cols-3 gap-1.5">
+                    {themes.map(option => (
+                      <button
+                        key={option.key}
+                        onClick={() => {
+                          setTheme(option.key);
+                          setThemePickerOpen(false);
+                        }}
+                        className={`press relative flex min-w-0 flex-col items-center gap-1.5 rounded-xl border px-1.5 py-2 text-center transition ${
+                          theme === option.key ? 'border-primary bg-primary/10' : 'border-border/50 bg-card/50 hover:bg-secondary/60'
+                        }`}
+                        aria-label={`Use ${option.name} theme`}
+                      >
+                        <span className="flex h-5 w-10 overflow-hidden rounded-full border border-border/50" aria-hidden>
+                          {option.swatch.map(color => <span key={color} className="flex-1" style={{ background: color }} />)}
+                        </span>
+                        <span className="max-w-full truncate text-[10.5px] font-medium">{option.name}</span>
+                        {theme === option.key && <Check className="absolute right-1 top-1 h-3 w-3 text-primary" />}
+                      </button>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           <motion.div
