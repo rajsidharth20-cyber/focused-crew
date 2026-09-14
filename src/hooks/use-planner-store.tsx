@@ -48,6 +48,7 @@ export interface Commitment {
   startTime: string;
   endTime: string;
   type: 'class' | 'visit' | 'meeting' | 'other';
+  date: string | null;
   recurringDays: number[] | null;
 }
 
@@ -67,6 +68,12 @@ export interface PlannerState {
   dailyObjectives: DailyObjective[];
   commitments: Commitment[];
   protocols: string[];
+  events: PlannerEvent[];
+}
+
+export interface AgendaDateData {
+  objectives: DailyObjective[];
+  commitments: Commitment[];
   events: PlannerEvent[];
 }
 
@@ -248,6 +255,7 @@ function usePlannerStoreInternal() {
       const nextCommitments = (cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
         endTime: c.end_time, type: c.type as Commitment['type'],
+        date: c.date ?? null,
         recurringDays: c.recurring_days ?? null,
       }));
       setCommitments(nextCommitments);
@@ -584,7 +592,7 @@ function usePlannerStoreInternal() {
     const todayDow = new Date(today + 'T00:00:00').getDay();
     const appliesToday = !rec || rec.includes(todayDow);
     if (isGuest) {
-      const newC = { id: crypto.randomUUID(), title, startTime, endTime, type, date: rec ? null : today, recurringDays: rec };
+      const newC: Commitment = { id: crypto.randomUUID(), title, startTime, endTime, type, date: rec ? null : today, recurringDays: rec };
       const data = getGuestData(); data.commitments = [...(data.commitments || []), newC]; saveGuestData(data);
       if (appliesToday) setCommitments(prev => [...prev, newC]);
       return;
@@ -596,6 +604,7 @@ function usePlannerStoreInternal() {
     if (!error && data && appliesToday) setCommitments(prev => [...prev, {
       id: data.id, title: data.title, startTime: data.start_time,
       endTime: data.end_time, type: data.type as Commitment['type'],
+      date: data.date ?? null,
       recurringDays: data.recurring_days ?? null,
     }]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
@@ -701,6 +710,78 @@ function usePlannerStoreInternal() {
     await supabase.from('events').delete().eq('id', id);
   }, [isGuest, getGuestData, saveGuestData]);
 
+  const loadAgendaDate = useCallback(async (date: string): Promise<AgendaDateData> => {
+    const dow = new Date(`${date}T00:00:00`).getDay();
+    const makeVirtual = (template: DailyObjective): DailyObjective => ({
+      ...template,
+      id: `virtual-${template.id}-${date}`,
+      date,
+      completed: false,
+      progressNotes: [],
+      isTemplate: false,
+      templateId: template.id,
+      skipped: false,
+    });
+    const mergeObjectives = (rows: DailyObjective[], templates: DailyObjective[]) => {
+      const occurrences = rows.filter(o => !o.isTemplate);
+      const visible = occurrences.filter(o => !o.skipped);
+      for (const template of templates) {
+        if (!template.recurringDays?.includes(dow)) continue;
+        if (occurrences.some(o => o.templateId === template.id)) continue;
+        visible.push(makeVirtual(template));
+      }
+      const seen = new Set<string>();
+      return visible.filter(o => {
+        const key = o.templateId ? `t:${o.templateId}` : `i:${o.id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+    };
+
+    if (isGuest) {
+      const data = getGuestData();
+      const allObjectives = (data.dailyObjectives || []) as DailyObjective[];
+      const templates = allObjectives.filter(o => o.isTemplate);
+      const rows = allObjectives.filter(o => !o.isTemplate && o.date === date);
+      const allCommitments = (data.commitments || []) as Commitment[];
+      const allEvents = (data.events || []) as PlannerEvent[];
+      return {
+        objectives: mergeObjectives(rows, templates),
+        commitments: allCommitments.filter(c => c.date === date || !!c.recurringDays?.includes(dow) || (!c.date && !c.recurringDays)),
+        events: allEvents.filter(e => e.eventDate === date || !!e.recurringDays?.includes(dow)),
+      };
+    }
+
+    if (!user) return { objectives: [], commitments: [], events: [] };
+    const [objectiveRows, commitmentRows, eventRows] = await Promise.all([
+      supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', date).eq('is_template', false),
+      supabase.from('commitments').select('*').eq('user_id', user.id).or(`date.eq.${date},recurring_days.not.is.null`),
+      supabase.from('events').select('*').eq('user_id', user.id).or(`event_date.eq.${date},recurring_days.not.is.null`),
+    ]);
+    const firstError = objectiveRows.error || commitmentRows.error || eventRows.error;
+    if (firstError) throw firstError;
+    const mapObjective = (o: any): DailyObjective => ({
+      id: o.id, subjectId: o.subject_id, task: o.task,
+      estimatedMinutes: o.estimated_minutes, completed: o.completed,
+      progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
+      priority: (o.priority || 'medium') as Priority,
+      recurringDays: o.recurring_days ?? null, isTemplate: !!o.is_template,
+      templateId: o.template_id ?? null, skipped: !!o.skipped,
+    });
+    return {
+      objectives: mergeObjectives((objectiveRows.data ?? []).map(mapObjective), objectiveTemplates),
+      commitments: (commitmentRows.data ?? []).map((c: any) => ({
+        id: c.id, title: c.title, startTime: c.start_time, endTime: c.end_time,
+        type: c.type as Commitment['type'], date: c.date ?? null, recurringDays: c.recurring_days ?? null,
+      })).filter(c => c.date === date || !!c.recurringDays?.includes(dow)),
+      events: (eventRows.data ?? []).map((e: any) => ({
+        id: e.id, title: e.title, eventDate: e.event_date, startTime: e.start_time,
+        endTime: e.end_time, description: e.description, recurringDays: e.recurring_days ?? null,
+      })).filter(e => e.eventDate === date || !!e.recurringDays?.includes(dow)),
+    };
+  }, [getGuestData, isGuest, objectiveTemplates, user]);
+
   return {
     subjects,
     weeklyTargets,
@@ -735,6 +816,7 @@ function usePlannerStoreInternal() {
     removeEvent,
     carryForwardObjective,
     clearDay,
+    loadAgendaDate,
   };
 }
 
