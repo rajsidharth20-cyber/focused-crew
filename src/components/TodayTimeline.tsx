@@ -5,6 +5,7 @@ import { useNow } from '@/hooks/use-now';
 import type { Commitment, DailyObjective, PlannerEvent } from '@/hooks/use-planner-store';
 import { EmptyState } from '@/components/EmptyState';
 import { matchesRange } from '@/lib/schedule-filter';
+import { getEffectiveToday } from '@/lib/day-boundary';
 
 type Item = {
   id: string;
@@ -33,20 +34,24 @@ interface Props {
   commitments: Commitment[];
   events: PlannerEvent[];
   objectives: DailyObjective[];
+  date?: string;
+  title?: string;
 }
 
 const START_HOUR = 6;
 const END_HOUR = 24;
 const HOUR_H = 56; // px per hour
 
-export function TodayTimeline({ commitments, events, objectives }: Props) {
+export function TodayTimeline({ commitments, events, objectives, date = getEffectiveToday(), title = "Today's timeline" }: Props) {
   const now = useNow(30_000);
   const nowMin = now.getHours() * 60 + now.getMinutes();
+  const targetDate = useMemo(() => new Date(`${date}T00:00:00`), [date]);
+  const isToday = date === getEffectiveToday();
 
   const items: Item[] = useMemo(() => {
     const out: Item[] = [];
     for (const c of commitments) {
-      if (!matchesRange({ recurringDays: c.recurringDays }, 'today')) continue;
+      if (!matchesRange({ eventDate: c.date, recurringDays: c.recurringDays }, 'today', targetDate)) continue;
       const s = toMinutes(c.startTime);
       const e = toMinutes(c.endTime);
       if (s == null || e == null) continue;
@@ -54,21 +59,21 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
     }
     for (const ev of events) {
       // Only show items that actually land on today (dated or recurring on this weekday).
-      if (!matchesRange({ eventDate: ev.eventDate, recurringDays: ev.recurringDays }, 'today')) continue;
+      if (!matchesRange({ eventDate: ev.eventDate, recurringDays: ev.recurringDays }, 'today', targetDate)) continue;
       const s = toMinutes(ev.startTime);
       if (s == null) continue;
       const e = toMinutes(ev.endTime) ?? s + 30;
       out.push({ id: `e-${ev.id}`, kind: 'event', title: ev.title, start: s, end: Math.max(e, s + 15), meta: ev.description || undefined });
     }
     for (const o of objectives) {
-      if (o.completed || !o.deadline) continue;
+      if (o.completed || !o.deadline || o.date !== date) continue;
       const d = new Date(o.deadline);
       if (Number.isNaN(d.getTime())) continue;
       const s = d.getHours() * 60 + d.getMinutes();
       out.push({ id: `o-${o.id}`, kind: 'objective', title: o.task, start: s, end: s + 30, meta: `Deadline ${fmt(s)}` });
     }
     return out.sort((a, b) => a.start - b.start);
-  }, [commitments, events, objectives]);
+  }, [commitments, date, events, objectives, targetDate]);
 
   const hours = useMemo(() => {
     const arr: number[] = [];
@@ -79,7 +84,7 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
   const totalMin = (END_HOUR - START_HOUR) * 60;
   const y = (min: number) => Math.max(0, Math.min(totalMin, min - START_HOUR * 60)) * (HOUR_H / 60);
 
-  const nowInRange = nowMin >= START_HOUR * 60 && nowMin < END_HOUR * 60;
+  const nowInRange = isToday && nowMin >= START_HOUR * 60 && nowMin < END_HOUR * 60;
 
   if (items.length === 0) {
     return (
@@ -99,11 +104,11 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-primary" />
-          <span className="text-sm font-semibold">Today's timeline</span>
+          <span className="text-sm font-semibold">{title}</span>
         </div>
-        <span className="text-[11px] text-muted-foreground tabular-nums">
+        {isToday && <span className="text-[11px] text-muted-foreground tabular-nums">
           {now.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })}
-        </span>
+        </span>}
       </div>
 
       <div className="relative" style={{ height: totalMin * (HOUR_H / 60) }}>
@@ -132,8 +137,8 @@ export function TodayTimeline({ commitments, events, objectives }: Props) {
           {items.map((it) => {
             const top = y(it.start);
             const height = Math.max(28, y(it.end) - y(it.start));
-            const isNow = nowMin >= it.start && nowMin < it.end;
-            const isPast = nowMin >= it.end;
+            const isNow = isToday && nowMin >= it.start && nowMin < it.end;
+            const isPast = isToday && nowMin >= it.end;
             const tint =
               it.kind === 'event'
                 ? 'bg-accent/15 border-accent/40 text-accent-foreground'
