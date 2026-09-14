@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Plane, Swords, Calendar as CalendarIcon, Clock3, Target } from 'lucide-react';
 import { BottomNav } from '@/components/shell/BottomNav';
@@ -11,6 +12,8 @@ import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useTheme } from '@/hooks/use-theme';
 import { useNow } from '@/hooks/use-now';
 import { useEventReminders } from '@/hooks/use-event-reminders';
+import { CalendarAgendaDialog } from '@/components/home/CalendarAgendaDialog';
+import { Button } from '@/components/ui/button';
 
 const Planner = () => {
   const store = usePlannerStore();
@@ -18,6 +21,7 @@ const Planner = () => {
   const { theme } = useTheme();
   const now = useNow(60_000);
   const ThemeIcon = theme === 'war' ? Swords : Plane;
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const today = now.toLocaleDateString('en-US', {
     weekday: 'long', month: 'long', day: 'numeric',
@@ -45,6 +49,9 @@ const Planner = () => {
             <p className="text-[10.5px] text-muted-foreground truncate mt-1">{today}</p>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCalendarOpen(true)} aria-label="Open calendar">
+              <CalendarIcon className="h-4 w-4" />
+            </Button>
             <ThemeIcon className="w-4 h-4 text-primary" />
           </div>
         </div>
@@ -117,6 +124,12 @@ const Planner = () => {
       </main>
 
       <BottomNav />
+      <CalendarAgendaDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        subjects={store.subjects}
+        loadDate={store.loadAgendaDate}
+      />
     </div>
   );
 };

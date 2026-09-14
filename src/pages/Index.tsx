@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame, CalendarDays } from 'lucide-react';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
@@ -29,6 +29,8 @@ import { StreakCard } from '@/components/StreakCard';
 import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { BottomNav, QUICK_ADD_EVENT } from '@/components/shell/BottomNav';
 import { AnnouncementsButton } from '@/components/announcements/AnnouncementsButton';
+import { CalendarAgendaDialog } from '@/components/home/CalendarAgendaDialog';
+import { Button } from '@/components/ui/button';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useStreak } from '@/hooks/use-streak';
@@ -57,6 +59,7 @@ const Index = () => {
   const [focusMode, setFocusMode] = useState(false);
   const [streakOpen, setStreakOpen] = useState(false);
   const [startOpen, setStartOpen] = useState(false);
+  const [calendarOpen, setCalendarOpen] = useState(false);
   const dailyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -175,6 +178,9 @@ const Index = () => {
             </div>
           </div>
           <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCalendarOpen(true)} aria-label="Open calendar">
+              <CalendarDays className="h-4 w-4" />
+            </Button>
             <button
               onClick={() => setStreakOpen(true)}
               aria-label={`Study streak: ${streak.streak} day${streak.streak === 1 ? '' : 's'}. Tap for details`}
@@ -332,6 +338,13 @@ const Index = () => {
           <StreakCard sessions={studyStore.sessions} />
         </DialogContent>
       </Dialog>
+
+      <CalendarAgendaDialog
+        open={calendarOpen}
+        onOpenChange={setCalendarOpen}
+        subjects={store.subjects}
+        loadDate={store.loadAgendaDate}
+      />
 
       {/* Compact floating session pill */}
       <AnimatePresence>
