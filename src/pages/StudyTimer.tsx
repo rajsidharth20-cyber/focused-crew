@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Timer, Hourglass, FileDown, Loader2, Maximize2, Minimize2, Palette, Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -20,8 +20,6 @@ import { useTheme } from '@/hooks/use-theme';
 
 type Mode = 'pomodoro' | 'stopwatch';
 
-const FULLSCREEN_KEY = 'taskpilot_study_fullscreen_v1';
-
 const StudyTimer = () => {
   const study = useStudyStore();
   const planner = usePlannerStore();
@@ -34,18 +32,40 @@ const StudyTimer = () => {
   const [downloadingReport, setDownloadingReport] = useState(false);
   const [noteSession, setNoteSession] = useState<StudySession | null>(null);
   const [timerRunning, setTimerRunning] = useState(false);
-  const [fullscreen, setFullscreen] = useState(() => localStorage.getItem(FULLSCREEN_KEY) === '1');
+  const [fullscreen, setFullscreen] = useState(false);
   const [themePickerOpen, setThemePickerOpen] = useState(false);
+  const allowAutomaticFullscreen = useRef(true);
+  const idleResetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const immersive = timerRunning;
 
   useEffect(() => {
-    localStorage.setItem(FULLSCREEN_KEY, fullscreen ? '1' : '0');
-  }, [fullscreen]);
+    if (idleResetTimer.current) {
+      clearTimeout(idleResetTimer.current);
+      idleResetTimer.current = null;
+    }
 
-  // Starting or restoring either timer should immediately enter the immersive view.
-  useEffect(() => {
-    if (timerRunning) setFullscreen(true);
+    if (timerRunning) {
+      if (allowAutomaticFullscreen.current) setFullscreen(true);
+      return;
+    }
+
+    // Timer variants remount when leaving full screen and briefly report idle
+    // before restoring persisted state. Wait before enabling automatic entry again.
+    idleResetTimer.current = setTimeout(() => {
+      allowAutomaticFullscreen.current = true;
+      idleResetTimer.current = null;
+    }, 150);
+
+    return () => {
+      if (idleResetTimer.current) clearTimeout(idleResetTimer.current);
+    };
   }, [timerRunning]);
+
+  const exitFullscreen = () => {
+    allowAutomaticFullscreen.current = false;
+    setThemePickerOpen(false);
+    setFullscreen(false);
+  };
 
 
   const handleDownloadWeekly = async () => {
@@ -109,7 +129,7 @@ const StudyTimer = () => {
   const timerEl =
     mode === 'pomodoro'
       ? <PomodoroTimer onComplete={handlePomodoroComplete} onRunningChange={setTimerRunning} />
-      : <StopwatchTimer onSave={handleStopwatchSave} />;
+      : <StopwatchTimer onSave={handleStopwatchSave} onRunningChange={setTimerRunning} />;
 
   const contextLines = [
     topic || null,
@@ -159,7 +179,7 @@ const StudyTimer = () => {
                 <Palette className="h-3.5 w-3.5" />
               </button>
               <button
-                onClick={() => setFullscreen(false)}
+                onClick={exitFullscreen}
                 className="press inline-flex items-center gap-1.5 text-[11.5px] px-3 py-1.5 rounded-full border border-foreground/10 bg-foreground/[0.04] text-muted-foreground hover:text-foreground transition"
                 aria-label="Exit full screen study mode"
               >

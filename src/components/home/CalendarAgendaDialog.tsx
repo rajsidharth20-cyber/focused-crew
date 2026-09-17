@@ -23,9 +23,15 @@ export function CalendarAgendaDialog({ open, onOpenChange, subjects, loadDate }:
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(false);
   const cache = useRef(new Map<string, AgendaDateData>());
+  const wasOpen = useRef(false);
 
   useEffect(() => {
+    const reopened = open && !wasOpen.current;
+    wasOpen.current = open;
     if (!open) return;
+    // Keep date navigation quick while the dialog is open, but refresh all
+    // agenda data each time it reopens so recent planner changes are visible.
+    if (reopened) cache.current.clear();
     const cached = cache.current.get(selected);
     if (cached) {
       setData(cached);
