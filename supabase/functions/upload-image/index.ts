@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json();
     const bucket = body.bucket as Bucket;
-    if (!Object.hasOwn(limits, bucket) || typeof body.bytes !== 'string') {
+    if (!Object.hasOwn(limits, bucket) || typeof body.bytes !== 'string' || body.bytes.length > 11_200_000) {
       return new Response('Invalid upload request', { status: 400, headers: corsHeaders });
     }
 
