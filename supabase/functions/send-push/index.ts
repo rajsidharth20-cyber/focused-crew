@@ -259,7 +259,6 @@ serve(async (req) => {
                 data: { title, body, url, category, tag: dedupeBase },
                 webpush: {
                   headers: { Urgency: "high", TTL: "86400" },
-                  fcm_options: { link: url },
                 },
               },
             }),
@@ -268,7 +267,9 @@ serve(async (req) => {
         if (res.ok) { sent++; continue; }
         const err = await res.text();
         console.error("fcm error", res.status, err);
-        if (res.status === 404 || res.status === 403 || /UNREGISTERED|INVALID_ARGUMENT/.test(err)) {
+        // Delete only tokens Firebase explicitly reports as stale. A malformed
+        // message payload must not erase otherwise valid phone registrations.
+        if (/UNREGISTERED|registration-token-not-registered/i.test(err)) {
           await admin.from("push_tokens").delete().eq("token", token);
         }
       }
