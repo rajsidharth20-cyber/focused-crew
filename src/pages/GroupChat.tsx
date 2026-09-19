@@ -1,4 +1,5 @@
 import { assertImageFile } from '@/lib/upload-guard';
+import { secureImageUpload } from '@/lib/secure-image-upload';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -221,11 +222,12 @@ export default function GroupChat() {
     if (!groupId || !user) return;
     try { assertImageFile(file); } catch (err: any) { toast.error(err.message); return; }
     setUploading(true);
-    const path = `${groupId}/${user.id}-${Date.now()}-${file.name.replace(/[^\w.-]/g, '')}`;
-    const { error: upErr } = await supabase.storage.from('group-images').upload(path, file, { contentType: file.type });
-    if (upErr) {
+    let path: string;
+    try {
+      path = await secureImageUpload({ bucket: 'group-images', file, groupId });
+    } catch (upErr: any) {
       setUploading(false);
-      toast.error(upErr.message);
+      toast.error(upErr?.message ?? 'Image upload failed');
       return;
     }
     const { error } = await supabase.from('group_messages').insert({
