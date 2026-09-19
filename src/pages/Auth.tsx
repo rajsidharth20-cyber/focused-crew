@@ -2,8 +2,10 @@ import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Plane, Loader2, User, UserX, KeyRound, MailCheck } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
+import { lovable } from '@/integrations/lovable';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 
 export default function Auth() {
   const { user, loading, isGuest, enterGuestMode } = useAuth();
@@ -16,6 +18,7 @@ export default function Auth() {
   const [existingEmail, setExistingEmail] = useState(false);
   const [codeSent, setCodeSent] = useState(false);
   const [code, setCode] = useState('');
+  const [googleSubmitting, setGoogleSubmitting] = useState(false);
   const isLogin = mode === 'login';
 
 
@@ -33,6 +36,24 @@ export default function Auth() {
     enterGuestMode();
     toast.success('Welcome aboard, Guest! Your data stays on this device.');
     navigate('/');
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleSubmitting(true);
+    try {
+      const result = await lovable.auth.signInWithOAuth('google', {
+        redirect_uri: window.location.origin,
+        extraParams: { prompt: 'select_account' },
+      });
+
+      if (result.error) throw result.error;
+      if (result.redirected) return;
+      navigate('/');
+    } catch (err: any) {
+      toast.error(err?.message ?? 'Google sign-in could not be started.');
+    } finally {
+      setGoogleSubmitting(false);
+    }
   };
 
   const handleForgot = async () => {
@@ -167,6 +188,34 @@ export default function Auth() {
               .
             </p>
           </div>
+        )}
+
+        {mode !== 'forgot' && mode !== 'code' && (
+          <>
+            <Button
+              type="button"
+              variant="outline"
+              className="w-full bg-background/70"
+              onClick={handleGoogleSignIn}
+              disabled={googleSubmitting || submitting}
+            >
+              {googleSubmitting ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <span aria-hidden="true" className="text-base font-bold text-foreground">G</span>
+              )}
+              Continue with Google
+            </Button>
+
+            <div className="relative my-4">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border" />
+              </div>
+              <div className="relative flex justify-center text-xs">
+                <span className="bg-card px-2 text-muted-foreground">or use email</span>
+              </div>
+            </div>
+          </>
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
