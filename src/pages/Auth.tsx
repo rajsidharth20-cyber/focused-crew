@@ -92,7 +92,7 @@ export default function Auth() {
   };
 
   const handleVerifyCode = async () => {
-    if (code.trim().length < 6) { toast.error('Enter the 6-digit code.'); return; }
+    if (code.trim().length < 6 || code.trim().length > 8) { toast.error('Enter the code from your email.'); return; }
     setSubmitting(true);
     try {
       const { error } = await supabase.auth.verifyOtp({ email, token: code.trim(), type: 'email' });
@@ -250,13 +250,13 @@ export default function Auth() {
           </div>
           {mode === 'code' && codeSent && (
             <div>
-              <label className="text-xs text-muted-foreground font-medium block mb-1.5">6-digit code</label>
+              <label className="text-xs text-muted-foreground font-medium block mb-1.5">Email code</label>
               <input
                 type="text"
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 value={code}
-                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                onChange={e => setCode(e.target.value.replace(/\D/g, '').slice(0, 8))}
                 required
                 className="w-full bg-secondary/50 border border-border rounded-md px-3 py-2.5 text-center text-lg tracking-[0.4em] text-foreground placeholder:tracking-normal placeholder:text-muted-foreground focus:outline-none focus:ring-1 focus:ring-primary/50"
                 placeholder="000000"
