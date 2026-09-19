@@ -1,4 +1,5 @@
 import { assertImageFile, MAX_AVATAR_BYTES } from '@/lib/upload-guard';
+import { secureImageUpload } from '@/lib/secure-image-upload';
 import { useEffect, useRef, useState } from 'react';
 import { UserCircle2, Loader2, Camera, Save, Lock, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -74,10 +75,7 @@ export function ProfileDialog() {
         toast.success('Photo ready — remember to save.');
       } else if (user) {
         const small = await compressImage(file, { maxSize: 320, quality: 0.82 });
-        const ext = small.name.split('.').pop() || 'jpg';
-        const path = `${user.id}/avatar-${Date.now()}.${ext}`;
-        const { error } = await supabase.storage.from('avatars').upload(path, small, { upsert: true, contentType: small.type, cacheControl: '31536000' });
-        if (error) throw error;
+        const path = await secureImageUpload({ bucket: 'avatars', file: small });
         setAvatarUrl(path);
         toast.success('Photo uploaded — remember to save.');
       }
