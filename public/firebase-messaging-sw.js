@@ -3,44 +3,38 @@
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js");
 importScripts("https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js");
 
-const CONFIG_URL = "https://noznnfeuifjqkhnqoooc.supabase.co/functions/v1/push-config";
-
 self.addEventListener("install", () => self.skipWaiting());
 self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
 
-const ready = (async () => {
-  try {
-    const res = await fetch(CONFIG_URL);
-    const cfg = await res.json();
-    if (!cfg?.apiKey) return;
-    firebase.initializeApp({
-      apiKey: cfg.apiKey,
-      projectId: cfg.projectId,
-      messagingSenderId: cfg.messagingSenderId,
-      appId: cfg.appId,
-    });
-    const messaging = firebase.messaging();
-    messaging.onBackgroundMessage((payload) => {
-      const d = payload.data || {};
-      const title = d.title || "Focused Crew";
-      self.registration.showNotification(title, {
-        body: d.body || "",
-        icon: "/pwa-192x192.png",
-        badge: "/pwa-192x192.png",
-        tag: d.tag || d.category || "task-pilot",
-        renotify: false,
-        data: { url: d.url || "/" },
-      });
-    });
-  } catch (e) {
-    console.error("[fcm-sw] init failed", e);
-  }
-})();
+// A closed web app starts this worker only when a push arrives. Firebase must
+// therefore be initialised synchronously during worker startup; an async config
+// fetch can finish after the first push event has already been missed.
+const params = new URL(self.location.href).searchParams;
+const firebaseConfig = {
+  apiKey: params.get("apiKey") || "",
+  projectId: params.get("projectId") || "",
+  messagingSenderId: params.get("messagingSenderId") || "",
+  appId: params.get("appId") || "",
+};
 
-self.addEventListener("push", () => {
-  /* keep the worker alive until firebase is initialised */
-  ready;
-});
+if (Object.values(firebaseConfig).every(Boolean)) {
+  firebase.initializeApp(firebaseConfig);
+  const messaging = firebase.messaging();
+  messaging.onBackgroundMessage((payload) => {
+    const d = payload.data || {};
+    const title = d.title || "Focused Crew";
+    return self.registration.showNotification(title, {
+      body: d.body || "",
+      icon: "/pwa-192x192.png",
+      badge: "/pwa-192x192.png",
+      tag: d.tag || d.category || "focused-crew",
+      renotify: false,
+      data: { url: d.url || "/" },
+    });
+  });
+} else {
+  console.error("[fcm-sw] missing Firebase web configuration");
+}
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();

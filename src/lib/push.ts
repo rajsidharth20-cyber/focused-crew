@@ -73,9 +73,18 @@ export async function registerPushToken(userId: string): Promise<string | null> 
 
   // Keep the FCM worker off the root scope — sharing '/' with the PWA worker
   // makes both fight for control of the page and triggers reload loops.
-  const swReg = await navigator.serviceWorker.register('/firebase-messaging-sw.js', {
-    scope: '/firebase-cloud-messaging-push-scope',
+  const workerConfig = new URLSearchParams({
+    apiKey: cfg.apiKey,
+    projectId: cfg.projectId,
+    messagingSenderId: cfg.messagingSenderId,
+    appId: cfg.appId,
   });
+  const swReg = await navigator.serviceWorker.register(`/firebase-messaging-sw.js?${workerConfig.toString()}`, {
+    scope: '/firebase-cloud-messaging-push-scope',
+    updateViaCache: 'none',
+  });
+  await navigator.serviceWorker.ready;
+  await swReg.update();
   const token = await getToken(messaging, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: swReg });
   if (!token) return null;
 
