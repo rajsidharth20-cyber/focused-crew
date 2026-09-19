@@ -67,6 +67,11 @@ const StudyTimer = () => {
     setFullscreen(false);
   };
 
+  const enterFullscreen = () => {
+    allowAutomaticFullscreen.current = true;
+    setFullscreen(true);
+  };
+
 
   const handleDownloadWeekly = async () => {
     setDownloadingReport(true);
@@ -287,16 +292,17 @@ const StudyTimer = () => {
               {immersive ? 'Stay with it — everything else is hidden.' : 'Focus, log, analyze.'}
             </p>
           </div>
-          {!immersive && (
-            <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
               <button
-                onClick={() => setFullscreen(true)}
+                onClick={enterFullscreen}
                 className="press inline-flex items-center gap-1.5 text-xs px-3 py-2 rounded-full border border-border/60 hover:bg-muted/40 transition"
                 aria-label="Switch to full screen study mode"
               >
                 <Maximize2 className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">Full screen</span>
               </button>
+            {!immersive && (
+              <>
               <button
 
                 onClick={handleDownloadWeekly}
@@ -308,8 +314,9 @@ const StudyTimer = () => {
                 <span className="hidden sm:inline">Weekly</span>
               </button>
               <ManualSessionDialog tags={study.tags} subjects={planner.subjects} />
-            </div>
-          )}
+              </>
+            )}
+          </div>
         </div>
       </header>
 
