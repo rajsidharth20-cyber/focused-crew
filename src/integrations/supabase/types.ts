@@ -156,6 +156,458 @@ export type Database = {
         }
         Relationships: []
       }
+      bot_direct_state: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          last_message_at: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          last_message_at?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          last_message_at?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      bot_events: {
+        Row: {
+          actor_id: string | null
+          bot_instance_id: string
+          created_at: string
+          error_code: string | null
+          event_type: string
+          group_id: string
+          id: string
+          message_id: string | null
+          processed_at: string | null
+          result: Json
+          status: string
+        }
+        Insert: {
+          actor_id?: string | null
+          bot_instance_id: string
+          created_at?: string
+          error_code?: string | null
+          event_type: string
+          group_id: string
+          id?: string
+          message_id?: string | null
+          processed_at?: string | null
+          result?: Json
+          status?: string
+        }
+        Update: {
+          actor_id?: string | null
+          bot_instance_id?: string
+          created_at?: string
+          error_code?: string | null
+          event_type?: string
+          group_id?: string
+          id?: string
+          message_id?: string | null
+          processed_at?: string | null
+          result?: Json
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_events_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: false
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_events_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_events_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_flags: {
+        Row: {
+          bot_instance_id: string
+          classification: string
+          confidence: number
+          created_at: string
+          group_id: string
+          id: string
+          message_id: string
+          reason: string
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          target_user_id: string
+        }
+        Insert: {
+          bot_instance_id: string
+          classification: string
+          confidence: number
+          created_at?: string
+          group_id: string
+          id?: string
+          message_id: string
+          reason: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_user_id: string
+        }
+        Update: {
+          bot_instance_id?: string
+          classification?: string
+          confidence?: number
+          created_at?: string
+          group_id?: string
+          id?: string
+          message_id?: string
+          reason?: string
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          target_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_flags_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: false
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_flags_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_flags_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: true
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_focus_sessions: {
+        Row: {
+          active: boolean
+          bot_instance_id: string
+          ends_at: string
+          group_id: string
+          id: string
+          started_at: string
+          started_by: string
+        }
+        Insert: {
+          active?: boolean
+          bot_instance_id: string
+          ends_at: string
+          group_id: string
+          id?: string
+          started_at?: string
+          started_by: string
+        }
+        Update: {
+          active?: boolean
+          bot_instance_id?: string
+          ends_at?: string
+          group_id?: string
+          id?: string
+          started_at?: string
+          started_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_focus_sessions_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: false
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_focus_sessions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_instances: {
+        Row: {
+          bot_type: string
+          created_at: string
+          created_by: string
+          enabled: boolean
+          group_id: string
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          bot_type?: string
+          created_at?: string
+          created_by: string
+          enabled?: boolean
+          group_id: string
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          bot_type?: string
+          created_at?: string
+          created_by?: string
+          enabled?: boolean
+          group_id?: string
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_instances_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_permissions: {
+        Row: {
+          bot_instance_id: string
+          created_at: string
+          enabled: boolean
+          id: string
+          permission: string
+          updated_at: string
+        }
+        Insert: {
+          bot_instance_id: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          permission: string
+          updated_at?: string
+        }
+        Update: {
+          bot_instance_id?: string
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          permission?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_permissions_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: false
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_poll_options: {
+        Row: {
+          id: string
+          label: string
+          poll_id: string
+          position: number
+        }
+        Insert: {
+          id?: string
+          label: string
+          poll_id: string
+          position: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          poll_id?: string
+          position?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_poll_options_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "bot_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_poll_votes: {
+        Row: {
+          created_at: string
+          id: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          option_id: string
+          poll_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          option_id?: string
+          poll_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_poll_votes_option_id_fkey"
+            columns: ["option_id"]
+            isOneToOne: false
+            referencedRelation: "bot_poll_options"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_poll_votes_poll_id_fkey"
+            columns: ["poll_id"]
+            isOneToOne: false
+            referencedRelation: "bot_polls"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_polls: {
+        Row: {
+          bot_instance_id: string
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          message_id: string | null
+          question: string
+          status: string
+        }
+        Insert: {
+          bot_instance_id: string
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          message_id?: string | null
+          question: string
+          status?: string
+        }
+        Update: {
+          bot_instance_id?: string
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          message_id?: string | null
+          question?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_polls_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: false
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_polls_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "bot_polls_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "group_messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      bot_settings: {
+        Row: {
+          auto_delete_enabled: boolean
+          auto_mute_enabled: boolean
+          bot_instance_id: string
+          created_at: string
+          group_ai_requests_per_minute: number
+          group_rules: string
+          id: string
+          language: string
+          moderation_level: string
+          mute_minutes: number
+          response_mode: string
+          updated_at: string
+          user_requests_per_minute: number
+        }
+        Insert: {
+          auto_delete_enabled?: boolean
+          auto_mute_enabled?: boolean
+          bot_instance_id: string
+          created_at?: string
+          group_ai_requests_per_minute?: number
+          group_rules?: string
+          id?: string
+          language?: string
+          moderation_level?: string
+          mute_minutes?: number
+          response_mode?: string
+          updated_at?: string
+          user_requests_per_minute?: number
+        }
+        Update: {
+          auto_delete_enabled?: boolean
+          auto_mute_enabled?: boolean
+          bot_instance_id?: string
+          created_at?: string
+          group_ai_requests_per_minute?: number
+          group_rules?: string
+          id?: string
+          language?: string
+          moderation_level?: string
+          mute_minutes?: number
+          response_mode?: string
+          updated_at?: string
+          user_requests_per_minute?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bot_settings_bot_instance_id_fkey"
+            columns: ["bot_instance_id"]
+            isOneToOne: true
+            referencedRelation: "bot_instances"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       commitments: {
         Row: {
           created_at: string
@@ -514,6 +966,44 @@ export type Database = {
           },
         ]
       }
+      group_member_restrictions: {
+        Row: {
+          created_at: string
+          created_by: string
+          group_id: string
+          id: string
+          reason: string
+          restricted_until: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          group_id: string
+          id?: string
+          reason: string
+          restricted_until: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          group_id?: string
+          id?: string
+          reason?: string
+          restricted_until?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_member_restrictions_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       group_members: {
         Row: {
           group_id: string
@@ -548,31 +1038,40 @@ export type Database = {
       }
       group_messages: {
         Row: {
+          author_type: string
+          bot_event_id: string | null
           content: string
           created_at: string
           group_id: string
           id: string
           image_url: string | null
+          moderation_status: string
           pinned: boolean
           reply_to_id: string | null
           user_id: string
         }
         Insert: {
+          author_type?: string
+          bot_event_id?: string | null
           content?: string
           created_at?: string
           group_id: string
           id?: string
           image_url?: string | null
+          moderation_status?: string
           pinned?: boolean
           reply_to_id?: string | null
           user_id: string
         }
         Update: {
+          author_type?: string
+          bot_event_id?: string | null
           content?: string
           created_at?: string
           group_id?: string
           id?: string
           image_url?: string | null
+          moderation_status?: string
           pinned?: boolean
           reply_to_id?: string | null
           user_id?: string
@@ -620,6 +1119,8 @@ export type Database = {
       }
       messages: {
         Row: {
+          bot_role: string | null
+          bot_type: string | null
           created_at: string
           id: string
           message: string
@@ -628,6 +1129,8 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          bot_role?: string | null
+          bot_type?: string | null
           created_at?: string
           id?: string
           message: string
@@ -636,6 +1139,8 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          bot_role?: string | null
+          bot_type?: string | null
           created_at?: string
           id?: string
           message?: string
