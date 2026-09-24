@@ -34,6 +34,8 @@ import {
   UserPlus,
   Users,
   Radio,
+  Bot,
+  ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -286,6 +288,17 @@ export default function GroupDashboard() {
             <p className="text-[10px] uppercase tracking-widest text-muted-foreground">You today</p>
             <p className="text-xl font-bold tabular-nums mt-1">{fmt(todaySeconds[user.id] ?? 0)}</p>
           </div>
+        </section>
+
+        <section className="space-y-2">
+          <h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold flex items-center gap-1.5">
+            <Bot className="w-3.5 h-3.5" /> Bots
+          </h2>
+          <Link to={`/groups/${group.id}/bots/focusbot`} className="flex items-center gap-3 rounded-lg border border-border/60 bg-card p-3 transition-colors hover:bg-muted/50">
+            <span className="w-9 h-9 rounded-full bg-primary/10 text-primary grid place-items-center"><Bot className="w-5 h-5" /></span>
+            <div className="min-w-0 flex-1"><p className="text-sm font-medium">FocusBot</p><p className="text-xs text-muted-foreground">Study help, focus sessions, polls, and moderation</p></div>
+            <ChevronRight className="w-4 h-4 text-muted-foreground" />
+          </Link>
         </section>
 
         <section className="space-y-2">

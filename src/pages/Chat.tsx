@@ -32,6 +32,8 @@ import {
   Search,
   Trash2,
   BookOpen,
+  Bot,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -220,6 +222,10 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
 
 
       <div className="flex-1 overflow-y-auto p-2">
+        <Link to="/focusbot" className="flex items-center gap-3 px-3 py-3 rounded-2xl transition-colors hover:bg-muted/60 border-b border-border/50">
+          <span className="w-12 h-12 rounded-full bg-primary/10 text-primary grid place-items-center shrink-0"><Bot className="w-6 h-6" /></span>
+          <div className="min-w-0 flex-1"><div className="flex items-center gap-1.5"><span className="font-medium">FocusBot</span><ShieldCheck className="w-3.5 h-3.5 text-primary" /></div><p className="text-sm text-muted-foreground truncate">Your private study assistant</p></div>
+        </Link>
         {loading ? (
           <div className="flex justify-center py-10">
             <Loader2 className="w-5 h-5 animate-spin text-primary" />
