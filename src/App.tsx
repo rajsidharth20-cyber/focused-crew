@@ -26,6 +26,8 @@ const UserProfile = lazy(() => import("./pages/UserProfile"));
 const StudyGroups = lazy(() => import("./pages/StudyGroups"));
 const GroupDashboard = lazy(() => import("./pages/GroupDashboard"));
 const GroupChat = lazy(() => import("./pages/GroupChat"));
+const FocusBotSettings = lazy(() => import("./pages/FocusBotSettings"));
+const FocusBotChat = lazy(() => import("./pages/FocusBotChat"));
 const ResetPassword = lazy(() => import("./pages/ResetPassword"));
 const GoogleCallback = lazy(() => import("./pages/GoogleCallback"));
 const NotificationSettings = lazy(() => import("./pages/NotificationSettings"));
@@ -80,10 +82,12 @@ const App = () => (
             <Route path="/admin/announcements" element={<ProtectedRoute><AdminAnnouncements /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
+             <Route path="/focusbot" element={<ProtectedRoute><FocusBotChat /></ProtectedRoute>} />
             <Route path="/u/:userId" element={<ProtectedRoute><UserProfile /></ProtectedRoute>} />
             <Route path="/groups" element={<ProtectedRoute><StudyGroups /></ProtectedRoute>} />
             <Route path="/groups/:groupId" element={<ProtectedRoute><GroupDashboard /></ProtectedRoute>} />
             <Route path="/groups/:groupId/chat" element={<ProtectedRoute><GroupChat /></ProtectedRoute>} />
+             <Route path="/groups/:groupId/bots/focusbot" element={<ProtectedRoute><FocusBotSettings /></ProtectedRoute>} />
 
             <Route path="/settings/notifications" element={<ProtectedRoute><NotificationSettings /></ProtectedRoute>} />
             <Route path="*" element={<NotFound />} />
