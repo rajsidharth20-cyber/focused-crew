@@ -38,17 +38,16 @@ async function ensureBot(db: ReturnType<typeof adminClient>, groupId: string, us
   let { data: bot } = await db.from("bot_instances").select("*").eq("group_id", groupId).eq("bot_type", "focusbot").maybeSingle();
   if (!bot) {
     const created = await db.from("bot_instances").insert({ group_id: groupId, created_by: userId }).select("*").single();
-    if (created.error) throw created.error;
-    bot = created.data;
-    await Promise.all([
-      db.from("bot_settings").insert({ bot_instance_id: bot.id }),
-      db.from("bot_permissions").insert(permissions.map(permission => ({
-        bot_instance_id: bot.id,
-        permission,
-        enabled: defaultEnabled.has(permission),
-      }))),
-    ]);
+    if (created.error && created.error.code !== "23505") throw created.error;
+    bot = created.data ?? (await db.from("bot_instances").select("*").eq("group_id", groupId).eq("bot_type", "focusbot").single()).data;
   }
+  if (!bot) throw new Error("FocusBot configuration is unavailable.");
+  await Promise.all([
+    db.from("bot_settings").upsert({ bot_instance_id: bot.id }, { onConflict: "bot_instance_id", ignoreDuplicates: true }),
+    db.from("bot_permissions").upsert(permissions.map(permission => ({
+      bot_instance_id: bot.id, permission, enabled: defaultEnabled.has(permission),
+    })), { onConflict: "bot_instance_id,permission", ignoreDuplicates: true }),
+  ]);
   const [{ data: settings }, { data: permissionRows }] = await Promise.all([
     db.from("bot_settings").select("*").eq("bot_instance_id", bot.id).single(),
     db.from("bot_permissions").select("permission,enabled").eq("bot_instance_id", bot.id),
@@ -91,7 +90,6 @@ async function gatewayText(input: string, instructions: string) {
   const decoder = new TextDecoder();
   let buffer = "";
   let answer = "";
-  let reasoning = "";
   while (true) {
     const { done, value } = await reader.read();
     buffer += decoder.decode(value ?? new Uint8Array(), { stream: !done });
@@ -103,13 +101,14 @@ async function gatewayText(input: string, instructions: string) {
         try {
           const event = JSON.parse(line.slice(6));
           if (event.type === "response.output_text.delta") answer += event.delta ?? "";
-          if (event.type === "response.reasoning_summary_text.delta") reasoning += event.delta ?? "";
-        } catch { /* Ignore incomplete vendor events. */ }
+           if (event.type === "response.failed" || event.type === "error") throw new Error(event.response?.error?.message ?? event.error?.message ?? event.message ?? "Lovable AI could not complete this request.");
+         } catch (error) { if (error instanceof SyntaxError) continue; throw error; }
       }
     }
     if (done) break;
   }
-  return answer.trim() || reasoning.trim() || "I couldn't produce a response this time.";
+  if (!answer.trim()) throw new Error("Lovable AI did not return a response.");
+  return answer.trim();
 }
 
 async function addBotMessage(db: ReturnType<typeof adminClient>, groupId: string, actorId: string, content: string, replyToId?: string) {
@@ -179,6 +178,8 @@ Deno.serve(async req => {
         auto_delete_enabled: Boolean(settings.auto_delete_enabled),
         auto_mute_enabled: Boolean(settings.auto_mute_enabled),
         moderation_level: ["conservative", "balanced", "strict"].includes(String(settings.moderation_level)) ? settings.moderation_level : "conservative",
+        mute_minutes: Number.isInteger(settings.mute_minutes) ? Math.max(1, Math.min(1440, Number(settings.mute_minutes))) : config.settings.mute_minutes,
+        response_mode: ["commands_only", "mentions_commands"].includes(String(settings.response_mode)) ? settings.response_mode : config.settings.response_mode,
       }).eq("bot_instance_id", config.bot.id);
       return json(req, { ok: true });
     }
@@ -189,6 +190,7 @@ Deno.serve(async req => {
       const decision = String(body.decision);
       const { data: flag } = await db.from("bot_flags").select("*").eq("id", flagId).eq("group_id", groupId).single();
       if (!flag) return json(req, { error: "Flag not found." }, 404);
+      if (!["dismiss", "delete", "mute"].includes(decision)) return json(req, { error: "Invalid review action." }, 400);
       if (decision === "delete") await db.from("group_messages").delete().eq("id", flag.message_id);
       if (decision === "mute") await db.from("group_member_restrictions").insert({ group_id: groupId, user_id: flag.target_user_id, created_by: guard.ctx.userId, reason: flag.reason, restricted_until: new Date(Date.now() + config.settings.mute_minutes * 60000).toISOString() });
       const status = decision === "dismiss" ? "dismissed" : decision === "delete" ? "deleted" : decision === "mute" ? "muted" : "reviewed";
@@ -202,7 +204,7 @@ Deno.serve(async req => {
     if (!source || !config.bot.enabled) return json(req, { ignored: true });
     const content = source.content?.trim() ?? "";
     const command = content.match(/^\/(\w+)/)?.[1]?.toLowerCase();
-    const mentioned = /@focusbot\b/i.test(content);
+    const mentioned = /@focusbot\b/i.test(content) && config.settings.response_mode !== "commands_only";
     const relevant = Boolean(command || mentioned || config.permissionMap.spam_detection);
     if (!relevant) return json(req, { ignored: true });
     const { error: eventError } = await db.from("bot_events").insert({ bot_instance_id: config.bot.id, group_id: groupId, message_id: source.id, actor_id: guard.ctx.userId, event_type: command ? `command_${command}` : mentioned ? "mention" : "moderation", status: "processing" });
@@ -229,8 +231,11 @@ Deno.serve(async req => {
       else {
         const created = await db.from("bot_polls").insert({ bot_instance_id: config.bot.id, group_id: groupId, created_by: guard.ctx.userId, question: poll.question }).select("id").single();
         if (created.error) throw created.error;
-        await db.from("bot_poll_options").insert(poll.options.map((label, position) => ({ poll_id: created.data.id, label, position })));
-        reply = `Poll created: ${poll.question}`;
+        const { error: optionsError } = await db.from("bot_poll_options").insert(poll.options.map((label, position) => ({ poll_id: created.data.id, label, position })));
+        if (optionsError) throw optionsError;
+        const pollMessage = await addBotMessage(db, groupId, guard.ctx.userId, `Poll: ${poll.question}`, source.id);
+        const { error: linkError } = await db.from("bot_polls").update({ message_id: pollMessage.id }).eq("id", created.data.id);
+        if (linkError) throw linkError;
       }
     } else if (command === "summary") {
       if (!config.permissionMap.chat_summaries) reply = "Summaries are disabled in this group.";
