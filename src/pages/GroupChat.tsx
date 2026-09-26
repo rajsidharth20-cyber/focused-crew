@@ -264,6 +264,11 @@ export default function GroupChat() {
       return;
     }
     notifyGroup(inserted?.id ?? crypto.randomUUID(), content, replyId);
+    if (botEnabled && inserted?.id) {
+      void processGroupMessage(groupId, inserted.id).then(() => loadBot()).catch(err => {
+        if (/^\/(help|summary|focus|rules|poll|stopbot)\b|@focusbot\b/i.test(content)) toast.error(err instanceof Error ? err.message : 'FocusBot is unavailable.');
+      });
+    }
   };
 
   const sendImage = async (file: File) => {
@@ -328,6 +333,9 @@ export default function GroupChat() {
         <h1 className="text-base font-semibold truncate flex-1">{groupName}</h1>
       </header>
 
+      {botEnabled && <div className="px-3 py-2 border-b border-border/60 bg-muted/40 text-xs text-muted-foreground flex gap-2 items-start"><Bot className="w-4 h-4 shrink-0 text-primary" /><span>FocusBot is active and may analyze group messages. Private chats are never monitored.</span></div>}
+      {botEnabled && focusUntil && new Date(focusUntil).getTime() > now && <div className="px-3 py-2 border-b border-border/60 text-xs font-medium text-primary">Focus session · {Math.ceil((new Date(focusUntil).getTime() - now) / 60000)} min remaining</div>}
+
       {pinned.length > 0 && (
         <div className="px-3 py-2 border-b border-border/60 bg-muted/40 shrink-0 space-y-1">
           {pinned.slice(-2).map(m => (
@@ -353,11 +361,12 @@ export default function GroupChat() {
           </p>
         ) : (
           visibleMessages.map(m => {
-            const mine = m.user_id === user.id;
+            const isBot = m.author_type === 'focusbot';
+            const mine = !isBot && m.user_id === user.id;
             const parent = m.reply_to_id ? byId[m.reply_to_id] : null;
             return (
               <div key={m.id} className={`flex gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
-                {!mine && (
+                {isBot ? <span className="w-7 h-7 mt-auto shrink-0 rounded-full bg-primary/10 text-primary grid place-items-center"><Bot className="w-4 h-4" /></span> : !mine && (
                   <UserAvatar
                     src={profiles[m.user_id]?.avatar_url}
                     name={memberName(profiles[m.user_id])}
@@ -377,7 +386,7 @@ export default function GroupChat() {
                 >
                   {!mine && (
                     <p className="text-[11px] font-medium opacity-80 mb-0.5">
-                      {memberName(profiles[m.user_id])}
+                       {isBot ? 'FocusBot · BOT' : memberName(profiles[m.user_id])}
                     </p>
                   )}
                   {parent && (
@@ -389,6 +398,7 @@ export default function GroupChat() {
                   {m.content && (
                     <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                   )}
+                   {polls.filter(p => p.message_id === m.id).map(poll => <div key={poll.id} className="mt-2 space-y-1.5 border-t border-border/60 pt-2"><p className="text-sm font-medium">{poll.question}</p>{pollOptions.filter(o => o.poll_id === poll.id).sort((a, b) => a.position - b.position).map(option => { const count = pollVotes.filter(v => v.option_id === option.id).length; const selected = pollVotes.some(v => v.poll_id === poll.id && v.option_id === option.id && v.user_id === user.id); return <Button key={option.id} variant={selected ? 'secondary' : 'outline'} size="sm" className="w-full justify-between h-auto min-h-8 whitespace-normal text-left" disabled={poll.status !== 'open'} onClick={() => vote(poll.id, option.id)}><span className="break-words">{option.label}</span><span className="ml-2 tabular-nums">{count}</span></Button>; })}</div>)}
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] opacity-70 tabular-nums">
                       {new Date(m.created_at).toLocaleTimeString([], {
@@ -417,7 +427,7 @@ export default function GroupChat() {
                     <ContextMenuItem onSelect={() => hide(m.id)}>
                       <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                     </ContextMenuItem>
-                    {mine && (
+                     {mine && (
                       <ContextMenuItem onSelect={() => deleteForAll(m.id)} className="text-destructive">
                         <Trash2 className="w-4 h-4 mr-2" /> Delete for everyone
                       </ContextMenuItem>
