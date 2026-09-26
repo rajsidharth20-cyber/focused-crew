@@ -18,8 +18,9 @@ import {
 import { useHiddenMessages } from '@/hooks/use-hidden-messages';
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bot, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { processGroupMessage } from '@/hooks/use-focusbot';
 
 interface GroupMessage {
   id: string;
@@ -30,7 +31,12 @@ interface GroupMessage {
   reply_to_id: string | null;
   pinned: boolean;
   created_at: string;
+  author_type: string;
 }
+
+interface Poll { id: string; message_id: string | null; question: string; status: string }
+interface PollOption { id: string; poll_id: string; label: string; position: number }
+interface PollVote { poll_id: string; option_id: string; user_id: string }
 
 const EMOJIS = ['😀','😂','🥲','😍','🤔','😴','😭','🔥','💪','🎯','✅','📚','⏰','☕','🚀','🫡','👍','👏','🙏','💯'];
 
@@ -64,6 +70,12 @@ export default function GroupChat() {
   const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [botEnabled, setBotEnabled] = useState(false);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [pollOptions, setPollOptions] = useState<PollOption[]>([]);
+  const [pollVotes, setPollVotes] = useState<PollVote[]>([]);
+  const [focusUntil, setFocusUntil] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { isHidden, hide } = useHiddenMessages('group');
@@ -83,13 +95,49 @@ export default function GroupChat() {
     setGroupName(g?.name ?? 'Group chat');
     const list = (msgs ?? []) as GroupMessage[];
     setMessages(list);
-    setProfiles(await fetchProfiles([...new Set(list.map(m => m.user_id))]));
+    setProfiles(await fetchProfiles([...new Set(list.filter(m => m.author_type !== 'focusbot').map(m => m.user_id))]));
     setLoading(false);
   }, [groupId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadBot = useCallback(async () => {
+    if (!groupId || !user) return;
+    const [{ data: bot }, { data: pollRows }, { data: sessions }] = await Promise.all([
+      supabase.from('bot_instances').select('enabled').eq('group_id', groupId).eq('bot_type', 'focusbot').maybeSingle(),
+      supabase.from('bot_polls').select('id,message_id,question,status').eq('group_id', groupId).order('created_at', { ascending: false }).limit(30),
+      supabase.from('bot_focus_sessions').select('ends_at').eq('group_id', groupId).eq('active', true).order('ends_at', { ascending: false }).limit(1),
+    ]);
+    setBotEnabled(Boolean(bot?.enabled));
+    setPolls(pollRows ?? []);
+    setFocusUntil(sessions?.[0]?.ends_at ?? null);
+    const ids = (pollRows ?? []).map(p => p.id);
+    if (!ids.length) { setPollOptions([]); setPollVotes([]); return; }
+    const [{ data: options }, { data: votes }] = await Promise.all([
+      supabase.from('bot_poll_options').select('id,poll_id,label,position').in('poll_id', ids),
+      supabase.from('bot_poll_votes').select('poll_id,option_id,user_id').in('poll_id', ids),
+    ]);
+    setPollOptions(options ?? []);
+    setPollVotes(votes ?? []);
+  }, [groupId, user]);
+
+  useEffect(() => {
+    loadBot();
+    const interval = window.setInterval(() => { setNow(Date.now()); loadBot(); }, 15000);
+    return () => window.clearInterval(interval);
+  }, [loadBot]);
+
+  const vote = async (pollId: string, optionId: string) => {
+    if (!user) return;
+    const existing = pollVotes.find(v => v.poll_id === pollId && v.user_id === user.id);
+    const result = existing
+      ? await supabase.from('bot_poll_votes').update({ option_id: optionId }).eq('poll_id', pollId).eq('user_id', user.id)
+      : await supabase.from('bot_poll_votes').insert({ poll_id: pollId, option_id: optionId, user_id: user.id });
+    if (result.error) toast.error(result.error.message);
+    else await loadBot();
+  };
 
   useEffect(() => {
     if (!groupId || !user) return;
@@ -101,7 +149,7 @@ export default function GroupChat() {
         async payload => {
           const msg = payload.new as GroupMessage;
           setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
-          if (!profilesHas(msg.user_id)) {
+          if (msg.author_type !== 'focusbot' && !profilesHas(msg.user_id)) {
             const p = await fetchProfiles([msg.user_id]);
             setProfiles(prev => ({ ...prev, ...p }));
           }
@@ -216,6 +264,11 @@ export default function GroupChat() {
       return;
     }
     notifyGroup(inserted?.id ?? crypto.randomUUID(), content, replyId);
+    if (botEnabled && inserted?.id) {
+      void processGroupMessage(groupId, inserted.id).then(() => loadBot()).catch(err => {
+        if (/^\/(help|summary|focus|rules|poll|stopbot)\b|@focusbot\b/i.test(content)) toast.error(err instanceof Error ? err.message : 'FocusBot is unavailable.');
+      });
+    }
   };
 
   const sendImage = async (file: File) => {
@@ -280,6 +333,9 @@ export default function GroupChat() {
         <h1 className="text-base font-semibold truncate flex-1">{groupName}</h1>
       </header>
 
+      {botEnabled && <div className="px-3 py-2 border-b border-border/60 bg-muted/40 text-xs text-muted-foreground flex gap-2 items-start"><Bot className="w-4 h-4 shrink-0 text-primary" /><span>FocusBot is active and may analyze group messages. Private chats are never monitored.</span></div>}
+      {botEnabled && focusUntil && new Date(focusUntil).getTime() > now && <div className="px-3 py-2 border-b border-border/60 text-xs font-medium text-primary">Focus session · {Math.ceil((new Date(focusUntil).getTime() - now) / 60000)} min remaining</div>}
+
       {pinned.length > 0 && (
         <div className="px-3 py-2 border-b border-border/60 bg-muted/40 shrink-0 space-y-1">
           {pinned.slice(-2).map(m => (
@@ -305,11 +361,12 @@ export default function GroupChat() {
           </p>
         ) : (
           visibleMessages.map(m => {
-            const mine = m.user_id === user.id;
+            const isBot = m.author_type === 'focusbot';
+            const mine = !isBot && m.user_id === user.id;
             const parent = m.reply_to_id ? byId[m.reply_to_id] : null;
             return (
               <div key={m.id} className={`flex gap-2 ${mine ? 'justify-end' : 'justify-start'}`}>
-                {!mine && (
+                {isBot ? <span className="w-7 h-7 mt-auto shrink-0 rounded-full bg-primary/10 text-primary grid place-items-center"><Bot className="w-4 h-4" /></span> : !mine && (
                   <UserAvatar
                     src={profiles[m.user_id]?.avatar_url}
                     name={memberName(profiles[m.user_id])}
@@ -329,7 +386,7 @@ export default function GroupChat() {
                 >
                   {!mine && (
                     <p className="text-[11px] font-medium opacity-80 mb-0.5">
-                      {memberName(profiles[m.user_id])}
+                       {isBot ? 'FocusBot · BOT' : memberName(profiles[m.user_id])}
                     </p>
                   )}
                   {parent && (
@@ -341,6 +398,7 @@ export default function GroupChat() {
                   {m.content && (
                     <p className="text-sm whitespace-pre-wrap break-words">{m.content}</p>
                   )}
+                   {polls.filter(p => p.message_id === m.id).map(poll => <div key={poll.id} className="mt-2 space-y-1.5 border-t border-border/60 pt-2"><p className="text-sm font-medium">{poll.question}</p>{pollOptions.filter(o => o.poll_id === poll.id).sort((a, b) => a.position - b.position).map(option => { const count = pollVotes.filter(v => v.option_id === option.id).length; const selected = pollVotes.some(v => v.poll_id === poll.id && v.option_id === option.id && v.user_id === user.id); return <Button key={option.id} variant={selected ? 'secondary' : 'outline'} size="sm" className="w-full justify-between h-auto min-h-8 whitespace-normal text-left" disabled={poll.status !== 'open'} onClick={() => vote(poll.id, option.id)}><span className="break-words">{option.label}</span><span className="ml-2 tabular-nums">{count}</span></Button>; })}</div>)}
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] opacity-70 tabular-nums">
                       {new Date(m.created_at).toLocaleTimeString([], {
@@ -369,7 +427,7 @@ export default function GroupChat() {
                     <ContextMenuItem onSelect={() => hide(m.id)}>
                       <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                     </ContextMenuItem>
-                    {mine && (
+                     {mine && (
                       <ContextMenuItem onSelect={() => deleteForAll(m.id)} className="text-destructive">
                         <Trash2 className="w-4 h-4 mr-2" /> Delete for everyone
                       </ContextMenuItem>
