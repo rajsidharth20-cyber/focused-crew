@@ -18,8 +18,9 @@ import {
 import { useHiddenMessages } from '@/hooks/use-hidden-messages';
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bot, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { processGroupMessage } from '@/hooks/use-focusbot';
 
 interface GroupMessage {
   id: string;
@@ -30,7 +31,12 @@ interface GroupMessage {
   reply_to_id: string | null;
   pinned: boolean;
   created_at: string;
+  author_type: string;
 }
+
+interface Poll { id: string; message_id: string | null; question: string; status: string }
+interface PollOption { id: string; poll_id: string; label: string; position: number }
+interface PollVote { poll_id: string; option_id: string; user_id: string }
 
 const EMOJIS = ['😀','😂','🥲','😍','🤔','😴','😭','🔥','💪','🎯','✅','📚','⏰','☕','🚀','🫡','👍','👏','🙏','💯'];
 
@@ -64,6 +70,12 @@ export default function GroupChat() {
   const [replyTo, setReplyTo] = useState<GroupMessage | null>(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
+  const [botEnabled, setBotEnabled] = useState(false);
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [pollOptions, setPollOptions] = useState<PollOption[]>([]);
+  const [pollVotes, setPollVotes] = useState<PollVote[]>([]);
+  const [focusUntil, setFocusUntil] = useState<string | null>(null);
+  const [now, setNow] = useState(Date.now());
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
   const { isHidden, hide } = useHiddenMessages('group');
@@ -83,13 +95,49 @@ export default function GroupChat() {
     setGroupName(g?.name ?? 'Group chat');
     const list = (msgs ?? []) as GroupMessage[];
     setMessages(list);
-    setProfiles(await fetchProfiles([...new Set(list.map(m => m.user_id))]));
+    setProfiles(await fetchProfiles([...new Set(list.filter(m => m.author_type !== 'focusbot').map(m => m.user_id))]));
     setLoading(false);
   }, [groupId]);
 
   useEffect(() => {
     load();
   }, [load]);
+
+  const loadBot = useCallback(async () => {
+    if (!groupId || !user) return;
+    const [{ data: bot }, { data: pollRows }, { data: sessions }] = await Promise.all([
+      supabase.from('bot_instances').select('enabled').eq('group_id', groupId).eq('bot_type', 'focusbot').maybeSingle(),
+      supabase.from('bot_polls').select('id,message_id,question,status').eq('group_id', groupId).order('created_at', { ascending: false }).limit(30),
+      supabase.from('bot_focus_sessions').select('ends_at').eq('group_id', groupId).eq('active', true).order('ends_at', { ascending: false }).limit(1),
+    ]);
+    setBotEnabled(Boolean(bot?.enabled));
+    setPolls(pollRows ?? []);
+    setFocusUntil(sessions?.[0]?.ends_at ?? null);
+    const ids = (pollRows ?? []).map(p => p.id);
+    if (!ids.length) { setPollOptions([]); setPollVotes([]); return; }
+    const [{ data: options }, { data: votes }] = await Promise.all([
+      supabase.from('bot_poll_options').select('id,poll_id,label,position').in('poll_id', ids),
+      supabase.from('bot_poll_votes').select('poll_id,option_id,user_id').in('poll_id', ids),
+    ]);
+    setPollOptions(options ?? []);
+    setPollVotes(votes ?? []);
+  }, [groupId, user]);
+
+  useEffect(() => {
+    loadBot();
+    const interval = window.setInterval(() => { setNow(Date.now()); loadBot(); }, 15000);
+    return () => window.clearInterval(interval);
+  }, [loadBot]);
+
+  const vote = async (pollId: string, optionId: string) => {
+    if (!user) return;
+    const existing = pollVotes.find(v => v.poll_id === pollId && v.user_id === user.id);
+    const result = existing
+      ? await supabase.from('bot_poll_votes').update({ option_id: optionId }).eq('poll_id', pollId).eq('user_id', user.id)
+      : await supabase.from('bot_poll_votes').insert({ poll_id: pollId, option_id: optionId, user_id: user.id });
+    if (result.error) toast.error(result.error.message);
+    else await loadBot();
+  };
 
   useEffect(() => {
     if (!groupId || !user) return;
@@ -101,7 +149,7 @@ export default function GroupChat() {
         async payload => {
           const msg = payload.new as GroupMessage;
           setMessages(prev => (prev.some(m => m.id === msg.id) ? prev : [...prev, msg]));
-          if (!profilesHas(msg.user_id)) {
+          if (msg.author_type !== 'focusbot' && !profilesHas(msg.user_id)) {
             const p = await fetchProfiles([msg.user_id]);
             setProfiles(prev => ({ ...prev, ...p }));
           }
