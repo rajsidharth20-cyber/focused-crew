@@ -22,6 +22,27 @@
       "when": 1790150165796,
       "tag": "0002_harden_focusbot_boundaries",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1790592494939,
+      "tag": "0003_allow_group_leaders_to_read_group_reports",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1790592520830,
+      "tag": "0004_scope_group_reports_to_group",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790592622560,
+      "tag": "0005_verify_group_report_scope",
+      "breakpoints": true
     }
   ]
 }

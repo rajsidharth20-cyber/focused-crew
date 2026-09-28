@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles, Megaphone } from 'lucide-react';
+import { FileDown, Loader2, Trash2, LogOut, Users, Image as ImageIcon, Bell, ChevronRight, Sparkles, Megaphone, Flag } from 'lucide-react';
 import { useIsStaff } from '@/hooks/use-announcements';
 import { DayAnalysisDialog } from '@/components/DayAnalysisDialog';
 import { ShareAppButton } from '@/components/ShareAppButton';
@@ -78,6 +78,7 @@ const More = () => {
           <Row to="/settings/notifications" icon={Bell} label="Notification settings" />
           <Row to="/announcements" icon={Megaphone} label="Announcements" />
           {isStaff && <Row to="/admin/announcements" icon={Megaphone} label="Manage announcements" />}
+          {isStaff && <Row to="/admin/reports" icon={Flag} label="Group reports" />}
           <DayAnalysisDialog
             username={username}
             objectives={store.dailyObjectives}

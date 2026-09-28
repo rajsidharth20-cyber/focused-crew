@@ -22,6 +22,7 @@ const Feed = lazy(() => import("./pages/Feed"));
 const Notes = lazy(() => import("./pages/Notes"));
 const Announcements = lazy(() => import("./pages/Announcements"));
 const AdminAnnouncements = lazy(() => import("./pages/AdminAnnouncements"));
+const AdminReports = lazy(() => import("./pages/AdminReports"));
 const UserProfile = lazy(() => import("./pages/UserProfile"));
 const StudyGroups = lazy(() => import("./pages/StudyGroups"));
 const GroupDashboard = lazy(() => import("./pages/GroupDashboard"));
@@ -80,6 +81,7 @@ const App = () => (
             <Route path="/notes" element={<ProtectedRoute><Notes /></ProtectedRoute>} />
             <Route path="/announcements" element={<ProtectedRoute><Announcements /></ProtectedRoute>} />
             <Route path="/admin/announcements" element={<ProtectedRoute><AdminAnnouncements /></ProtectedRoute>} />
+            <Route path="/admin/reports" element={<ProtectedRoute><AdminReports /></ProtectedRoute>} />
             <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
             <Route path="/chat/:userId" element={<ProtectedRoute><ChatThread /></ProtectedRoute>} />
              <Route path="/focusbot" element={<ProtectedRoute><FocusBotChat /></ProtectedRoute>} />
