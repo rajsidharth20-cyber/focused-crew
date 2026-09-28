@@ -1,0 +1,2 @@
+DROP POLICY "Group leaders read scoped group reports" ON public.reports;
+CREATE POLICY "Group leaders read verified group reports" ON public.reports FOR SELECT TO authenticated USING (target_type = 'group_message' AND group_id IS NOT NULL AND private.is_group_admin(group_id, auth.uid()) AND EXISTS (SELECT 1 FROM public.group_messages gm WHERE gm.id = reports.target_id AND gm.group_id = reports.group_id));

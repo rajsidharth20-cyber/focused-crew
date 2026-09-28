@@ -36,6 +36,13 @@
       "when": 1790592520830,
       "tag": "0004_scope_group_reports_to_group",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790592622560,
+      "tag": "0005_verify_group_report_scope",
+      "breakpoints": true
     }
   ]
 }
