@@ -18,7 +18,7 @@ import {
 import { useHiddenMessages } from '@/hooks/use-hidden-messages';
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { ArrowLeft, Bot, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Bot, Flag, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
 import { processGroupMessage } from '@/hooks/use-focusbot';
 
@@ -265,8 +265,11 @@ export default function GroupChat() {
     }
     notifyGroup(inserted?.id ?? crypto.randomUUID(), content, replyId);
     if (botEnabled && inserted?.id) {
-      void processGroupMessage(groupId, inserted.id).then(() => loadBot()).catch(err => {
-        if (/^\/(help|summary|focus|rules|poll|stopbot)\b|@focusbot\b/i.test(content)) toast.error(err instanceof Error ? err.message : 'FocusBot is unavailable.');
+      void processGroupMessage(groupId, inserted.id).then((result: any) => {
+        if (result?.reported) toast.success('Report sent privately to group leaders and app admins.');
+        return loadBot();
+      }).catch(err => {
+        if (/^\/(help|summary|focus|rules|poll|stopbot|report)\b|@focusbot\b/i.test(content)) toast.error(err instanceof Error ? err.message : 'FocusBot is unavailable.');
       });
     }
   };
@@ -424,6 +427,7 @@ export default function GroupChat() {
                 </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
+                     {botEnabled && !mine && !isBot && <ContextMenuItem onSelect={() => { setReplyTo(m); setText('@FocusBot report '); }}><Flag className="w-4 h-4 mr-2" />Report with FocusBot</ContextMenuItem>}
                     <ContextMenuItem onSelect={() => hide(m.id)}>
                       <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                     </ContextMenuItem>
