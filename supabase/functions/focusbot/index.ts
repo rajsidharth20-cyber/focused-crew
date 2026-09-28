@@ -205,7 +205,13 @@ Deno.serve(async req => {
     const { data: source } = await db.from("group_messages").select("*").eq("id", messageId).eq("group_id", groupId).eq("user_id", guard.ctx.userId).eq("author_type", "human").single();
     if (!source || !config.bot.enabled) return json(req, { ignored: true });
     const content = source.content?.trim() ?? "";
-    const command = content.match(/^\/(\w+)/)?.[1]?.toLowerCase();
+    const reportMatch = content.match(/^(?:@focusbot\s+report|\/report)\b([\s\S]*)/i);
+    const command = reportMatch ? "report" : content.match(/^\/(\w+)/)?.[1]?.toLowerCase();
+    if (command === "report") {
+      if (!source.reply_to_id) return json(req, { error: "Reply to the message you want to report with @FocusBot report." }, 400);
+      const { data: target } = await db.from("group_messages").select("id,user_id,content,image_url,author_type").eq("id", source.reply_to_id).eq("group_id", groupId).maybeSingle();
+      if (!target || target.author_type !== "human" || target.user_id === guard.ctx.userId) return json(req, { error: "You can only report another member's group message." }, 400);
+    }
     const mentioned = /@focusbot\b/i.test(content) && config.settings.response_mode !== "commands_only";
     const relevant = Boolean(command || mentioned || config.permissionMap.spam_detection || config.permissionMap.ai_moderation);
     if (!relevant) return json(req, { ignored: true });
@@ -215,7 +221,34 @@ Deno.serve(async req => {
 
     let reply = "";
     try {
-    if (command === "help") reply = "Commands: /summary, /focus, /rules, /poll Question | Option 1 | Option 2, and /stopbot (admins). You can also mention @FocusBot for study help.";
+    if (command === "help") reply = "Commands: /summary, /focus, /rules, /poll Question | Option 1 | Option 2, /stopbot (admins). Reply to a message with @FocusBot report to privately alert the group leader and app admins.";
+    else if (command === "report") {
+      const { data: target, error: targetError } = await db.from("group_messages").select("id,user_id,content,image_url,author_type").eq("id", source.reply_to_id).eq("group_id", groupId).single();
+      if (targetError || !target || target.author_type !== "human" || target.user_id === guard.ctx.userId) throw new Error("The reported message is no longer available.");
+      const reason = reportMatch?.[1]?.trim().slice(0, 500) || "Reported via FocusBot";
+      const details = `Reason: ${reason}\nReported message: ${(target.content ?? "").slice(0, 2000)}${target.image_url ? "\nIncludes an image." : ""}`;
+      const { data: report, error: reportError } = await db.from("reports").insert({ reporter_id: guard.ctx.userId, target_type: "group_message", target_id: target.id, target_user_id: target.user_id, group_id: groupId, reason: "Group chat report", details }).select("id").single();
+      if (reportError && reportError.code !== "23505") throw reportError;
+      if (report) {
+        const [{ data: leaders }, { data: admins }] = await Promise.all([
+          db.from("group_members").select("user_id").eq("group_id", groupId).in("role", ["owner", "admin"]),
+          db.from("user_roles").select("user_id").eq("role", "admin"),
+        ]);
+        const leaderIds = new Set((leaders ?? []).map(row => row.user_id));
+        const recipients = [...new Set([...(leaders ?? []), ...(admins ?? [])].map(row => row.user_id))].filter(id => id !== guard.ctx.userId);
+        if (recipients.length) {
+          const { error: noticeError } = await db.from("notification_log").insert(recipients.map(userId => ({
+            user_id: userId,
+            category: "group_messages",
+            title: "Group message reported",
+            body: "A group message needs review.",
+            url: leaderIds.has(userId) ? `/groups/${groupId}/bots/focusbot` : "/admin/reports",
+            dedupe_key: `focusbot-report:${report.id}:${userId}`,
+          })));
+          if (noticeError) throw noticeError;
+        }
+      }
+    }
     else if (command === "rules") reply = config.settings.group_rules;
     else if (command === "stopbot") {
       if (!access.admin) reply = "Only a group owner or admin can stop FocusBot.";
@@ -269,8 +302,8 @@ Deno.serve(async req => {
       }
     }
     if (reply) await addBotMessage(db, groupId, guard.ctx.userId, reply, source.id);
-    await db.from("bot_events").update({ status: "completed", processed_at: new Date().toISOString(), result: { replied: Boolean(reply) } }).eq("message_id", source.id);
-    return json(req, { ok: true });
+    await db.from("bot_events").update({ status: "completed", processed_at: new Date().toISOString(), result: { replied: Boolean(reply), reported: command === "report" } }).eq("message_id", source.id);
+    return json(req, { ok: true, reported: command === "report" });
     } catch (error) {
       await db.from("bot_events").update({ status: "failed", processed_at: new Date().toISOString(), error_code: typeof (error as { status?: number }).status === "number" ? String((error as { status: number }).status) : "processing_error" }).eq("message_id", source.id);
       throw error;
