@@ -7,6 +7,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { callFocusBot, type FocusBotConfig, type FocusBotPermission } from '@/hooks/use-focusbot';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+interface GroupReport { id: string; details: string | null; created_at: string; status: string; target_id: string }
 
 const permissionLabels: Record<FocusBotPermission, { title: string; detail: string }> = {
   spam_detection: { title: 'Spam detection', detail: 'Checks links, repetition, and message bursts.' },
@@ -26,11 +29,18 @@ export default function FocusBotSettings() {
   const [config, setConfig] = useState<FocusBotConfig | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [reports, setReports] = useState<GroupReport[]>([]);
 
   const load = useCallback(async () => {
     if (!groupId) return;
     try {
-      setConfig(await callFocusBot<FocusBotConfig>({ action: 'get_config', groupId }));
+      const next = await callFocusBot<FocusBotConfig>({ action: 'get_config', groupId });
+      setConfig(next);
+      if (next.isAdmin) {
+        const { data, error } = await supabase.from('reports').select('id,details,created_at,status,target_id').eq('group_id', groupId).eq('target_type', 'group_message').order('created_at', { ascending: false }).limit(50);
+        if (error) throw error;
+        setReports(data ?? []);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'FocusBot settings are unavailable.');
     } finally {
@@ -110,6 +120,8 @@ export default function FocusBotSettings() {
         </section>
 
         {config.isAdmin && <section className="space-y-2"><h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Moderation review</h2>{config.flags.filter(flag => flag.status === 'pending').length === 0 ? <p className="text-sm text-muted-foreground">No messages need review.</p> : <div className="space-y-2">{config.flags.filter(flag => flag.status === 'pending').map(flag => <div key={flag.id} className="border border-border/60 rounded-lg bg-card p-3"><div className="flex items-center justify-between gap-2"><span className="text-xs font-semibold">{flag.classification.replace(/_/g, ' ')}</span><span className="text-xs tabular-nums text-muted-foreground">{Math.round(flag.confidence * 100)}%</span></div><p className="text-sm mt-1">{flag.reason}</p><div className="flex gap-2 mt-3"><Button size="sm" variant="outline" onClick={() => review(flag.id, 'dismiss')}>Dismiss</Button><Button size="sm" variant="outline" onClick={() => review(flag.id, 'delete')}><Trash2 className="w-3.5 h-3.5 mr-1" />Delete</Button><Button size="sm" variant="outline" onClick={() => review(flag.id, 'mute')}><UserX className="w-3.5 h-3.5 mr-1" />Mute</Button></div></div>)}</div>}</section>}
+
+        {config.isAdmin && <section className="space-y-2"><h2 className="text-xs uppercase tracking-widest text-muted-foreground font-semibold">Member reports</h2>{reports.length === 0 ? <p className="text-sm text-muted-foreground">No reported messages.</p> : reports.map(report => <div key={report.id} className="border border-border/60 rounded-lg bg-card p-3 space-y-2"><div className="flex items-center justify-between gap-2 text-xs text-muted-foreground"><span>{new Date(report.created_at).toLocaleString()}</span><span>{report.status}</span></div><p className="text-sm whitespace-pre-wrap break-words">{report.details}</p><Button size="sm" variant="outline" onClick={() => navigate(`/groups/${groupId}/chat`)}>Open group chat</Button></div>)}</section>}
 
         {!config.isAdmin && <p className="text-sm text-muted-foreground text-center">Only a group owner or admin can change these settings.</p>}
       </main>
