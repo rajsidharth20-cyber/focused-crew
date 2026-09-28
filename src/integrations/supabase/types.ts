@@ -1443,6 +1443,7 @@ export type Database = {
         Row: {
           created_at: string
           details: string | null
+          group_id: string | null
           handled_by: string | null
           id: string
           reason: string
@@ -1456,6 +1457,7 @@ export type Database = {
         Insert: {
           created_at?: string
           details?: string | null
+          group_id?: string | null
           handled_by?: string | null
           id?: string
           reason: string
@@ -1469,6 +1471,7 @@ export type Database = {
         Update: {
           created_at?: string
           details?: string | null
+          group_id?: string | null
           handled_by?: string | null
           id?: string
           reason?: string
@@ -1479,7 +1482,15 @@ export type Database = {
           target_user_id?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "reports_group_id_fkey"
+            columns: ["group_id"]
+            isOneToOne: false
+            referencedRelation: "study_groups"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       stories: {
         Row: {
