@@ -20,7 +20,7 @@ import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowLeft, Bot, Flag, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { processGroupMessage } from '@/hooks/use-focusbot';
+import { processGroupMessage, reportGroupMessage } from '@/hooks/use-focusbot';
 
 interface GroupMessage {
   id: string;
@@ -249,6 +249,29 @@ export default function GroupChat() {
   const send = async () => {
     if (!groupId || !user || !text.trim()) return;
     const content = text.trim();
+    const reportMatch = content.match(/^(?:@focusbot\s+report|\/report)\b([\s\S]*)/i);
+    if (reportMatch) {
+      if (!botEnabled) {
+        toast.error('FocusBot must be enabled to report a message.');
+        return;
+      }
+      if (!replyTo) {
+        toast.error('Reply to the message you want to report.');
+        return;
+      }
+      const target = replyTo;
+      setText('');
+      setReplyTo(null);
+      try {
+        await reportGroupMessage(groupId, target.id, reportMatch[1]?.trim() ?? '');
+        toast.success('Report sent privately to group leaders and app admins.');
+      } catch (err) {
+        setText(content);
+        setReplyTo(target);
+        toast.error(err instanceof Error ? err.message : 'FocusBot could not send the report.');
+      }
+      return;
+    }
     setText('');
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
