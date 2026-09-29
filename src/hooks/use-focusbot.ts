@@ -40,3 +40,11 @@ export async function callFocusBot<T>(body: Record<string, unknown>) {
 
 export const processGroupMessage = (groupId: string, messageId: string) =>
   callFocusBot({ action: 'process_group_message', groupId, messageId });
+
+export const reportGroupMessage = (groupId: string, targetMessageId: string, reason: string) =>
+  callFocusBot<{ ok: true; reported: true }>({
+    action: 'report_group_message',
+    groupId,
+    targetMessageId,
+    reason,
+  });
