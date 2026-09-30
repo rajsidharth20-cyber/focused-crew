@@ -2,16 +2,19 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups } from '@/hooks/use-study-groups';
+import { useFriends } from '@/hooks/use-friends';
 import { isLive, type PresenceRow } from '@/hooks/use-study-presence';
 
 /** Read live group and friend status without querying or writing study_presence. */
 export function useLiveStudy(userIds: string[]) {
   const { user } = useAuth();
   const { groups } = useMyGroups();
+  const { friends } = useFriends();
   const ids = [...new Set(userIds)].sort().join(',');
   const rooms = groups.map(g => `study:group:${g.id}`);
   // A friend who doesn't share a group can still be watched on their own study scope.
-  const names = [...new Set([...rooms, ...ids.split(',').filter(Boolean).map(id => `study:user:${id}`)])].sort().join(',');
+  const friendSet = new Set(friends);
+  const names = [...new Set([...rooms, ...ids.split(',').filter(id => friendSet.has(id)).map(id => `study:user:${id}`)])].sort().join(',');
   const [byRoom, setByRoom] = useState<Record<string, Record<string, PresenceRow>>>({});
   const [, forceTick] = useState(0);
   const refresh = useCallback(() => setByRoom(prev => ({ ...prev })), []);

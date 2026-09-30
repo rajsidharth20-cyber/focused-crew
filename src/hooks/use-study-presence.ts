@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useId } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups } from '@/hooks/use-study-groups';
@@ -17,8 +17,8 @@ export const isLive = (p?: PresenceRow | null) =>
 
 type StudyState = Omit<PresenceRow, 'user_id'>;
 const states = new Map<string, StudyState>();
-const groupIds = new Map<string, Set<string>>();
 const activeChannels = new Map<string, Set<{ track: (state: StudyState) => Promise<unknown> }>>();
+const sources = new Map<string, Map<string, StudyState>>();
 
 export function publishStudyPresence(input: {
   userId: string; isStudying: boolean; mode?: string | null;
@@ -39,11 +39,11 @@ export function publishStudyPresence(input: {
 /** Mount once near the timer; tracking follows group membership and current timer state. */
 export function useBroadcastStudyPresence(running: boolean, mode: string, topic?: string | null, startedAt?: string | null) {
   const { user, isGuest } = useAuth();
+  const sourceId = useId();
   const { groups } = useMyGroups();
   const ids = groups.map(g => g.id).sort().join(',');
   useEffect(() => {
     if (!user || isGuest) return;
-    groupIds.set(user.id, new Set(ids ? ids.split(',') : []));
     const channels = [...(ids ? ids.split(',') : []).map(id => `study:group:${id}`), `study:user:${user.id}`]
       .map(name => supabase.channel(name, { config: { presence: { key: user.id } } }));
     const trackers = new Set(channels);
@@ -65,11 +65,20 @@ export function useBroadcastStudyPresence(running: boolean, mode: string, topic?
 
   useEffect(() => {
     if (!user || isGuest) return;
-    void publishStudyPresence({ userId: user.id, isStudying: running, mode, topic, startedAt });
-    if (!running) return;
-    const interval = setInterval(() => {
-      void publishStudyPresence({ userId: user.id, isStudying: running, mode, topic, startedAt });
-    }, 60_000);
-    return () => clearInterval(interval);
-  }, [user?.id, isGuest, running, mode, topic, startedAt]);
+    const current = sources.get(user.id) ?? new Map<string, StudyState>();
+    current.set(sourceId, { is_studying: running, mode, topic: topic ?? null, started_at: startedAt ?? null, updated_at: new Date().toISOString() });
+    sources.set(user.id, current);
+    const update = () => {
+      const selected = [...current.values()].find(state => state.is_studying);
+      void publishStudyPresence({ userId: user.id, isStudying: Boolean(selected), mode: selected?.mode,
+        topic: selected?.topic, startedAt: selected?.started_at });
+    };
+    update();
+    const interval = running ? setInterval(update, 60_000) : undefined;
+    return () => {
+      if (interval) clearInterval(interval);
+      current.delete(sourceId);
+      update();
+    };
+  }, [user?.id, isGuest, sourceId, running, mode, topic, startedAt]);
 }
