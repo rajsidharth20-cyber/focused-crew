@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
 import type { SocialProfile } from '@/hooks/use-friends';
 
@@ -35,7 +36,6 @@ export interface PostComment {
 /** Posts + stories that RLS already limits to the signed-in user and their friends. */
 export function useFeed() {
   const { user } = useAuth();
-  const instanceId = useId();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
@@ -94,15 +94,39 @@ export function useFeed() {
   useEffect(() => {
     load();
     if (!user) return;
-    const channel = supabase
-      .channel(`feed-${user.id}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, () => load())
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stories' }, () => load())
-      .subscribe();
+    const onPost = onUserEvent(user.id, 'posts', payload => {
+      const row = payload.new as unknown as Post;
+      const id = (payload.old as { id?: string })?.id ?? row?.id;
+      if (!id) return;
+      setPosts(prev => {
+        const rest = prev.filter(item => item.id !== id);
+        return payload.eventType === 'DELETE' ? rest : [row, ...rest].sort((a, b) => b.created_at.localeCompare(a.created_at)).slice(0, 100);
+      });
+      if (payload.eventType === 'DELETE') {
+        setLikes(prev => { const next = { ...prev }; delete next[id]; return next; });
+        setCommentCounts(prev => { const next = { ...prev }; delete next[id]; return next; });
+      } else if (row?.user_id) {
+        void db.from('profiles').select('id, username, full_name, avatar_url').eq('id', row.user_id).maybeSingle()
+          .then(({ data }: { data: SocialProfile | null }) => { if (data) setProfiles(prev => ({ ...prev, [data.id]: data })); });
+      }
+    });
+    const onStory = onUserEvent(user.id, 'stories', payload => {
+      const row = payload.new as unknown as Story;
+      const id = (payload.old as { id?: string })?.id ?? row?.id;
+      if (!id) return;
+      setStories(prev => {
+        const rest = prev.filter(item => item.id !== id);
+        return payload.eventType === 'DELETE' ? rest : [...rest, row].sort((a, b) => a.created_at.localeCompare(b.created_at));
+      });
+      if (payload.eventType !== 'DELETE' && row?.user_id) {
+        void db.from('profiles').select('id, username, full_name, avatar_url').eq('id', row.user_id).maybeSingle()
+          .then(({ data }: { data: SocialProfile | null }) => { if (data) setProfiles(prev => ({ ...prev, [data.id]: data })); });
+      }
+    });
     return () => {
-      supabase.removeChannel(channel);
+      onPost(); onStory();
     };
-  }, [user, load, instanceId]);
+  }, [user?.id, load]);
 
   const createPost = useCallback(
     async (input: { kind: Post['kind']; caption?: string; image_url?: string | null }) => {
