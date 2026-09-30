@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Users } from 'lucide-react';
@@ -9,6 +9,7 @@ import { useFriends, socialName } from '@/hooks/use-friends';
 import { useMyGroups, fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { useNow } from '@/hooks/use-now';
+import { applyMemberEvent, type MemberPair } from '@/lib/member-events';
 
 const fmtClock = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -29,8 +30,7 @@ export function StudyingNowSection() {
   const { friends, profiles: friendProfiles } = useFriends();
   const { groups } = useMyGroups();
   const [groupProfiles, setGroupProfiles] = useState<Record<string, MemberProfile>>({});
-  const [groupMemberIds, setGroupMemberIds] = useState<string[]>([]);
-  const instanceId = useId();
+  const [memberRows, setMemberRows] = useState<MemberPair[]>([]);
   const now = useNow(1000);
 
   const groupIds = useMemo(() => groups.map(g => g.id).sort().join(','), [groups]);
@@ -38,12 +38,12 @@ export function StudyingNowSection() {
   const loadMembers = useCallback(async () => {
     const ids = groupIds ? groupIds.split(',') : [];
     if (ids.length === 0) {
-      setGroupMemberIds([]);
+      setMemberRows([]);
       return;
     }
-    const { data } = await supabase.from('group_members').select('user_id').in('group_id', ids);
+    const { data } = await supabase.from('group_members').select('id, group_id, user_id').in('group_id', ids);
+    setMemberRows(data ?? []);
     const unique = Array.from(new Set((data ?? []).map(m => m.user_id)));
-    setGroupMemberIds(unique);
     setGroupProfiles(await fetchProfiles(unique));
   }, [groupIds]);
 
@@ -51,13 +51,21 @@ export function StudyingNowSection() {
     loadMembers();
     if (!groupIds) return;
     const channel = supabase
-      .channel(`home-live-members-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => loadMembers())
+      .channel(`home-live-members-${groupIds}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, payload => {
+        const row = payload.new as MemberPair;
+        setMemberRows(prev => applyMemberEvent(prev, payload, new Set(groupIds.split(','))));
+        if (payload.eventType !== 'DELETE' && row?.user_id) {
+          void fetchProfiles([row.user_id]).then(found => setGroupProfiles(prev => ({ ...prev, ...found })));
+        }
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [groupIds, loadMembers, instanceId]);
+  }, [groupIds, loadMembers]);
+
+  const groupMemberIds = useMemo(() => Array.from(new Set(memberRows.map(m => m.user_id))), [memberRows]);
 
   const watchIds = useMemo(
     () => Array.from(new Set([...friends, ...groupMemberIds])).filter(id => id !== user?.id),

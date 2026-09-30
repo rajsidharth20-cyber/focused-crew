@@ -1,74 +1,71 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { useMyGroups } from '@/hooks/use-study-groups';
+import { useFriends } from '@/hooks/use-friends';
 import { isLive, type PresenceRow } from '@/hooks/use-study-presence';
 
-const db = supabase as any;
-
-/** Live study status (YPT style) for a set of users, refreshed in realtime. */
+/** Read live group and friend status without querying or writing study_presence. */
 export function useLiveStudy(userIds: string[]) {
-  const key = userIds.slice().sort().join(',');
-  const [presence, setPresence] = useState<Record<string, PresenceRow>>({});
+  const { user } = useAuth();
+  const { groups } = useMyGroups();
+  const { friends } = useFriends();
+  const ids = [...new Set(userIds)].sort().join(',');
+  const rooms = groups.map(g => `study:group:${g.id}`);
+  // A friend who doesn't share a group can still be watched on their own study scope.
+  const friendSet = new Set(friends);
+  const names = [...new Set([...rooms, ...ids.split(',').filter(id => friendSet.has(id)).map(id => `study:user:${id}`)])].sort().join(',');
+  const [byRoom, setByRoom] = useState<Record<string, Record<string, PresenceRow>>>({});
   const [, forceTick] = useState(0);
-  const instanceId = useId();
-
-  const load = useCallback(async () => {
-    const ids = key ? key.split(',') : [];
-    if (ids.length === 0) {
-      setPresence({});
-      return;
-    }
-    const { data } = await db.from('study_presence').select('*').in('user_id', ids);
-    const map: Record<string, PresenceRow> = {};
-    ((data ?? []) as PresenceRow[]).forEach(p => {
-      map[p.user_id] = p;
-    });
-    setPresence(map);
-  }, [key]);
+  const refresh = useCallback(() => setByRoom(prev => ({ ...prev })), []);
 
   useEffect(() => {
-    load();
-    const watched = new Set(key ? key.split(',') : []);
-    const channel = supabase
-      .channel(`presence-${key.slice(0, 40)}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'study_presence' }, payload => {
-        const row = (payload.new ?? payload.old) as PresenceRow | undefined;
-        if (!row?.user_id) return load();
-        if (!watched.has(row.user_id)) return;
-        setPresence(prev => {
-          if (payload.eventType === 'DELETE') {
-            const next = { ...prev };
-            delete next[row.user_id];
-            return next;
-          }
-          return { ...prev, [row.user_id]: row };
-        });
-      })
-      .subscribe();
-
-    // Re-sync whenever the tab or connection comes back, so we never show stale rows.
-    const resync = () => {
-      if (document.visibilityState === 'visible') load();
-    };
+    if (!user || !names) { setByRoom({}); return; }
+    const channels = names.split(',').map(name => {
+      const channel = supabase.channel(name);
+      const sync = () => {
+        const state = channel.presenceState();
+        const next: Record<string, PresenceRow> = {};
+        for (const [id, entries] of Object.entries(state)) {
+          const entry = entries[entries.length - 1] as unknown as Omit<PresenceRow, 'user_id'> | undefined;
+          if (entry) next[id] = { ...entry, user_id: id };
+        }
+        setByRoom(prev => ({ ...prev, [name]: next }));
+      };
+      channel.on('presence', { event: 'sync' }, sync).subscribe();
+      return channel;
+    });
+    const resync = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', resync);
     window.addEventListener('focus', resync);
-    window.addEventListener('online', load);
-
     const tick = setInterval(() => forceTick(t => t + 1), 15_000);
-    // Periodic safety refetch in case a realtime event was missed.
-    const poll = setInterval(load, 60_000);
-    return () => {
-      supabase.removeChannel(channel);
-      document.removeEventListener('visibilitychange', resync);
-      window.removeEventListener('focus', resync);
-      window.removeEventListener('online', load);
-      clearInterval(tick);
-      clearInterval(poll);
+    let poll: ReturnType<typeof setInterval> | undefined;
+    const togglePoll = () => {
+      if (poll) clearInterval(poll);
+      poll = document.visibilityState === 'visible' ? setInterval(refresh, 60_000) : undefined;
     };
-  }, [key, load, instanceId]);
+    togglePoll();
+    document.addEventListener('visibilitychange', togglePoll);
+    return () => {
+      channels.forEach(channel => { void supabase.removeChannel(channel); });
+      document.removeEventListener('visibilitychange', resync);
+      document.removeEventListener('visibilitychange', togglePoll);
+      window.removeEventListener('focus', resync);
+      clearInterval(tick);
+      if (poll) clearInterval(poll);
+    };
+  }, [user?.id, names, refresh]);
 
-  const liveIds = Object.values(presence)
-    .filter(isLive)
-    .map(p => p.user_id);
-
-  return { presence, liveIds, isUserLive: (id: string) => isLive(presence[id]), refresh: load };
+  const watched = new Set(ids ? ids.split(',') : []);
+  const presence = useMemo(() => {
+    const merged: Record<string, PresenceRow> = {};
+    for (const room of Object.values(byRoom)) {
+      for (const [id, row] of Object.entries(room)) {
+        if (watched.has(id) && (!merged[id] || row.updated_at > merged[id].updated_at)) merged[id] = row;
+      }
+    }
+    return merged;
+  }, [byRoom, ids]);
+  const liveIds = Object.values(presence).filter(isLive).map(p => p.user_id);
+  return { presence, liveIds, isUserLive: (id: string) => isLive(presence[id]), refresh };
 }

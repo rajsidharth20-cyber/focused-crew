@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
 
 const db = supabase as any;
@@ -28,7 +29,6 @@ export const socialName = (p?: SocialProfile | null) =>
  */
 export function useFriends() {
   const { user } = useAuth();
-  const instanceId = useId();
   const [rows, setRows] = useState<Friendship[]>([]);
   const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
   const [loading, setLoading] = useState(true);
@@ -65,14 +65,21 @@ export function useFriends() {
   useEffect(() => {
     load();
     if (!user) return;
-    const channel = supabase
-      .channel(`friendships-${user.id}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'friendships' }, () => load())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, load, instanceId]);
+    return onUserEvent(user.id, 'friendships', payload => {
+      const row = payload.new as unknown as Friendship;
+      const id = (payload.old as { id?: string })?.id ?? row?.id;
+      if (!id) return;
+      setRows(prev => {
+        const rest = prev.filter(r => r.id !== id);
+        return payload.eventType === 'DELETE' ? rest : [row, ...rest].sort((a, b) => b.created_at.localeCompare(a.created_at));
+      });
+      if (payload.eventType !== 'DELETE' && (row.requester_id === user.id || row.addressee_id === user.id)) {
+        const other = row.requester_id === user.id ? row.addressee_id : row.requester_id;
+        void db.from('profiles').select('id, username, full_name, avatar_url').eq('id', other).maybeSingle()
+          .then(({ data }: { data: SocialProfile | null }) => { if (data) setProfiles(prev => ({ ...prev, [data.id]: data })); });
+      }
+    });
+  }, [user?.id, load]);
 
   const otherId = useCallback(
     (r: Friendship) => (r.requester_id === user?.id ? r.addressee_id : r.requester_id),

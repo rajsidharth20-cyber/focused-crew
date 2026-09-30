@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { publishStudyPresence } from '@/hooks/use-study-presence';
+import { useBroadcastStudyPresence } from '@/hooks/use-study-presence';
+import { onUserEvent } from '@/lib/user-events';
 
 const db = supabase as any;
 const GUEST_KEY = 'taskpilot_active_subject_timer_v1';
@@ -76,17 +77,13 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
       if (!cancelled) setTimer(fromRow(data));
     };
     load();
-    const channel = supabase
-      .channel(`active-timer-${user.id}-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'active_timers', filter: `user_id=eq.${user.id}` },
-        (payload: any) => setTimer(fromRow(payload.new)))
-      .subscribe();
+    const off = onUserEvent(user.id, 'active_timers', payload => setTimer(fromRow(payload.new)));
     const resync = () => load();
     document.addEventListener('visibilitychange', resync);
     window.addEventListener('focus', resync);
     return () => {
       cancelled = true;
-      supabase.removeChannel(channel);
+      off();
       document.removeEventListener('visibilitychange', resync);
       window.removeEventListener('focus', resync);
     };
@@ -117,21 +114,8 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
     }, { onConflict: 'user_id' });
   }, [user, isGuest]);
 
-  // ---- presence broadcast so group mates can see live study ----
-  useEffect(() => {
-    if (!user || isGuest) return;
-    const push = () => publishStudyPresence({
-      userId: user.id,
-      isStudying: !!timer?.isRunning,
-      mode: 'subject',
-      topic: topicRef.current?.(timer?.subjectId ?? null) ?? null,
-      startedAt: timer?.sessionStartedAt ?? timer?.startedAt ?? null,
-    });
-    push();
-    if (!timer?.isRunning) return;
-    const id = setInterval(push, 60_000);
-    return () => clearInterval(id);
-  }, [timer?.isRunning, timer?.subjectId, timer?.sessionStartedAt, timer?.startedAt, user, isGuest]);
+  useBroadcastStudyPresence(!!timer?.isRunning, 'subject', topicRef.current?.(timer?.subjectId ?? null) ?? null,
+    timer?.sessionStartedAt ?? timer?.startedAt ?? null);
 
   const start = useCallback(async (subjectId: string) => {
     const now = new Date().toISOString();

@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
 
 export interface StudyGroup {
@@ -36,7 +37,6 @@ export function useMyGroups() {
   const [groups, setGroups] = useState<StudyGroup[]>([]);
   const [memberships, setMemberships] = useState<GroupMember[]>([]);
   const [loading, setLoading] = useState(true);
-  const instanceId = useId();
 
   const refresh = useCallback(async () => {
     if (!user) {
@@ -68,18 +68,27 @@ export function useMyGroups() {
   useEffect(() => {
     refresh();
     if (!user) return;
-    const channel = supabase
-      .channel(`my-groups-${user.id}-${instanceId}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'group_members', filter: `user_id=eq.${user.id}` },
-        () => refresh()
-      )
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, refresh, instanceId]);
+    return onUserEvent(user.id, 'group_members', payload => {
+      const row = payload.new as unknown as GroupMember;
+      const old = payload.old as { id?: string; user_id?: string; group_id?: string };
+      if (payload.eventType !== 'DELETE' && row.user_id !== user.id) return;
+      // DELETE payloads may contain only the primary key; match existing memberships by id.
+      const id = old?.id ?? row?.id;
+      if (!id) return;
+      setMemberships(prev => {
+        const existing = prev.find(m => m.id === id);
+        if (payload.eventType === 'DELETE' && !existing) return prev;
+        if (payload.eventType !== 'DELETE' && !existing) {
+          void supabase.from('study_groups').select('*').eq('id', row.group_id).maybeSingle()
+            .then(({ data }) => { if (data) setGroups(groups => [data as StudyGroup, ...groups.filter(g => g.id !== data.id)]); });
+        }
+        if (payload.eventType === 'DELETE' && existing) {
+          setGroups(groups => groups.filter(g => g.id !== existing.group_id));
+        }
+        return payload.eventType === 'DELETE' ? prev.filter(m => m.id !== id) : [...prev.filter(m => m.id !== id), row];
+      });
+    });
+  }, [user?.id, refresh]);
 
   return { groups, memberships, loading, refresh };
 }
