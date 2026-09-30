@@ -7,7 +7,8 @@
 - [ ] Verify authorization, typecheck, build, and key user flows
 
 # Realtime scaling
-- [ ] Apply Realtime row changes locally for feed, friendships, groups, and member lists
-- [ ] Share one user-events subscription across user-facing hooks
-- [ ] Replace study-presence writes and reads with group and friend Realtime Presence
-- [ ] Pause the safety refresh while hidden; verify existing displays and flows
+- [x] Apply Realtime row changes locally for feed, friendships, groups, and member lists
+- [x] Share one user-events subscription across user-facing hooks
+- [x] Replace study-presence writes and reads with group and friend Realtime Presence
+- [x] Pause the safety refresh while hidden
+- [ ] Verify live presence with two authenticated users (requires two active users in a shared study group)
