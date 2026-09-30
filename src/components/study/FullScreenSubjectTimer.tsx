@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown, ChevronRight, Pause, Play, Square, Users } from 'lucide-react';
@@ -17,6 +17,7 @@ import {
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { useNow } from '@/hooks/use-now';
 import { fmtHMS } from '@/components/home/SubjectBoard';
+import { applyMemberEvent, type MemberPair } from '@/lib/member-events';
 
 interface Props {
   subjectName: string;
@@ -55,12 +56,11 @@ export function FullScreenSubjectTimer({
   const { user } = useAuth();
   const navigate = useNavigate();
   const now = useNow(1000);
-  const instanceId = useId();
   const [tab, setTab] = useState<'mine' | 'all'>('mine');
 
   const { groups } = useMyGroups();
   const { friends, profiles: friendProfiles } = useFriends();
-  const [membersByGroup, setMembersByGroup] = useState<Record<string, string[]>>({});
+  const [memberRows, setMemberRows] = useState<MemberPair[]>([]);
   const [profiles, setProfiles] = useState<Record<string, MemberProfile>>({});
   const [publicGroups, setPublicGroups] = useState<StudyGroup[]>([]);
 
@@ -69,15 +69,11 @@ export function FullScreenSubjectTimer({
   const loadMembers = useCallback(async () => {
     const ids = groupIds ? groupIds.split(',') : [];
     if (ids.length === 0) {
-      setMembersByGroup({});
+      setMemberRows([]);
       return;
     }
-    const { data } = await supabase.from('group_members').select('group_id, user_id').in('group_id', ids);
-    const map: Record<string, string[]> = {};
-    (data ?? []).forEach(m => {
-      (map[m.group_id] ??= []).push(m.user_id);
-    });
-    setMembersByGroup(map);
+    const { data } = await supabase.from('group_members').select('id, group_id, user_id').in('group_id', ids);
+    setMemberRows(data ?? []);
     const profs = await fetchProfiles(Array.from(new Set((data ?? []).map(m => m.user_id))));
     setProfiles(prev => ({ ...prev, ...profs }));
   }, [groupIds]);
@@ -87,13 +83,24 @@ export function FullScreenSubjectTimer({
     loadMembers();
     if (!groupIds) return;
     const channel = supabase
-      .channel(`session-room-members-${instanceId}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, () => loadMembers())
+      .channel(`session-room-members-${groupIds}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, payload => {
+        const row = payload.new as MemberPair;
+        setMemberRows(prev => applyMemberEvent(prev, payload, new Set(groupIds.split(','))));
+        if (payload.eventType !== 'DELETE' && row?.user_id) {
+          void fetchProfiles([row.user_id]).then(found => setProfiles(prev => ({ ...prev, ...found })));
+        }
+      })
       .subscribe();
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [groupIds, loadMembers, instanceId]);
+  }, [groupIds, loadMembers]);
+
+  const membersByGroup = useMemo(() => memberRows.reduce<Record<string, string[]>>((map, row) => {
+    (map[row.group_id] ??= []).push(row.user_id);
+    return map;
+  }, {}), [memberRows]);
 
   useEffect(() => {
     if (tab !== 'all' || publicGroups.length) return;
