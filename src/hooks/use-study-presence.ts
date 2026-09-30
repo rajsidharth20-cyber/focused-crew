@@ -17,7 +17,7 @@ export const isLive = (p?: PresenceRow | null) =>
 
 type StudyState = Omit<PresenceRow, 'user_id'>;
 const states = new Map<string, StudyState>();
-const activeChannels = new Map<string, Set<{ track: (state: StudyState) => Promise<unknown> }>>();
+const activeChannels = new Map<string, { rooms: string; count: number; channels: Set<{ track: (state: StudyState) => Promise<unknown> }> ; close: () => void }>();
 const sources = new Map<string, Map<string, StudyState>>();
 
 export function publishStudyPresence(input: {
@@ -32,7 +32,7 @@ export function publishStudyPresence(input: {
     updated_at: new Date().toISOString(),
   };
   states.set(input.userId, state);
-  activeChannels.get(input.userId)?.forEach(channel => { void channel.track(state); });
+  activeChannels.get(input.userId)?.channels.forEach(channel => { void channel.track(state); });
   return Promise.resolve();
 }
 
@@ -44,10 +44,18 @@ export function useBroadcastStudyPresence(running: boolean, mode: string, topic?
   const ids = groups.map(g => g.id).sort().join(',');
   useEffect(() => {
     if (!user || isGuest) return;
+    const existing = activeChannels.get(user.id);
+    if (existing?.rooms === ids) {
+      existing.count++;
+      return () => { existing.count--; if (!existing.count) { existing.close(); activeChannels.delete(user.id); } };
+    }
+    existing?.close();
     const channels = [...(ids ? ids.split(',') : []).map(id => `study:group:${id}`), `study:user:${user.id}`]
       .map(name => supabase.channel(name, { config: { presence: { key: user.id } } }));
     const trackers = new Set(channels);
-    activeChannels.set(user.id, trackers);
+    const record = { rooms: ids, count: 1, channels: trackers,
+      close: () => channels.forEach(channel => { void supabase.removeChannel(channel); }) };
+    activeChannels.set(user.id, record);
     for (const channel of channels) {
       channel.subscribe(status => {
         if (status === 'SUBSCRIBED') {
@@ -58,8 +66,11 @@ export function useBroadcastStudyPresence(running: boolean, mode: string, topic?
       });
     }
     return () => {
-      if (activeChannels.get(user.id) === trackers) activeChannels.delete(user.id);
-      channels.forEach(channel => { void supabase.removeChannel(channel); });
+      record.count--;
+      if (record.count === 0 && activeChannels.get(user.id) === record) {
+        activeChannels.delete(user.id);
+        record.close();
+      }
     };
   }, [user?.id, isGuest, ids]);
 
