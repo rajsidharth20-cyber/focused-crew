@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, createContext, useContext, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef, createContext, useContext, type ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
@@ -77,12 +77,30 @@ export interface AgendaDateData {
   events: PlannerEvent[];
 }
 
+const OBJECTIVE_COLUMNS = 'id, subject_id, task, estimated_minutes, completed, progress_notes, date, deadline, priority, recurring_days, is_template, template_id, skipped';
+const COMMITMENT_COLUMNS = 'id, title, start_time, end_time, type, date, recurring_days';
+const EVENT_COLUMNS = 'id, title, event_date, start_time, end_time, description, recurring_days';
+
+const mapObjective = (o: any): DailyObjective => ({
+  id: o.id, subjectId: o.subject_id, task: o.task,
+  estimatedMinutes: o.estimated_minutes, completed: o.completed,
+  progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
+  priority: (o.priority || 'medium') as Priority,
+  recurringDays: o.recurring_days ?? null, isTemplate: !!o.is_template,
+  templateId: o.template_id ?? null, skipped: !!o.skipped,
+});
+
 function usePlannerStoreInternal() {
   const { user, isGuest } = useAuth();
   const [subjects, setSubjects] = useState<Subject[]>([]);
   const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>([]);
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyError, setHistoryError] = useState(false);
+  const historyCache = useRef<{ userId: string; promise: Promise<DailyObjective[]> } | null>(null);
+  const activeUserId = useRef(user?.id);
+  activeUserId.current = user?.id;
   const [objectiveTemplates, setObjectiveTemplates] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
   const [commitments, setCommitments] = useState<Commitment[]>([]);
@@ -165,22 +183,19 @@ function usePlannerStoreInternal() {
     }
 
     const fetchAll = async () => {
-      const [sRes, wtRes, doRes, cRes, pastDoRes, pastWtRes, evRes, tplRes] = await Promise.all([
+      const [sRes, wtRes, doRes, cRes, pastWtRes, evRes, tplRes] = await Promise.all([
 
-        supabase.from('subjects').select('*').eq('user_id', user.id),
-        supabase.from('weekly_targets').select('*').eq('user_id', user.id)
+        supabase.from('subjects').select('id, name, color, sort_order').eq('user_id', user.id),
+        supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today).eq('is_template', false),
+        supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('date', today).eq('is_template', false),
         // Today's dated stops + every recurring stop (the UI filters by day/range).
-        supabase.from('commitments').select('*').eq('user_id', user.id)
+        supabase.from('commitments').select(COMMITMENT_COLUMNS).eq('user_id', user.id)
           .or(`date.eq.${today},recurring_days.not.is.null`),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).lt('date', today)
-          .gte('date', new Date(Date.parse(today + 'T00:00:00') - 90 * 86400000).toISOString().slice(0, 10))
-          .eq('is_template', false).order('date', { ascending: false }).limit(500),
-        supabase.from('weekly_targets').select('*').eq('user_id', user.id).lt('deadline', today),
-        supabase.from('events').select('*').eq('user_id', user.id)
+        supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline').eq('user_id', user.id).lt('deadline', today),
+        supabase.from('events').select(EVENT_COLUMNS).eq('user_id', user.id)
           .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
-        supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('is_template', true),
+        supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('is_template', true),
       ]);
 
       setSubjects((sRes.data ?? [])
@@ -193,22 +208,11 @@ function usePlannerStoreInternal() {
       setWeeklyTargets((wtRes.data ?? []).map(mapWT));
       setPastWeeklyTargets((pastWtRes.data ?? []).map(mapWT));
 
-      const mapDO = (o: any): DailyObjective => ({
-        id: o.id, subjectId: o.subject_id, task: o.task,
-        estimatedMinutes: o.estimated_minutes, completed: o.completed,
-        progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
-        priority: (o.priority || 'medium') as Priority,
-        recurringDays: o.recurring_days ?? null,
-        isTemplate: !!o.is_template,
-        templateId: o.template_id ?? null,
-        skipped: !!o.skipped,
-      });
-
       // Recurring objectives: create today's copy for each template that matches today.
-      const templates = (tplRes.data ?? []).map(mapDO);
+      const templates = (tplRes.data ?? []).map(mapObjective);
       setObjectiveTemplates(templates);
       const todayDow = new Date(today + 'T00:00:00').getDay();
-      const todayAll = (doRes.data ?? []).map(mapDO).filter(o => !o.isTemplate);
+      const todayAll = (doRes.data ?? []).map(mapObjective).filter(o => !o.isTemplate);
       const todaysRows = todayAll.filter(o => !o.skipped);
       const missing = templates.filter(t =>
         t.recurringDays?.includes(todayDow) && !todayAll.some(o => o.templateId === t.id),
@@ -227,18 +231,18 @@ function usePlannerStoreInternal() {
               priority: t.priority, progress_notes: [], template_id: t.id, is_template: false,
             })),
           )
-          .select();
+          .select(OBJECTIVE_COLUMNS);
         if (insertErr) {
           if (insertErr.code === '23505') {
             const { data: refetched } = await supabase
-              .from('daily_objectives').select('*').eq('user_id', user.id).eq('date', today).eq('is_template', false);
+              .from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('date', today).eq('is_template', false);
             todaysRows.length = 0;
-            (refetched ?? []).map(mapDO).filter(o => !o.skipped).forEach(o => todaysRows.push(o));
+            (refetched ?? []).map(mapObjective).filter(o => !o.skipped).forEach(o => todaysRows.push(o));
           } else {
             console.error('Failed to materialise recurring objectives', insertErr);
           }
         } else {
-          (created ?? []).forEach((r: any) => todaysRows.push(mapDO(r)));
+          (created ?? []).forEach((r: any) => todaysRows.push(mapObjective(r)));
         }
       }
       // Safety net: never show the same recurring task twice on one day.
@@ -250,7 +254,6 @@ function usePlannerStoreInternal() {
         return true;
       });
       setDailyObjectives(deduped);
-      setPastObjectives((pastDoRes.data ?? []).map(mapDO).filter(o => !o.isTemplate));
 
       const nextCommitments = (cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
@@ -284,6 +287,40 @@ function usePlannerStoreInternal() {
 
     fetchAll();
   }, [user, isGuest, today, getGuestData]);
+
+  // History is fetched only when the history list or weekly report actually needs it.
+  // Share an in-flight request so opening history and exporting at once never doubles it.
+  const loadPastObjectives = useCallback(async (): Promise<DailyObjective[]> => {
+    if (isGuest) return ((getGuestData().dailyObjectives || []) as DailyObjective[])
+      .filter(o => !o.isTemplate && o.date < today && !o.skipped);
+    if (!user) return [];
+    if (historyCache.current?.userId === user.id) return historyCache.current.promise;
+    setHistoryLoading(true);
+    setHistoryError(false);
+    const userId = user.id;
+    const promise = (async () => {
+      const start = new Date(`${today}T12:00:00`);
+      start.setDate(start.getDate() - 90);
+      const from = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}-${String(start.getDate()).padStart(2, '0')}`;
+      const { data, error } = await supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS)
+        .eq('user_id', userId).lt('date', today).gte('date', from)
+        .eq('is_template', false).order('date', { ascending: false }).limit(500);
+      if (error) throw error;
+      const rows = (data ?? []).map(mapObjective).filter(o => !o.skipped);
+      if (activeUserId.current === userId) setPastObjectives(rows);
+      return rows;
+    })();
+    historyCache.current = { userId, promise };
+    try {
+      return await promise;
+    } catch (error) {
+      if (historyCache.current?.promise === promise) historyCache.current = null;
+      if (activeUserId.current === userId) setHistoryError(true);
+      throw error;
+    } finally {
+      if (activeUserId.current === userId) setHistoryLoading(false);
+    }
+  }, [isGuest, user, today, getGuestData]);
 
   const addSubject = useCallback(async (name: string, color?: string) => {
     const pick = color || SUBJECT_COLORS[Math.floor(Math.random() * SUBJECT_COLORS.length)];
@@ -755,20 +792,12 @@ function usePlannerStoreInternal() {
 
     if (!user) return { objectives: [], commitments: [], events: [] };
     const [objectiveRows, commitmentRows, eventRows] = await Promise.all([
-      supabase.from('daily_objectives').select('*').eq('user_id', user.id).eq('date', date).eq('is_template', false),
-      supabase.from('commitments').select('*').eq('user_id', user.id).or(`date.eq.${date},recurring_days.not.is.null`),
-      supabase.from('events').select('*').eq('user_id', user.id).or(`event_date.eq.${date},recurring_days.not.is.null`),
+      supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('date', date).eq('is_template', false),
+      supabase.from('commitments').select(COMMITMENT_COLUMNS).eq('user_id', user.id).or(`date.eq.${date},recurring_days.not.is.null`),
+      supabase.from('events').select(EVENT_COLUMNS).eq('user_id', user.id).or(`event_date.eq.${date},recurring_days.not.is.null`),
     ]);
     const firstError = objectiveRows.error || commitmentRows.error || eventRows.error;
     if (firstError) throw firstError;
-    const mapObjective = (o: any): DailyObjective => ({
-      id: o.id, subjectId: o.subject_id, task: o.task,
-      estimatedMinutes: o.estimated_minutes, completed: o.completed,
-      progressNotes: o.progress_notes ?? [], date: o.date, deadline: o.deadline,
-      priority: (o.priority || 'medium') as Priority,
-      recurringDays: o.recurring_days ?? null, isTemplate: !!o.is_template,
-      templateId: o.template_id ?? null, skipped: !!o.skipped,
-    });
     return {
       objectives: mergeObjectives((objectiveRows.data ?? []).map(mapObjective), objectiveTemplates),
       commitments: (commitmentRows.data ?? []).map((c: any) => ({
@@ -788,6 +817,9 @@ function usePlannerStoreInternal() {
     pastWeeklyTargets,
     dailyObjectives,
     pastObjectives,
+    historyLoading,
+    historyError,
+    loadPastObjectives,
     objectiveTemplates,
     commitments,
     protocols,
