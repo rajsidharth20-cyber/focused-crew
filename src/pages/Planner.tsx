@@ -102,6 +102,7 @@ const Planner = () => {
             subjects={store.subjects}
             targets={store.weeklyTargets}
             pastTargets={store.pastWeeklyTargets}
+            onLoadHistory={store.loadPastWeeklyTargets}
             onAdd={store.addWeeklyTarget}
             onToggle={store.toggleWeeklyTarget}
             onRemove={store.removeWeeklyTarget}

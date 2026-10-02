@@ -99,6 +99,7 @@ function usePlannerStoreInternal() {
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
   const historyCache = useRef<{ userId: string; promise: Promise<DailyObjective[]> } | null>(null);
+  const weeklyHistoryCache = useRef<{ userId: string; promise: Promise<WeeklyTarget[]> } | null>(null);
   const activeUserId = useRef(user?.id);
   activeUserId.current = user?.id;
   const [objectiveTemplates, setObjectiveTemplates] = useState<DailyObjective[]>([]);
@@ -183,7 +184,7 @@ function usePlannerStoreInternal() {
     }
 
     const fetchAll = async () => {
-      const [sRes, wtRes, doRes, cRes, pastWtRes, evRes, tplRes] = await Promise.all([
+      const [sRes, wtRes, doRes, cRes, evRes, tplRes] = await Promise.all([
 
         supabase.from('subjects').select('id, name, color, sort_order').eq('user_id', user.id),
         supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline').eq('user_id', user.id)
@@ -192,7 +193,6 @@ function usePlannerStoreInternal() {
         // Today's dated stops + every recurring stop (the UI filters by day/range).
         supabase.from('commitments').select(COMMITMENT_COLUMNS).eq('user_id', user.id)
           .or(`date.eq.${today},recurring_days.not.is.null`),
-        supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline').eq('user_id', user.id).lt('deadline', today),
         supabase.from('events').select(EVENT_COLUMNS).eq('user_id', user.id)
           .or(`event_date.gte.${today},recurring_days.not.is.null`).order('event_date', { ascending: true, nullsFirst: false }),
         supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('is_template', true),
@@ -206,7 +206,6 @@ function usePlannerStoreInternal() {
         id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
       });
       setWeeklyTargets((wtRes.data ?? []).map(mapWT));
-      setPastWeeklyTargets((pastWtRes.data ?? []).map(mapWT));
 
       // Recurring objectives: create today's copy for each template that matches today.
       const templates = (tplRes.data ?? []).map(mapObjective);
@@ -321,6 +320,29 @@ function usePlannerStoreInternal() {
       if (activeUserId.current === userId) setHistoryLoading(false);
     }
   }, [isGuest, user, today, getGuestData]);
+
+  const loadPastWeeklyTargets = useCallback(async (): Promise<WeeklyTarget[]> => {
+    if (isGuest || !user) return pastWeeklyTargets;
+    if (weeklyHistoryCache.current?.userId === user.id) return weeklyHistoryCache.current.promise;
+    const userId = user.id;
+    const promise = (async () => {
+      const { data, error } = await supabase.from('weekly_targets')
+        .select('id, subject_id, target, completed, deadline').eq('user_id', userId).lt('deadline', today);
+      if (error) throw error;
+      const rows = (data ?? []).map(t => ({
+        id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
+      }));
+      if (activeUserId.current === userId) setPastWeeklyTargets(rows);
+      return rows;
+    })();
+    weeklyHistoryCache.current = { userId, promise };
+    try {
+      return await promise;
+    } catch (error) {
+      if (weeklyHistoryCache.current?.promise === promise) weeklyHistoryCache.current = null;
+      throw error;
+    }
+  }, [isGuest, user, today, pastWeeklyTargets]);
 
   const addSubject = useCallback(async (name: string, color?: string) => {
     const pick = color || SUBJECT_COLORS[Math.floor(Math.random() * SUBJECT_COLORS.length)];
@@ -820,6 +842,7 @@ function usePlannerStoreInternal() {
     historyLoading,
     historyError,
     loadPastObjectives,
+    loadPastWeeklyTargets,
     objectiveTemplates,
     commitments,
     protocols,
