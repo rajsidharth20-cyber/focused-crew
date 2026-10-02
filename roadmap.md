@@ -17,4 +17,4 @@
 - [x] Defer objective and expired-target history until requested in Planner or weekly report
 - [x] Load PDF rendering only when exporting
 - [x] Select only displayed planner columns on initial and calendar reads
-- [ ] Verify boot, history, calendar, and PDF exports
+- [x] Verify boot, history, calendar, and PDF exports
