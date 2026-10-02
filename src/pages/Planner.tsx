@@ -73,6 +73,9 @@ const Planner = () => {
             subjects={store.subjects}
             objectives={store.dailyObjectives}
             pastObjectives={store.pastObjectives}
+            historyLoading={store.historyLoading}
+            historyError={store.historyError}
+            onLoadHistory={store.loadPastObjectives}
             onAdd={store.addDailyObjective}
             onToggle={store.toggleDailyObjective}
             onAddNote={store.addProgressNote}
@@ -99,6 +102,7 @@ const Planner = () => {
             subjects={store.subjects}
             targets={store.weeklyTargets}
             pastTargets={store.pastWeeklyTargets}
+            onLoadHistory={store.loadPastWeeklyTargets}
             onAdd={store.addWeeklyTarget}
             onToggle={store.toggleWeeklyTarget}
             onRemove={store.removeWeeklyTarget}

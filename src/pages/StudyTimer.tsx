@@ -77,6 +77,7 @@ const StudyTimer = () => {
     setDownloadingReport(true);
     const t = toast.loading('Building your weekly report…');
     try {
+      const pastObjectives = await planner.loadPastObjectives();
       const { generateWeeklyReportPDF } = await import('@/lib/weekly-report-pdf');
       await generateWeeklyReportPDF({
         username,
@@ -84,7 +85,7 @@ const StudyTimer = () => {
         tags: study.tags,
         subjects: planner.subjects,
         dailyObjectives: planner.dailyObjectives,
-        pastObjectives: planner.pastObjectives,
+        pastObjectives,
       });
       toast.success('Weekly report downloaded', { id: t });
     } catch (e) {

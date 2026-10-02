@@ -1,4 +1,4 @@
-import { jsPDF } from 'jspdf';
+import type { jsPDF } from 'jspdf';
 import { BRAND_LOGO_DATA_URL } from './brand-logo';
 
 /* ------------------------------------------------------------------ *
@@ -50,7 +50,8 @@ export const fmtMin = (m: number | null | undefined) => {
   return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`;
 };
 
-export function buildDailyReport(data: ReportData): jsPDF {
+export async function buildDailyReport(data: ReportData): Promise<jsPDF> {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'pt', format: 'a4' });
   const W = doc.internal.pageSize.getWidth();
   const H = doc.internal.pageSize.getHeight();

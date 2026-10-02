@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import { BRAND_LOGO_DATA_URL } from './brand-logo';
 import type { StudySession, StudyTag } from '@/hooks/use-study-store';
 import type { Subject, DailyObjective } from '@/hooks/use-planner-store';
@@ -104,6 +103,7 @@ function aggregate(input: ReportInput) {
 
 // --------- PDF ---------
 export async function generateWeeklyReportPDF(input: ReportInput): Promise<void> {
+  const { jsPDF } = await import('jspdf');
   const { username, sessions, tags, subjects } = input;
   const subjectName = (id: string) => subjects.find(s => s.id === id)?.name ?? 'Unknown';
   const tagInfo = (id: string) => tags.find(t => t.id === id);

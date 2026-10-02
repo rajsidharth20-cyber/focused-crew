@@ -8,6 +8,9 @@ interface DailyObjectivesProps {
   subjects: Subject[];
   objectives: DailyObjective[];
   pastObjectives: DailyObjective[];
+  historyLoading?: boolean;
+  historyError?: boolean;
+  onLoadHistory?: () => Promise<DailyObjective[]>;
   onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string, recurringDays?: number[]) => void;
   templates?: DailyObjective[];
   onRemoveTemplate?: (id: string) => void;
@@ -51,7 +54,7 @@ const formatTimestamp = (iso: string) => {
   });
 };
 
-export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onUpdate, onRemove, onCarryForward, templates = [], onRemoveTemplate }: DailyObjectivesProps) {
+export function DailyObjectives({ subjects, objectives, pastObjectives, historyLoading, historyError, onLoadHistory, onAdd, onToggle, onAddNote, onUpdateNotes, onUpdatePriority, onUpdate, onRemove, onCarryForward, templates = [], onRemoveTemplate }: DailyObjectivesProps) {
   const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [task, setTask] = useState('');
@@ -63,6 +66,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
   const [activeNote, setActiveNote] = useState<string | null>(null);
   const [noteInput, setNoteInput] = useState('');
   const [showPast, setShowPast] = useState(false);
+  const [historyRequested, setHistoryRequested] = useState(false);
   const [carryForwardId, setCarryForwardId] = useState<string | null>(null);
   const [carryForwardDate, setCarryForwardDate] = useState('');
   const [editingNoteIdx, setEditingNoteIdx] = useState<{ id: string; idx: number } | null>(null);
@@ -591,14 +595,20 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
         <p className="text-sm text-muted-foreground text-center py-4">{t.dailyEmpty}</p>
       )}
 
-      {pastObjectives.length > 0 && (
+      {(onLoadHistory || pastObjectives.length > 0) && (
         <div className="mt-4 border-t border-border/50 pt-4">
           <button
-            onClick={() => setShowPast(!showPast)}
+            onClick={() => {
+              if (!showPast && onLoadHistory && (!historyRequested || historyError)) {
+                setHistoryRequested(true);
+                void onLoadHistory().catch(() => {});
+              }
+              setShowPast(!showPast);
+            }}
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            {t.history} ({pastObjectives.length})
+            {t.history}{historyRequested && !historyLoading && !historyError ? ` (${pastObjectives.length})` : ''}
           </button>
           <AnimatePresence>
             {showPast && (
@@ -608,7 +618,7 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, onAdd, o
                 exit={{ height: 0, opacity: 0 }}
                 className="space-y-2"
               >
-                {pastObjectives.map(o => renderObjective(o, true))}
+                {historyLoading ? <p className="text-xs text-muted-foreground">Loading…</p> : historyError ? <p className="text-xs text-destructive">Could not load history. Tap History to try again.</p> : pastObjectives.map(o => renderObjective(o, true))}
               </motion.div>
             )}
           </AnimatePresence>

@@ -8,17 +8,19 @@ interface WeeklyTargetsProps {
   subjects: Subject[];
   targets: WeeklyTarget[];
   pastTargets: WeeklyTarget[];
+  onLoadHistory?: () => Promise<WeeklyTarget[]>;
   onAdd: (subjectId: string, target: string, deadline?: string) => void;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
 }
 
-export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle, onRemove }: WeeklyTargetsProps) {
+export function WeeklyTargets({ subjects, targets, pastTargets, onLoadHistory, onAdd, onToggle, onRemove }: WeeklyTargetsProps) {
   const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [input, setInput] = useState('');
   const [deadline, setDeadline] = useState('');
   const [showPast, setShowPast] = useState(false);
+  const [historyRequested, setHistoryRequested] = useState(false);
 
   const handleAdd = () => {
     if (subjectId && input.trim()) {
@@ -115,14 +117,20 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onAdd, onToggle,
         )}
       </div>
 
-      {pastTargets.length > 0 && (
+      {(onLoadHistory || pastTargets.length > 0) && (
         <div className="mt-4 border-t border-border/50 pt-4">
           <button
-            onClick={() => setShowPast(!showPast)}
+            onClick={() => {
+              if (!showPast && onLoadHistory && !historyRequested) {
+                setHistoryRequested(true);
+                void onLoadHistory().catch(() => setHistoryRequested(false));
+              }
+              setShowPast(!showPast);
+            }}
             className="flex items-center gap-2 text-xs font-display font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors mb-2"
           >
             <History className="w-3.5 h-3.5" />
-            {t.history} ({pastTargets.length})
+            {t.history}{historyRequested ? ` (${pastTargets.length})` : ''}
           </button>
           <AnimatePresence>
             {showPast && (

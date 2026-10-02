@@ -321,7 +321,7 @@ export async function generateDailySummaryPDF(input: SummaryInput): Promise<void
     oneThing,
   };
 
-  const doc = buildDailyReport(report);
+  const doc = await buildDailyReport(report);
   doc.save(`focused-crew-daily-report-${today}.pdf`);
 
   /* ---------------- helpers ---------------- */
