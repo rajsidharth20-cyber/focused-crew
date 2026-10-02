@@ -12,3 +12,9 @@
 - [x] Replace study-presence writes and reads with group and friend Realtime Presence
 - [x] Pause the safety refresh while hidden
 - [ ] Verify live presence with two authenticated users (requires two active users in a shared study group)
+
+# Loading performance
+- [x] Defer objective history until requested in Planner or weekly report
+- [x] Load PDF rendering only when exporting
+- [x] Select only displayed planner columns on initial and calendar reads
+- [ ] Verify boot, history, calendar, and PDF exports
