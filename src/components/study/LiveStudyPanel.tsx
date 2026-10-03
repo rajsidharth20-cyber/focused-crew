@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups, fetchProfiles, memberName, type MemberProfile } from '@/hooks/use-study-groups';
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { applyMemberEvent, type MemberPair } from '@/lib/member-events';
+import { onUserEvent } from '@/lib/user-events';
 
 const minutesSince = (since?: string | null) => {
   if (!since) return 0;
@@ -40,22 +41,16 @@ export function LiveStudyPanel() {
 
   useEffect(() => {
     loadMembers();
-    if (!groupIds) return;
+    if (!groupIds || !user) return;
     // Keep the member list in sync when people join or leave a group.
-    const channel = supabase
-      .channel(`live-study-members-${groupIds}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, payload => {
+    return onUserEvent(user.id, 'group_members', payload => {
         const row = payload.new as MemberPair;
         setMemberRows(prev => applyMemberEvent(prev, payload, new Set(groupIds.split(','))));
-        if (payload.eventType !== 'DELETE' && row?.user_id) {
+        if (payload.eventType !== 'DELETE' && row?.user_id && groupIds.split(',').includes(row.group_id)) {
           void fetchProfiles([row.user_id]).then(found => setProfiles(prev => ({ ...prev, ...found })));
         }
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [groupIds, loadMembers]);
+    });
+  }, [groupIds, loadMembers, user?.id]);
 
   const membersByGroup = useMemo(() => memberRows.reduce<Record<string, string[]>>((map, row) => {
     (map[row.group_id] ??= []).push(row.user_id);

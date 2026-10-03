@@ -10,6 +10,7 @@ import { useMyGroups, fetchProfiles, memberName, type MemberProfile } from '@/ho
 import { useLiveStudy } from '@/hooks/use-live-study';
 import { useNow } from '@/hooks/use-now';
 import { applyMemberEvent, type MemberPair } from '@/lib/member-events';
+import { onUserEvent } from '@/lib/user-events';
 
 const fmtClock = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -49,21 +50,15 @@ export function StudyingNowSection() {
 
   useEffect(() => {
     loadMembers();
-    if (!groupIds) return;
-    const channel = supabase
-      .channel(`home-live-members-${groupIds}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'group_members' }, payload => {
+    if (!groupIds || !user) return;
+    return onUserEvent(user.id, 'group_members', payload => {
         const row = payload.new as MemberPair;
         setMemberRows(prev => applyMemberEvent(prev, payload, new Set(groupIds.split(','))));
-        if (payload.eventType !== 'DELETE' && row?.user_id) {
+        if (payload.eventType !== 'DELETE' && row?.user_id && groupIds.split(',').includes(row.group_id)) {
           void fetchProfiles([row.user_id]).then(found => setGroupProfiles(prev => ({ ...prev, ...found })));
         }
-      })
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [groupIds, loadMembers]);
+    });
+  }, [groupIds, loadMembers, user?.id]);
 
   const groupMemberIds = useMemo(() => Array.from(new Set(memberRows.map(m => m.user_id))), [memberRows]);
 
