@@ -1876,6 +1876,16 @@ export type Database = {
           read_count: number
         }[]
       }
+      apply_focusbot_moderation: {
+        Args: {
+          _classification: string
+          _confidence: number
+          _message_id: string
+          _reason: string
+        }
+        Returns: Json
+      }
+      assert_chat_access: { Args: { _group_id?: string }; Returns: undefined }
       consume_rate_limit: {
         Args: { _action: string; _limit: number; _window_seconds: number }
         Returns: boolean
@@ -1900,6 +1910,10 @@ export type Database = {
       set_group_message_pinned: {
         Args: { _message_id: string; _pinned: boolean }
         Returns: undefined
+      }
+      submit_focusbot_report: {
+        Args: { _group_id: string; _message_id: string; _reason?: string }
+        Returns: Json
       }
       suggest_usernames: {
         Args: { _base?: string }
