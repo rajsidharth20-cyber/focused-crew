@@ -278,6 +278,7 @@ const Index = () => {
                     objectives={store.dailyObjectives}
                     onToggle={store.toggleDailyObjective}
                     onCancelToday={store.removeDailyObjective}
+                    onAddNote={store.addProgressNote}
                   />
                 )}
               </div>
