@@ -185,6 +185,25 @@ export function TodayObjectiveList({ subjects, objectives, onToggle, onCancelTod
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <Dialog open={!!noteFor} onOpenChange={v => !v && setNoteFor(null)}>
+        <DialogContent className="max-w-sm rounded-3xl">
+          <DialogHeader>
+            <DialogTitle>Note for today</DialogTitle>
+            <DialogDescription>Saved only on today’s “{noteFor?.task}”. Other days stay unchanged.</DialogDescription>
+          </DialogHeader>
+          {noteFor && noteFor.progressNotes.length > 0 && (
+            <ul className="max-h-32 space-y-1 overflow-y-auto text-[12px] text-muted-foreground">
+              {noteFor.progressNotes.map((n, i) => <li key={i} className="rounded-lg bg-secondary/40 px-2 py-1">{noteText(n)}</li>)}
+            </ul>
+          )}
+          <Textarea value={note} onChange={e => setNote(e.target.value)} maxLength={1000} rows={3} placeholder="What did you cover today?" autoFocus />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setNoteFor(null)}>Cancel</Button>
+            <Button onClick={saveNote} disabled={saving || !note.trim()}>Save note</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </section>
   );
 }
