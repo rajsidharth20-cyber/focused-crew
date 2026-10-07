@@ -251,10 +251,6 @@ export default function GroupChat() {
     const content = text.trim();
     const reportMatch = content.match(/^(?:@focusbot\s+report|\/report)\b([\s\S]*)/i);
     if (reportMatch) {
-      if (!botEnabled) {
-        toast.error('FocusBot must be enabled to report a message.');
-        return;
-      }
       if (!replyTo) {
         toast.error('Reply to the message you want to report.');
         return;
