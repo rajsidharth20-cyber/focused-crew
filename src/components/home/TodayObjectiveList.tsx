@@ -132,8 +132,23 @@ export function TodayObjectiveList({ subjects, objectives, onToggle, onCancelTod
                       {[subjectName(o.subjectId), `${o.estimatedMinutes}m`].filter(Boolean).join(' · ')}
                     </span>
                   </div>
+                  {o.templateId && o.progressNotes.length > 0 && (
+                    <p className="mt-0.5 truncate text-[11px] text-muted-foreground">
+                      📝 {noteText(o.progressNotes[o.progressNotes.length - 1])}
+                      {o.progressNotes.length > 1 && ` (+${o.progressNotes.length - 1})`}
+                    </p>
+                  )}
                 </div>
                 <span className={`h-2 w-2 shrink-0 rounded-full ${priorityTint[o.priority] ?? priorityTint.low}`} />
+                {onAddNote && o.templateId && (
+                  <button
+                    onClick={() => { setNote(''); setNoteFor(o); }}
+                    aria-label={`Add a note to "${o.task}" for today`}
+                    className="press grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  >
+                    <StickyNote className="h-3.5 w-3.5" />
+                  </button>
+                )}
                 {onCancelToday && (
                   <button
                     onClick={() => setPending(o)}
