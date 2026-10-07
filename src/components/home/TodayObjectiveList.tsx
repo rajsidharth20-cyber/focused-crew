@@ -1,12 +1,16 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Check, ChevronRight, ListChecks, Pencil, Repeat, X } from 'lucide-react';
+import { Check, ChevronRight, ListChecks, Pencil, Repeat, StickyNote, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import type { DailyObjective, Subject } from '@/hooks/use-planner-store';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { toast } from 'sonner';
 
 interface Props {
   subjects: Subject[];
@@ -14,6 +18,8 @@ interface Props {
   onToggle: (id: string) => void;
   /** Cancels the objective for today only (recurring series stay intact). */
   onCancelToday?: (id: string) => void;
+  /** Adds a note to today's copy of a recurring objective. */
+  onAddNote?: (id: string, note: string) => Promise<void> | void;
 }
 
 const priorityTint: Record<string, string> = {
@@ -22,13 +28,36 @@ const priorityTint: Record<string, string> = {
   low: 'bg-muted-foreground/60',
 };
 
-/** Read-only view of today's objectives. Adding & editing happens in the Planner. */
-export function TodayObjectiveList({ subjects, objectives, onToggle, onCancelToday }: Props) {
+const noteText = (raw: string) => {
+  try { return (JSON.parse(raw) as { text?: string }).text ?? raw; } catch { return raw; }
+};
+
+/** Today's objectives. Editing happens in the Planner; recurring tasks take day notes here. */
+export function TodayObjectiveList({ subjects, objectives, onToggle, onCancelToday, onAddNote }: Props) {
   const subjectName = (id: string) => subjects.find(s => s.id === id)?.name ?? '';
   const done = objectives.filter(o => o.completed).length;
   const total = objectives.length;
   const pct = total ? Math.round((done / total) * 100) : 0;
   const [pending, setPending] = useState<DailyObjective | null>(null);
+  const [noteFor, setNoteFor] = useState<DailyObjective | null>(null);
+  const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const saveNote = async () => {
+    const text = note.trim().slice(0, 1000);
+    if (!noteFor || !text || !onAddNote) return;
+    setSaving(true);
+    try {
+      await onAddNote(noteFor.id, text);
+      toast.success('Note added for today');
+      setNote('');
+      setNoteFor(null);
+    } catch {
+      toast.error('Could not save the note');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <section className="rounded-[24px] border border-border/50 bg-card/60 p-4 backdrop-blur">
