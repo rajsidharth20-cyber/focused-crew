@@ -64,6 +64,13 @@
       "when": 1791567258501,
       "tag": "0008_close_chat_safety_bypasses",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791567365789,
+      "tag": "0009_preserve_message_content_on_moderation_removal",
+      "breakpoints": true
     }
   ]
 }
