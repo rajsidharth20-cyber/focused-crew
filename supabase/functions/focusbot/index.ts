@@ -271,7 +271,7 @@ Deno.serve(async req => {
          if (!parent) return json(req, { error: 'The replied-to message is not in this group.' }, 400);
        }
        // Client inserts are revoked; database triggers still enforce restrictions on this server insert.
-       const inserted = await db.from('group_messages').insert({ group_id: groupId, user_id: guard.ctx.userId, content: message || null, image_url: imageUrl, reply_to_id: body.replyToId ?? null }).select('id').single();
+       const inserted = await db.from('group_messages').insert({ group_id: groupId, user_id: guard.ctx.userId, content: message, image_url: imageUrl, reply_to_id: body.replyToId ?? null }).select('id').single();
       if (inserted.error) throw inserted.error;
       messageId = inserted.data.id;
     }
