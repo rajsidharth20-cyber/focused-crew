@@ -263,8 +263,15 @@ Deno.serve(async req => {
       const imageUrl = typeof body.imageUrl === 'string' ? body.imageUrl : null;
       if (!message && !imageUrl) return json(req, { error: 'Write a message first.' }, 400);
        if (imageUrl && (!imageUrl.startsWith(`${groupId}/${guard.ctx.userId}-`) || imageUrl.includes('..') || imageUrl.includes('://'))) return json(req, { error: 'Invalid group image.' }, 400);
-       // Use the caller's database identity so restriction and quota checks cannot be bypassed.
-       const inserted = await guard.ctx.client.from('group_messages').insert({ group_id: groupId, user_id: guard.ctx.userId, content: message || null, image_url: imageUrl, reply_to_id: body.replyToId ?? null }).select('id').single();
+       const { data: allowed, error: quotaError } = await guard.ctx.client.rpc('consume_rate_limit', { _action: 'group_message', _limit: 150, _window_seconds: 3600 });
+       if (quotaError) throw quotaError;
+       if (!allowed) return json(req, { error: 'You are sending messages too quickly. Please wait.' }, 429);
+       if (body.replyToId) {
+         const { data: parent } = await db.from('group_messages').select('id').eq('id', body.replyToId).eq('group_id', groupId).maybeSingle();
+         if (!parent) return json(req, { error: 'The replied-to message is not in this group.' }, 400);
+       }
+       // Client inserts are revoked; database triggers still enforce restrictions on this server insert.
+       const inserted = await db.from('group_messages').insert({ group_id: groupId, user_id: guard.ctx.userId, content: message || null, image_url: imageUrl, reply_to_id: body.replyToId ?? null }).select('id').single();
       if (inserted.error) throw inserted.error;
       messageId = inserted.data.id;
     }
