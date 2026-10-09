@@ -57,6 +57,13 @@
       "when": 1791359875639,
       "tag": "0007_block_restricted_members_from_pinning",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1791567258501,
+      "tag": "0008_close_chat_safety_bypasses",
+      "breakpoints": true
     }
   ]
 }
