@@ -20,7 +20,7 @@ import { useLiveStudy } from '@/hooks/use-live-study';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { ArrowLeft, Bot, Flag, ImagePlus, Loader2, Pin, PinOff, Reply, Send, Smile, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { processGroupMessage, reportGroupMessage } from '@/hooks/use-focusbot';
+import { callFocusBot, reportGroupMessage } from '@/hooks/use-focusbot';
 
 interface GroupMessage {
   id: string;
@@ -32,6 +32,7 @@ interface GroupMessage {
   pinned: boolean;
   created_at: string;
   author_type: string;
+  moderation_status: string;
 }
 
 interface Poll { id: string; message_id: string | null; question: string; status: string }
@@ -203,7 +204,7 @@ export default function GroupChat() {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages.length]);
 
-  const visibleMessages = useMemo(() => messages.filter(m => !isHidden(m.id)), [messages, isHidden]);
+  const visibleMessages = useMemo(() => messages.filter(m => m.moderation_status !== 'violation' && !isHidden(m.id)), [messages, isHidden]);
   const pinned = useMemo(() => messages.filter(m => m.pinned && !isHidden(m.id)), [messages, isHidden]);
   const byId = useMemo(() => {
     const map: Record<string, GroupMessage> = {};
@@ -271,25 +272,19 @@ export default function GroupChat() {
     setText('');
     const replyId = replyTo?.id ?? null;
     setReplyTo(null);
-    const { data: inserted, error } = await supabase.from('group_messages').insert({
-      group_id: groupId,
-      user_id: user.id,
-      content,
-      reply_to_id: replyId,
-    }).select('id').single();
-    if (error) {
-      toast.error(error.message);
-      setText(content);
-      return;
-    }
-    notifyGroup(inserted?.id ?? crypto.randomUUID(), content, replyId);
-    if (botEnabled && inserted?.id) {
-      void processGroupMessage(groupId, inserted.id).then((result: any) => {
-        if (result?.reported) toast.success('Report sent privately to group leaders and app admins.');
-        return loadBot();
-      }).catch(err => {
-        if (/^\/(help|summary|focus|rules|poll|stopbot|report)\b|@focusbot\b/i.test(content)) toast.error(err instanceof Error ? err.message : 'FocusBot is unavailable.');
+    try {
+      const result = await callFocusBot<{ messageId: string; removed?: boolean; moderationPending?: boolean }>({
+        action: 'send_group_message', groupId, message: content, replyToId: replyId,
       });
+      if (result.removed) toast.error('FocusBot removed this message for violating the group rules.');
+      else {
+        void notifyGroup(result.messageId, content, replyId);
+        if (result.moderationPending) toast.error('Message sent, but FocusBot could not complete its safety check.');
+      }
+      void loadBot();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send this message.');
+      setText(content);
     }
   };
 
@@ -305,15 +300,16 @@ export default function GroupChat() {
       toast.error(upErr?.message ?? 'Image upload failed');
       return;
     }
-    const { error } = await supabase.from('group_messages').insert({
-      group_id: groupId,
-      user_id: user.id,
-      image_url: path,
-      reply_to_id: replyTo?.id ?? null,
-    });
-    setUploading(false);
-    setReplyTo(null);
-    if (error) toast.error(error.message);
+    try {
+      const replyId = replyTo?.id ?? null;
+      const result = await callFocusBot<{ messageId: string; removed?: boolean; moderationPending?: boolean }>({ action: 'send_group_message', groupId, imageUrl: path, replyToId: replyId });
+      if (result.removed) toast.error('FocusBot removed this image for violating the group rules.');
+      else if (result.moderationPending) toast.error('Image sent, but FocusBot could not complete its safety check.');
+      else void notifyGroup(result.messageId, 'Sent a photo', replyId);
+      setReplyTo(null);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Could not send this image.');
+    } finally { setUploading(false); }
   };
 
   /** Removes the message for the whole group. Authors and group admins are allowed. */
@@ -446,7 +442,7 @@ export default function GroupChat() {
                 </div>
                   </ContextMenuTrigger>
                   <ContextMenuContent>
-                     {botEnabled && !mine && !isBot && <ContextMenuItem onSelect={() => { setReplyTo(m); setText('@FocusBot report '); }}><Flag className="w-4 h-4 mr-2" />Report with FocusBot</ContextMenuItem>}
+                     {!mine && !isBot && <ContextMenuItem onSelect={() => { setReplyTo(m); setText('@FocusBot report '); }}><Flag className="w-4 h-4 mr-2" />Report with FocusBot</ContextMenuItem>}
                     <ContextMenuItem onSelect={() => hide(m.id)}>
                       <Trash2 className="w-4 h-4 mr-2" /> Delete for me
                     </ContextMenuItem>

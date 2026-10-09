@@ -33,7 +33,11 @@ export interface FocusBotConfig {
 
 export async function callFocusBot<T>(body: Record<string, unknown>) {
   const { data, error } = await supabase.functions.invoke('focusbot', { body });
-  if (error) throw new Error(data?.error ?? error.message);
+  if (error) {
+    const response = 'context' in error && error.context instanceof Response ? error.context : null;
+    const details = await response?.clone().json().catch(() => null);
+    throw new Error(details?.error ?? data?.error ?? error.message);
+  }
   if (data?.error) throw new Error(data.error);
   return data as T;
 }

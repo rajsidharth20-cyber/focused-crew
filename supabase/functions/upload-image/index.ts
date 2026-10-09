@@ -62,6 +62,8 @@ Deno.serve(async (req) => {
       path = `${user.id}/${body.folder}/${crypto.randomUUID()}.${image.ext}`;
     } else {
       if (typeof body.groupId !== 'string') return new Response('Invalid group', { status: 400, headers: corsHeaders });
+      const { error: restricted } = await authClient.rpc('assert_chat_access', { _group_id: body.groupId });
+      if (restricted) return new Response(restricted.message, { status: 403, headers: corsHeaders });
       const { data: membership } = await admin.from('group_members').select('id').eq('group_id', body.groupId).eq('user_id', user.id).maybeSingle();
       if (!membership) return new Response('Forbidden', { status: 403, headers: corsHeaders });
       path = `${body.groupId}/${user.id}-${crypto.randomUUID()}.${image.ext}`;
