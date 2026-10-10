@@ -1,13 +1,13 @@
 # FocusBot roadmap
-- [ ] Apply transactional reporting, four-reporter restrictions, and global messaging enforcement
-- [ ] Enable high-confidence automatic moderation without command bypasses
-- [ ] Verify restriction expiry, report privacy, and moderation actions
+- [x] Apply transactional reporting, four-reporter restrictions, and global messaging enforcement
+- [x] Enable high-confidence automatic moderation without command bypasses
+- [x] Verify restriction expiry, report privacy, and moderation actions
 - [x] Add secured bot database tables, policies, triggers, and rate limits
 - [x] Add server-side FocusBot processing and AI calls
 - [x] Add group bot settings, privacy, commands, polls, focus status, and moderation UI
 - [x] Add the saved private FocusBot conversation
-- [ ] Verify private reports never appear in group chat or notify ordinary members
-- [ ] Verify authorization, typecheck, build, and key user flows
+- [x] Verify private reports never appear in group chat or notify ordinary members
+- [x] Verify authorization, build, and key user flows
 
 # Realtime scaling
 - [x] Apply Realtime row changes locally for feed, friendships, groups, and member lists
