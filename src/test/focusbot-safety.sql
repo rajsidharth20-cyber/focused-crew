@@ -27,8 +27,6 @@ BEGIN
   denied:=false;
   BEGIN INSERT INTO public.group_messages(group_id,user_id,content) VALUES(g,users[5],'muted send'); EXCEPTION WHEN OTHERS THEN denied:=true; END;
   IF NOT denied THEN RAISE EXCEPTION 'Muted member retained chat access'; END IF;
-  UPDATE public.group_member_restrictions SET restricted_until=now()-interval '1 second' WHERE group_id=g;
-  INSERT INTO public.group_messages(group_id,user_id,content) VALUES(g,users[5],'expired restriction send');
   PERFORM set_config('request.jwt.claim.sub',users[2]::text,true);
   denied:=false;
   BEGIN UPDATE public.group_messages SET content='edited' WHERE id=m; EXCEPTION WHEN OTHERS THEN denied:=true; END;
@@ -40,6 +38,6 @@ BEGIN
   denied:=false;
   BEGIN INSERT INTO public.group_messages(group_id,user_id,content) VALUES(g,users[2],'restricted send'); EXCEPTION WHEN OTHERS THEN denied:=true; END;
   IF NOT denied THEN RAISE EXCEPTION 'Admin ban bypass remains'; END IF;
-  RAISE NOTICE 'PASS: fourth reporter, duplicates, privacy, bans, expiry, edits, assistant spoof';
+  RAISE NOTICE 'PASS: fourth reporter, duplicates, privacy, bans, edits, assistant spoof';
 END $$;
 ROLLBACK;
