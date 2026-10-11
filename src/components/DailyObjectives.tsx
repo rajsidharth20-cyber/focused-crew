@@ -3,6 +3,9 @@ import { Plus, X, Check, MessageSquare, Compass, Clock, History, ArrowRight, Cal
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, DailyObjective, Priority } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { toast } from 'sonner';
 
 interface DailyObjectivesProps {
   subjects: Subject[];
@@ -13,7 +16,7 @@ interface DailyObjectivesProps {
   onLoadHistory?: () => Promise<DailyObjective[]>;
   onAdd: (subjectId: string, task: string, minutes: number, deadline?: string, priority?: Priority, initialNote?: string, recurringDays?: number[]) => void;
   templates?: DailyObjective[];
-  onRemoveTemplate?: (id: string) => void;
+  onRemoveTemplate?: (id: string) => Promise<void> | void;
   onToggle: (id: string) => void;
   onAddNote: (id: string, note: string) => void;
   onUpdateNotes: (id: string, notes: string[]) => void;
@@ -74,6 +77,23 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, historyL
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState({ task: '', minutes: '30', subjectId: '', deadline: '' });
   const [deleteState, setDeleteState] = useState<{ id: string; stage: 1 | 2 } | null>(null);
+  const [seriesToDelete, setSeriesToDelete] = useState<{ id: string; task: string } | null>(null);
+  const [deletingSeries, setDeletingSeries] = useState(false);
+
+  const deleteSeries = async () => {
+    if (!seriesToDelete || !onRemoveTemplate) return;
+    setDeletingSeries(true);
+    try {
+      await onRemoveTemplate(seriesToDelete.id);
+      setSeriesToDelete(null);
+      setDeleteState(null);
+      toast.success('Repeating objective permanently removed');
+    } catch {
+      toast.error('Could not remove the repeating objective');
+    } finally {
+      setDeletingSeries(false);
+    }
+  };
 
   const startEdit = (o: DailyObjective) => {
     setEditingId(o.id);
@@ -316,6 +336,11 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, historyL
                   {deleteState.stage === 1 ? 'Delete' : 'Yes, delete it'}
                 </button>
                 <button onClick={() => setDeleteState(null)} className="text-xs text-muted-foreground hover:text-foreground px-2">Cancel</button>
+                {o.templateId && onRemoveTemplate && (
+                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => setSeriesToDelete({ id: o.templateId ?? o.id, task: o.task })}>
+                    <Trash2 className="h-3.5 w-3.5 mr-1" /> Remove entire series
+                  </Button>
+                )}
               </div>
             </motion.div>
           )}
@@ -556,9 +581,9 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, historyL
                 {(tpl.recurringDays ?? []).slice().sort().map(d => DAY_LABELS[d]).join(' ')}
               </span>
               {onRemoveTemplate && (
-                <button onClick={() => onRemoveTemplate(tpl.id)} className="text-muted-foreground hover:text-destructive" aria-label="Stop repeating">
-                  <X className="w-3.5 h-3.5" />
-                </button>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={() => setSeriesToDelete({ id: tpl.id, task: tpl.task })} aria-label={`Permanently remove "${tpl.task}"`} title="Remove entire series">
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
               )}
             </div>
           ))}
@@ -624,6 +649,18 @@ export function DailyObjectives({ subjects, objectives, pastObjectives, historyL
           </AnimatePresence>
         </div>
       )}
+      <AlertDialog open={!!seriesToDelete} onOpenChange={open => { if (!open && !deletingSeries) setSeriesToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Permanently remove repeating objective?</AlertDialogTitle>
+            <AlertDialogDescription>“{seriesToDelete?.task}” and all its past, today’s, and future entries, including their notes, will be deleted. It will no longer repeat. This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletingSeries}>Keep it</AlertDialogCancel>
+            <Button variant="destructive" disabled={deletingSeries} onClick={deleteSeries}>{deletingSeries ? 'Removing…' : 'Remove permanently'}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -1,4 +1,3 @@
-# FocusBot roadmap
 # Planner updates
 - [ ] Add confirmed permanent removal of repeating objectives and all occurrences
 - [ ] Add saved weekly-target notes in Planner
