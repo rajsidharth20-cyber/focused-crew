@@ -1832,6 +1832,7 @@ export type Database = {
           created_at: string
           deadline: string | null
           id: string
+          progress_notes: string[]
           subject_id: string
           target: string
           user_id: string
@@ -1841,6 +1842,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           id?: string
+          progress_notes?: string[]
           subject_id: string
           target: string
           user_id: string
@@ -1850,6 +1852,7 @@ export type Database = {
           created_at?: string
           deadline?: string | null
           id?: string
+          progress_notes?: string[]
           subject_id?: string
           target?: string
           user_id?: string
@@ -1869,6 +1872,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      add_weekly_target_note: {
+        Args: { _note: string; _target_id: string }
+        Returns: string[]
+      }
       announcement_read_counts: {
         Args: never
         Returns: {
@@ -1897,6 +1904,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      remove_recurring_objective: {
+        Args: { _template_id: string }
+        Returns: undefined
       }
       search_profiles_by_username: {
         Args: { _term: string }
