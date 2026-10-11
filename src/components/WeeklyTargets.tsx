@@ -1,8 +1,12 @@
 import { useState } from 'react';
-import { Plus, X, Check, Map, History } from 'lucide-react';
+import { Plus, X, Check, Map, History, StickyNote } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import type { Subject, WeeklyTarget } from '@/hooks/use-planner-store';
 import { useTerms } from '@/lib/terms';
+import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { toast } from 'sonner';
 
 interface WeeklyTargetsProps {
   subjects: Subject[];
@@ -12,15 +16,35 @@ interface WeeklyTargetsProps {
   onAdd: (subjectId: string, target: string, deadline?: string) => void;
   onToggle: (id: string) => void;
   onRemove: (id: string) => void;
+  onAddNote: (id: string, note: string) => Promise<void>;
 }
 
-export function WeeklyTargets({ subjects, targets, pastTargets, onLoadHistory, onAdd, onToggle, onRemove }: WeeklyTargetsProps) {
+export function WeeklyTargets({ subjects, targets, pastTargets, onLoadHistory, onAdd, onToggle, onRemove, onAddNote }: WeeklyTargetsProps) {
   const t = useTerms();
   const [subjectId, setSubjectId] = useState('');
   const [input, setInput] = useState('');
   const [deadline, setDeadline] = useState('');
   const [showPast, setShowPast] = useState(false);
   const [historyRequested, setHistoryRequested] = useState(false);
+  const [noteTargetId, setNoteTargetId] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [savingNote, setSavingNote] = useState(false);
+  const noteTarget = [...targets, ...pastTargets].find(t => t.id === noteTargetId);
+  const noteText = (raw: string) => {
+    try { return (JSON.parse(raw) as { text?: string }).text ?? raw; } catch { return raw; }
+  };
+  const saveNote = async () => {
+    if (!noteTarget || !note.trim()) return;
+    setSavingNote(true);
+    try {
+      await onAddNote(noteTarget.id, note.trim());
+      setNote('');
+      setNoteTargetId(null);
+      toast.success('Weekly target note saved');
+    } catch {
+      toast.error('Could not save the note');
+    } finally { setSavingNote(false); }
+  };
 
   const handleAdd = () => {
     if (subjectId && input.trim()) {
@@ -63,7 +87,11 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onLoadHistory, o
             · ETA {t.deadline}
           </span>
         )}
+        {!!t.progressNotes?.length && <p className="mt-1 truncate text-xs text-muted-foreground">{noteText(t.progressNotes[t.progressNotes.length - 1])}</p>}
       </div>
+      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-primary" onClick={() => { setNote(''); setNoteTargetId(t.id); }} aria-label={`Add note to "${t.target}"`} title="Notes">
+        <StickyNote className="h-3.5 w-3.5" />
+      </Button>
       <button onClick={() => onRemove(t.id)} className="text-muted-foreground hover:text-destructive transition-colors">
         <X className="w-3.5 h-3.5" />
       </button>
@@ -146,6 +174,24 @@ export function WeeklyTargets({ subjects, targets, pastTargets, onLoadHistory, o
           </AnimatePresence>
         </div>
       )}
+      <Dialog open={!!noteTarget} onOpenChange={open => { if (!open && !savingNote) setNoteTargetId(null); }}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Weekly target notes</DialogTitle>
+            <DialogDescription>{noteTarget?.target}</DialogDescription>
+          </DialogHeader>
+          {!!noteTarget?.progressNotes?.length && (
+            <ul className="max-h-48 space-y-2 overflow-y-auto">
+              {noteTarget.progressNotes.map((raw, i) => <li key={i} className="whitespace-pre-wrap break-words border-l-2 border-primary/30 pl-3 text-sm text-muted-foreground">{noteText(raw)}</li>)}
+            </ul>
+          )}
+          <Textarea aria-label="Weekly target note" value={note} onChange={e => setNote(e.target.value)} maxLength={1000} rows={3} placeholder="Log your progress…" disabled={savingNote} />
+          <DialogFooter>
+            <Button variant="outline" disabled={savingNote} onClick={() => setNoteTargetId(null)}>Cancel</Button>
+            <Button disabled={savingNote || !note.trim()} onClick={saveNote}>{savingNote ? 'Saving…' : 'Save note'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

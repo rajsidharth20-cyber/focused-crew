@@ -71,6 +71,13 @@
       "when": 1791567365789,
       "tag": "0009_preserve_message_content_on_moderation_removal",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1791727002983,
+      "tag": "0010_planner_recurring_removal_and_weekly_notes",
+      "breakpoints": true
     }
   ]
 }

@@ -5,3 +5,4 @@
 - Load historical planner objectives only on demand from history or exports, because boot should transfer today's plan rather than 90 days of history.
 - Import PDF rendering libraries inside export actions, because ordinary navigation should not load report dependencies.
 - Send group messages only through the authenticated FocusBot handler, because direct client inserts would bypass server-side text and image moderation.
+- Delete recurring series and append weekly notes through owner-scoped database functions, because deletion must be atomic and simultaneous notes must not overwrite one another; guest mutations use equivalent local helpers.

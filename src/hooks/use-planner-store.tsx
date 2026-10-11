@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef, createContext, useCo
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
+import { appendPlannerNote, withoutRecurringSeries } from '@/lib/planner-mutations';
 
 export interface Subject {
   id: string;
@@ -21,6 +22,7 @@ export interface WeeklyTarget {
   target: string;
   completed: boolean;
   deadline: string | null;
+  progressNotes?: string[];
 }
 
 export type Priority = 'high' | 'medium' | 'low';
@@ -187,7 +189,7 @@ function usePlannerStoreInternal() {
       const [sRes, wtRes, doRes, cRes, evRes, tplRes] = await Promise.all([
 
         supabase.from('subjects').select('id, name, color, sort_order').eq('user_id', user.id),
-        supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline').eq('user_id', user.id)
+        supabase.from('weekly_targets').select('id, subject_id, target, completed, deadline, progress_notes').eq('user_id', user.id)
           .or(`deadline.is.null,deadline.gte.${today}`),
         supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('date', today).eq('is_template', false),
         // Today's dated stops + every recurring stop (the UI filters by day/range).
@@ -203,7 +205,7 @@ function usePlannerStoreInternal() {
         .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
       
       const mapWT = (t: any): WeeklyTarget => ({
-        id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
+        id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline, progressNotes: t.progress_notes ?? [],
       });
       setWeeklyTargets((wtRes.data ?? []).map(mapWT));
 
@@ -327,10 +329,10 @@ function usePlannerStoreInternal() {
     const userId = user.id;
     const promise = (async () => {
       const { data, error } = await supabase.from('weekly_targets')
-        .select('id, subject_id, target, completed, deadline').eq('user_id', userId).lt('deadline', today);
+        .select('id, subject_id, target, completed, deadline, progress_notes').eq('user_id', userId).lt('deadline', today);
       if (error) throw error;
       const rows = (data ?? []).map(t => ({
-        id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline,
+        id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline, progressNotes: t.progress_notes ?? [],
       }));
       if (activeUserId.current === userId) setPastWeeklyTargets(rows);
       return rows;
@@ -395,7 +397,7 @@ function usePlannerStoreInternal() {
 
   const addWeeklyTarget = useCallback(async (subjectId: string, target: string, deadline?: string) => {
     if (isGuest) {
-      const newT: WeeklyTarget = { id: crypto.randomUUID(), subjectId, target, completed: false, deadline: deadline || null };
+      const newT: WeeklyTarget = { id: crypto.randomUUID(), subjectId, target, completed: false, deadline: deadline || null, progressNotes: [] };
       setWeeklyTargets(prev => {
         const updated = [...prev, newT];
         const data = getGuestData(); data.weeklyTargets = [...(data.weeklyTargets || []), newT]; saveGuestData(data);
@@ -407,7 +409,7 @@ function usePlannerStoreInternal() {
     const { data, error } = await supabase.from('weekly_targets')
       .insert({ subject_id: subjectId, target, user_id: user.id, deadline: deadline || null }).select().single();
     if (!error && data) setWeeklyTargets(prev => [...prev, {
-      id: data.id, subjectId: data.subject_id, target: data.target, completed: data.completed, deadline: data.deadline,
+      id: data.id, subjectId: data.subject_id, target: data.target, completed: data.completed, deadline: data.deadline, progressNotes: data.progress_notes ?? [],
     }]);
   }, [user, isGuest, getGuestData, saveGuestData]);
 
@@ -426,6 +428,26 @@ function usePlannerStoreInternal() {
     }
     await supabase.from('weekly_targets').update({ completed: !t.completed }).eq('id', id);
   }, [weeklyTargets, pastWeeklyTargets, isGuest, getGuestData, saveGuestData]);
+
+  const addWeeklyTargetNote = useCallback(async (id: string, note: string) => {
+    const target = [...weeklyTargets, ...pastWeeklyTargets].find(t => t.id === id);
+    if (!target) throw new Error('Weekly target not found');
+    let notes = appendPlannerNote(target.progressNotes, note);
+    if (isGuest) {
+      const data = getGuestData();
+      data.weeklyTargets = (data.weeklyTargets || []).map((t: WeeklyTarget) => t.id === id ? { ...t, progressNotes: notes } : t);
+      saveGuestData(data);
+    } else {
+      if (!user) throw new Error('Sign in required');
+      const { data, error } = await supabase.rpc('add_weekly_target_note', { _target_id: id, _note: note.trim() });
+      if (error) throw error;
+      notes = data;
+    }
+    const update = (prev: WeeklyTarget[]) => prev.map(t => t.id === id ? { ...t, progressNotes: notes } : t);
+    setWeeklyTargets(update);
+    setPastWeeklyTargets(update);
+    weeklyHistoryCache.current = null;
+  }, [weeklyTargets, pastWeeklyTargets, isGuest, user, getGuestData, saveGuestData]);
 
   const removeWeeklyTarget = useCallback(async (id: string) => {
     setWeeklyTargets(prev => prev.filter(t => t.id !== id));
@@ -497,15 +519,21 @@ function usePlannerStoreInternal() {
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
   const removeObjectiveTemplate = useCallback(async (id: string) => {
-    setObjectiveTemplates(prev => prev.filter(t => t.id !== id));
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).filter((o: DailyObjective) => o.id !== id);
+      data.dailyObjectives = withoutRecurringSeries<DailyObjective>(data.dailyObjectives || [], id);
       saveGuestData(data);
-      return;
+    } else {
+      if (!user) throw new Error('Sign in required');
+      const { error } = await supabase.rpc('remove_recurring_objective', { _template_id: id });
+      if (error) throw error;
     }
-    await supabase.from('daily_objectives').delete().eq('id', id);
-  }, [isGuest, getGuestData, saveGuestData]);
+    setObjectiveTemplates(prev => prev.filter(t => t.id !== id));
+    setDailyObjectives(prev => withoutRecurringSeries(prev, id));
+    setPastObjectives(prev => withoutRecurringSeries(prev, id));
+    historyCache.current = null;
+    if (user) localStorage.removeItem(`fc_planner_cache_${user.id}_${today}`);
+  }, [user, today, isGuest, getGuestData, saveGuestData]);
 
   const toggleDailyObjective = useCallback(async (id: string) => {
     const all = [...dailyObjectives, ...pastObjectives];
@@ -853,6 +881,7 @@ function usePlannerStoreInternal() {
     reorderSubjects,
     removeSubject,
     addWeeklyTarget,
+    addWeeklyTargetNote,
     toggleWeeklyTarget,
     removeWeeklyTarget,
     addDailyObjective,
