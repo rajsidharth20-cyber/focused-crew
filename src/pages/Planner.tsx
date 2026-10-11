@@ -106,6 +106,7 @@ const Planner = () => {
             onAdd={store.addWeeklyTarget}
             onToggle={store.toggleWeeklyTarget}
             onRemove={store.removeWeeklyTarget}
+            onAddNote={store.addWeeklyTargetNote}
           />
         </motion.div>
 

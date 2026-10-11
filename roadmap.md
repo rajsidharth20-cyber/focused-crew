@@ -1,4 +1,10 @@
 # FocusBot roadmap
+# Planner updates
+- [ ] Add confirmed permanent removal of repeating objectives and all occurrences
+- [ ] Add saved weekly-target notes in Planner
+- [ ] Test removal and weekly notes, including signed-in persistence
+
+# FocusBot roadmap
 - [x] Apply transactional reporting, four-reporter restrictions, and global messaging enforcement
 - [x] Enable high-confidence automatic moderation without command bypasses
 - [x] Verify restriction expiry, report privacy, and moderation actions
