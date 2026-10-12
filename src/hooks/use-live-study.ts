@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { acquireStudyChannel } from '@/lib/study-presence-channel';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups } from '@/hooks/use-study-groups';
 import { useFriends } from '@/hooks/use-friends';
@@ -22,8 +22,7 @@ export function useLiveStudy(userIds: string[]) {
   useEffect(() => {
     if (!user || !names) { setByRoom({}); return; }
     const channels = names.split(',').map(name => {
-      const channel = supabase.channel(name);
-      const sync = () => {
+      return acquireStudyChannel(name, user.id, channel => {
         const state = channel.presenceState();
         const next: Record<string, PresenceRow> = {};
         for (const [id, entries] of Object.entries(state)) {
@@ -31,9 +30,7 @@ export function useLiveStudy(userIds: string[]) {
           if (entry) next[id] = { ...entry, user_id: id };
         }
         setByRoom(prev => ({ ...prev, [name]: next }));
-      };
-      channel.on('presence', { event: 'sync' }, sync).subscribe();
-      return channel;
+      });
     });
     const resync = () => { if (document.visibilityState === 'visible') refresh(); };
     document.addEventListener('visibilitychange', resync);
@@ -47,7 +44,7 @@ export function useLiveStudy(userIds: string[]) {
     togglePoll();
     document.addEventListener('visibilitychange', togglePoll);
     return () => {
-      channels.forEach(channel => { void supabase.removeChannel(channel); });
+      channels.forEach(channel => channel.release());
       document.removeEventListener('visibilitychange', resync);
       document.removeEventListener('visibilitychange', togglePoll);
       window.removeEventListener('focus', resync);
