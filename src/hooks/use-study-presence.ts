@@ -1,5 +1,5 @@
 import { useEffect, useId } from 'react';
-import { supabase } from '@/integrations/supabase/client';
+import { acquireStudyChannel } from '@/lib/study-presence-channel';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyGroups } from '@/hooks/use-study-groups';
 
@@ -51,20 +51,15 @@ export function useBroadcastStudyPresence(running: boolean, mode: string, topic?
     }
     existing?.close();
     const channels = [...(ids ? ids.split(',') : []).map(id => `study:group:${id}`), `study:user:${user.id}`]
-      .map(name => supabase.channel(name, { config: { presence: { key: user.id } } }));
+      .map(name => acquireStudyChannel(name, user.id, channel => {
+        void channel.track(states.get(user.id) ?? {
+          is_studying: false, mode: null, topic: null, started_at: null, updated_at: new Date().toISOString(),
+        });
+      }));
     const trackers = new Set(channels);
     const record = { rooms: ids, count: 1, channels: trackers,
-      close: () => channels.forEach(channel => { void supabase.removeChannel(channel); }) };
+      close: () => channels.forEach(channel => channel.release()) };
     activeChannels.set(user.id, record);
-    for (const channel of channels) {
-      channel.subscribe(status => {
-        if (status === 'SUBSCRIBED') {
-          void channel.track(states.get(user.id) ?? {
-            is_studying: false, mode: null, topic: null, started_at: null, updated_at: new Date().toISOString(),
-          });
-        }
-      });
-    }
     return () => {
       record.count--;
       if (record.count === 0 && activeChannels.get(user.id) === record) {
