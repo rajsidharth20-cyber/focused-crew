@@ -51,7 +51,7 @@ export function useBroadcastStudyPresence(running: boolean, mode: string, topic?
     }
     existing?.close();
     const channels = [...(ids ? ids.split(',') : []).map(id => `study:group:${id}`), `study:user:${user.id}`]
-      .map(name => acquireStudyChannel(name, user.id, channel => {
+      .map(name => acquireStudyChannel(name, user.id, () => {}, channel => {
         void channel.track(states.get(user.id) ?? {
           is_studying: false, mode: null, topic: null, started_at: null, updated_at: new Date().toISOString(),
         });
