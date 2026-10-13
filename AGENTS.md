@@ -7,3 +7,5 @@
 - Import PDF rendering libraries inside export actions, because ordinary navigation should not load report dependencies.
 - Send group messages only through the authenticated FocusBot handler, because direct client inserts would bypass server-side text and image moderation.
 - Delete recurring series and append weekly notes through owner-scoped database functions, because deletion must be atomic and simultaneous notes must not overwrite one another; guest mutations use equivalent local helpers.
+- Scope wall-clock ticks to timer display components, because the Home data owner must not rerender every second.
+- Fetch recent study sessions at boot and compact older day totals for streaks; load detailed history on demand and persist only a bounded recent cache, because all-time session rows must not block startup or localStorage.

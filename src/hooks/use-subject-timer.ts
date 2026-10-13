@@ -61,7 +61,6 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
   const { user, isGuest } = useAuth();
   const instanceId = useId();
   const [timer, setTimer] = useState<ActiveTimer | null>(EMPTY);
-  const [tick, setTick] = useState(0);
   const timerRef = useRef<ActiveTimer | null>(null);
   timerRef.current = timer;
   const topicRef = useRef(topicOf);
@@ -73,7 +72,7 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
     if (!user) return;
     let cancelled = false;
     const load = async () => {
-      const { data } = await db.from('active_timers').select('*').eq('user_id', user.id).maybeSingle();
+      const { data } = await db.from('active_timers').select('subject_id, started_at, accumulated_seconds, is_running, created_at').eq('user_id', user.id).maybeSingle();
       if (!cancelled) setTimer(fromRow(data));
     };
     load();
@@ -88,13 +87,6 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
       window.removeEventListener('focus', resync);
     };
   }, [user, isGuest, instanceId]);
-
-  // ---- 1s repaint while running (display only; elapsed is derived) ----
-  useEffect(() => {
-    if (!timer?.isRunning) return;
-    const id = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [timer?.isRunning]);
 
   const persist = useCallback(async (next: ActiveTimer | null) => {
     setTimer(next);
@@ -147,8 +139,6 @@ export function useSubjectTimer(topicOf?: (subjectId: string | null) => string |
 
   return {
     timer,
-    elapsed: elapsedOf(timer),
-    tick,
     isRunning: !!timer?.isRunning,
     activeSubjectId: timer?.subjectId ?? null,
     start,

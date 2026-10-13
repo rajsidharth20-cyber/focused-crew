@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
 import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame, CalendarDays } from 'lucide-react';
-import { fmtHMS } from '@/components/home/SubjectBoard';
+import { SubjectTimerClock } from '@/components/home/SubjectTimerClock';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
 import { WeeklyTargetsHome } from '@/components/home/WeeklyTargetsHome';
@@ -50,7 +50,7 @@ const Index = () => {
   const store = usePlannerStore();
   useNotificationTriggers();
   const studyStore = useStudyStore();
-  const streak = useStreak(studyStore.sessions);
+  const streak = useStreak(studyStore.sessions, studyStore.olderDayTotals);
   const { username, usernameLoading, user, isGuest } = useAuth();
   const { theme } = useTheme();
   useDayStart();
@@ -139,7 +139,7 @@ const Index = () => {
     }
   };
 
-  const minutesToday = streak.todayMinutes + (timer.isRunning ? Math.floor(timer.elapsed / 60) : 0);
+  const minutesToday = streak.todayMinutes;
   const subjectsActive = Object.keys(todayTotals).length;
 
   return (
@@ -233,6 +233,7 @@ const Index = () => {
             >
               <TodayProgressCard
                 minutesToday={minutesToday}
+                timer={timer.timer}
                 goalMinutes={streak.thresholdMinutes}
                 onGoalChange={streak.setThreshold}
                 streak={streak.streak}
@@ -336,7 +337,7 @@ const Index = () => {
           <DialogHeader>
             <DialogTitle className="text-base">Study streak</DialogTitle>
           </DialogHeader>
-          <StreakCard sessions={studyStore.sessions} />
+          <StreakCard sessions={studyStore.sessions} olderDayTotals={studyStore.olderDayTotals} />
         </DialogContent>
       </Dialog>
 
@@ -366,7 +367,7 @@ const Index = () => {
                 style={{ background: activeSubject.color || 'hsl(var(--primary))' }}
               />
               <span className="max-w-[7.5rem] truncate text-[12.5px] font-medium">{activeSubject.name}</span>
-              <span className="text-[12.5px] font-semibold tabular-nums">{fmtHMS(timer.elapsed)}</span>
+              <SubjectTimerClock timer={timer.timer} />
               <button
                 onClick={e => { e.stopPropagation(); timer.isRunning ? timer.pause() : timer.resume(); }}
                 aria-label={timer.isRunning ? 'Pause timer' : 'Resume timer'}
@@ -384,7 +385,7 @@ const Index = () => {
           <FullScreenSubjectTimer
             subjectName={activeSubject.name}
             color={activeSubject.color || 'hsl(var(--primary))'}
-            elapsed={timer.elapsed}
+            timer={timer.timer}
             isRunning={timer.isRunning}
             onPause={timer.pause}
             onResume={timer.resume}

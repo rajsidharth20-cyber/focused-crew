@@ -1922,6 +1922,13 @@ export type Database = {
         Args: { _message_id: string; _pinned: boolean }
         Returns: undefined
       }
+      study_day_totals: {
+        Args: { _before: string; _timezone: string }
+        Returns: {
+          day: string
+          seconds: number
+        }[]
+      }
       submit_focusbot_report: {
         Args: { _group_id: string; _message_id: string; _reason?: string }
         Returns: Json

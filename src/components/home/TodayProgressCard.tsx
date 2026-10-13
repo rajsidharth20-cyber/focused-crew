@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Flame, Target, TrendingUp, Pencil, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
+import type { ActiveTimer } from '@/hooks/use-subject-timer';
+import { useTimerElapsed } from '@/hooks/use-timer-elapsed';
 
 interface Props {
   minutesToday: number;
@@ -8,6 +10,7 @@ interface Props {
   onGoalChange?: (minutes: number) => void;
   streak: number;
   subjectsActive: number;
+  timer?: ActiveTimer | null;
 }
 
 const fmt = (m: number) => (m < 60 ? `${m}m` : `${Math.floor(m / 60)}h ${m % 60 ? `${m % 60}m` : ''}`.trim());
@@ -30,7 +33,9 @@ function motivation(pct: number, remaining: number, streak: number) {
 }
 
 /** Personal dashboard hero: today's time versus the editable daily study target. */
-export function TodayProgressCard({ minutesToday, goalMinutes, onGoalChange, streak, subjectsActive }: Props) {
+export function TodayProgressCard({ minutesToday: savedMinutes, goalMinutes, onGoalChange, streak, subjectsActive, timer = null }: Props) {
+  const elapsed = useTimerElapsed(timer, 1000);
+  const minutesToday = savedMinutes + (timer?.isRunning ? Math.floor(elapsed / 60) : 0);
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(goalMinutes));
 
