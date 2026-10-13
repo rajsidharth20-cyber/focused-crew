@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { SESSION_COLUMNS, recentStudyCutoff, mergeStudySessions } from '@/lib/study-history';
@@ -104,6 +104,22 @@ async function fetchSessions(uid: string, cutoff: string, older = false): Promis
   return rows;
 }
 
+async function fetchOlderTotals(uid: string, cutoff: string) {
+  const totals: Record<string, number> = {};
+  for (let offset = 0; ; offset += 500) {
+    const { data, error } = await supabase.rpc('study_day_totals', {
+      _before: cutoff, _timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    }).range(offset, offset + 499);
+    if (error) throw error;
+    for (const row of data ?? []) totals[row.day] = row.seconds;
+    if (!data || data.length < 500) break;
+  }
+  const current = memCache.get(uid);
+  if (current && current.cutoff === cutoff && !current.historyLoaded) {
+    writeSnapshot(uid, current.tags, current.sessions, { olderDayTotals: totals, at: current.at });
+  }
+}
+
 function fetchSnapshot(uid: string): Promise<Snapshot> {
   const pending = pendingLoads.get(uid);
   if (pending) return pending;
@@ -117,7 +133,14 @@ function fetchSnapshot(uid: string): Promise<Snapshot> {
       if (prev) return prev;
       throw tRes.error;
     }
-    return writeSnapshot(uid, (tRes.data ?? []).map(mapTag), rows, { cutoff, historyLoaded: false, olderDayTotals: {} });
+    const previous = memCache.get(uid);
+    const sessions = previous?.historyLoaded ? mergeStudySessions(previous.sessions.filter(row => row.startedAt < cutoff), rows) : rows;
+    const snapshot = writeSnapshot(uid, (tRes.data ?? []).map(mapTag), sessions, {
+      cutoff, historyLoaded: !!previous?.historyLoaded,
+      olderDayTotals: previous?.historyLoaded ? {} : previous?.olderDayTotals ?? {},
+    });
+    if (!snapshot.historyLoaded) void fetchOlderTotals(uid, cutoff).catch(error => console.error('[study-store] streak totals failed', error));
+    return snapshot;
   }).finally(() => { pendingLoads.delete(uid); });
   pendingLoads.set(uid, p);
   return p;
@@ -125,18 +148,22 @@ function fetchSnapshot(uid: string): Promise<Snapshot> {
 
 export function useStudyStore() {
   const { user, isGuest } = useAuth();
-  const initial = !isGuest && user ? readSnapshot(user.id) : null;
+  const [initial] = useState(() => !isGuest && user ? readSnapshot(user.id) : null);
   const [tags, setTags] = useState<StudyTag[]>(initial?.tags ?? []);
   const [sessions, setSessions] = useState<StudySession[]>(initial?.sessions ?? []);
   const [loading, setLoading] = useState(!initial);
   const [olderDayTotals, setOlderDayTotals] = useState<Record<string, number>>(initial?.olderDayTotals ?? {});
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyLoaded, setHistoryLoaded] = useState(false);
+  const delivered = useRef({ tags: initial?.tags, sessions: initial?.sessions });
 
   useEffect(() => {
     if (!user || isGuest) return;
     const listeners = snapshotListeners.get(user.id) ?? new Set();
-    const listener = (s: Snapshot) => { setTags(s.tags); setSessions(s.sessions); setOlderDayTotals(s.olderDayTotals); setHistoryLoaded(!!s.historyLoaded); };
+    const listener = (s: Snapshot) => {
+      delivered.current = { tags: s.tags, sessions: s.sessions };
+      setTags(s.tags); setSessions(s.sessions); setOlderDayTotals(s.olderDayTotals); setHistoryLoaded(!!s.historyLoaded);
+    };
     listeners.add(listener);
     snapshotListeners.set(user.id, listeners);
     return () => { listeners.delete(listener); };
@@ -155,6 +182,7 @@ export function useStudyStore() {
       if (!user) return;
       const cached = readSnapshot(user.id);
       if (cached) {
+        delivered.current = { tags: cached.tags, sessions: cached.sessions };
         setTags(cached.tags);
         setSessions(cached.sessions);
         setOlderDayTotals(cached.olderDayTotals);
@@ -169,14 +197,6 @@ export function useStudyStore() {
         if (cancelled) return;
         setTags(snap.tags);
         setSessions(snap.sessions);
-        // Compact all-time day totals preserve long streaks without loading old rows.
-        void supabase.rpc('study_day_totals', { _before: snap.cutoff, _timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(({ data, error }) => {
-          if (cancelled || error) return;
-          const current = memCache.get(user.id);
-          if (!current || current.historyLoaded) return;
-          const totals = Object.fromEntries((data ?? []).map(row => [row.day, row.seconds]));
-          writeSnapshot(user.id, current.tags, current.sessions, { olderDayTotals: totals, at: current.at });
-        });
       } catch (e) {
         console.error('[study-store] load failed', e);
       } finally {
@@ -191,6 +211,7 @@ export function useStudyStore() {
   useEffect(() => {
     if (isGuest || !user || loading) return;
     const cur = memCache.get(user.id);
+    if (delivered.current.tags === tags && delivered.current.sessions === sessions) return;
     if (cur?.tags === tags && cur.sessions === sessions) return;
     writeSnapshot(user.id, tags, sessions, { at: cur?.at ?? Date.now() });
   }, [tags, sessions, user, isGuest, loading]);
