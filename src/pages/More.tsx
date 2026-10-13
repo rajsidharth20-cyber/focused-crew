@@ -17,7 +17,7 @@ import { useTerms } from '@/lib/terms';
 const More = () => {
   const store = usePlannerStore();
   const studyStore = useStudyStore();
-  const streak = useStreak(studyStore.sessions);
+  const streak = useStreak(studyStore.sessions, studyStore.olderDayTotals);
   const { username, signOut } = useAuth();
   const t = useTerms();
   const { isStaff } = useIsStaff();

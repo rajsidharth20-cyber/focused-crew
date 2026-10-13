@@ -5,10 +5,11 @@ import type { StudySession } from '@/hooks/use-study-store';
 
 interface Props {
   sessions: StudySession[];
+  olderDayTotals?: Record<string, number>;
 }
 
-export function StreakCard({ sessions }: Props) {
-  const s = useStreak(sessions);
+export function StreakCard({ sessions, olderDayTotals }: Props) {
+  const s = useStreak(sessions, olderDayTotals);
   const [editing, setEditing] = useState(false);
   const [val, setVal] = useState(s.thresholdMinutes);
 

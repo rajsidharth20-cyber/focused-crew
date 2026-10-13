@@ -19,11 +19,13 @@ import { useNow } from '@/hooks/use-now';
 import { fmtHMS } from '@/components/home/SubjectBoard';
 import { applyMemberEvent, type MemberPair } from '@/lib/member-events';
 import { onUserEvent } from '@/lib/user-events';
+import type { ActiveTimer } from '@/hooks/use-subject-timer';
+import { useTimerElapsed } from '@/hooks/use-timer-elapsed';
 
 interface Props {
   subjectName: string;
   color: string;
-  elapsed: number;
+  timer: ActiveTimer | null;
   isRunning: boolean;
   onPause: () => void;
   onResume: () => void;
@@ -52,8 +54,9 @@ const fmtClock = (seconds: number) => {
  * Timer, presence and data logic live in the hooks — this file is presentation.
  */
 export function FullScreenSubjectTimer({
-  subjectName, color, elapsed, isRunning, onPause, onResume, onStop, onClose,
+  subjectName, color, timer, isRunning, onPause, onResume, onStop, onClose,
 }: Props) {
+  const elapsed = useTimerElapsed(timer);
   const { user } = useAuth();
   const navigate = useNavigate();
   const now = useNow(1000);

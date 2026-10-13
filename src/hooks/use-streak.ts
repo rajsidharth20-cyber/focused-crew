@@ -38,19 +38,19 @@ const addDays = (d: Date, n: number) => {
   return nd;
 };
 
-export function useStreak(sessions: StudySession[]) {
+export function useStreak(sessions: StudySession[], olderDayTotals: Record<string, number> = {}) {
   const [config, setConfig] = useState<StreakConfig>(() => load());
 
   useEffect(() => { save(config); }, [config]);
 
   const minutesByDay = useMemo(() => {
-    const m = new Map<string, number>();
+    const m = new Map<string, number>(Object.entries(olderDayTotals).map(([day, seconds]) => [day, seconds / 60]));
     for (const s of sessions) {
       const k = dayKey(new Date(s.startedAt));
       m.set(k, (m.get(k) ?? 0) + s.durationSeconds / 60);
     }
     return m;
-  }, [sessions]);
+  }, [sessions, olderDayTotals]);
 
   const today = dayKey(new Date());
   const yesterday = dayKey(addDays(new Date(), -1));
