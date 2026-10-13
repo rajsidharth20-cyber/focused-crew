@@ -1,4 +1,10 @@
 # Planner updates
+# Study performance
+- [ ] Scope subject timer ticks to clock displays and progress card
+- [ ] Load recent sessions on boot; defer full history and preserve all-time streaks
+- [ ] Verify timer rendering, recent queries, history and totals
+
+# Planner updates
 - [x] Add confirmed permanent removal of repeating objectives and all occurrences
 - [x] Add saved weekly-target notes in Planner
 - [x] Test removal and weekly notes, including signed-in persistence
