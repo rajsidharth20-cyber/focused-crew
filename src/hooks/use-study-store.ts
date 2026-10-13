@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { SESSION_COLUMNS, recentStudyCutoff, mergeStudySessions } from '@/lib/study-history';
 
 export interface StudyTag {
   id: string;
@@ -50,11 +51,14 @@ const mapSession = (r: any): StudySession => ({
 
 // Shared in-memory cache so every screen using this hook shows data instantly
 // (stale-while-revalidate) instead of re-downloading everything on mount.
-type Snapshot = { tags: StudyTag[]; sessions: StudySession[]; at: number };
+type Snapshot = { tags: StudyTag[]; sessions: StudySession[]; at: number; cutoff: string; olderDayTotals: Record<string, number>; historyLoaded?: boolean };
 const memCache = new Map<string, Snapshot>();
 const pendingLoads = new Map<string, Promise<Snapshot>>();
 const FRESH_MS = 30 * 1000;
-const lsKey = (uid: string) => `fc_study_cache_${uid}`;
+const lsKey = (uid: string) => `fc_study_recent_v2_${uid}`;
+const snapshotListeners = new Map<string, Set<(snapshot: Snapshot) => void>>();
+const pendingHistory = new Map<string, Promise<StudySession[]>>();
+const pendingSaves = new Map<string, ReturnType<typeof setTimeout>>();
 
 function readSnapshot(uid: string): Snapshot | null {
   const m = memCache.get(uid);
@@ -62,32 +66,58 @@ function readSnapshot(uid: string): Snapshot | null {
   try {
     const raw = localStorage.getItem(lsKey(uid));
     if (!raw) return null;
+    if (raw.length > 500_000) return null;
     const s = JSON.parse(raw) as Snapshot;
     memCache.set(uid, s);
     return s;
   } catch { return null; }
 }
 
-function writeSnapshot(uid: string, tags: StudyTag[], sessions: StudySession[]) {
-  const s: Snapshot = { tags, sessions, at: Date.now() };
+function writeSnapshot(uid: string, tags: StudyTag[], sessions: StudySession[], extra: Partial<Snapshot> = {}) {
+  const s: Snapshot = { cutoff: recentStudyCutoff(), olderDayTotals: {}, ...memCache.get(uid), tags, sessions, at: Date.now(), ...extra };
   memCache.set(uid, s);
-  try { localStorage.setItem(lsKey(uid), JSON.stringify(s)); } catch { /* quota */ }
+  snapshotListeners.get(uid)?.forEach(listener => listener(s));
+  const pending = pendingSaves.get(uid);
+  if (pending) clearTimeout(pending);
+  pendingSaves.set(uid, setTimeout(() => {
+    pendingSaves.delete(uid);
+    // Detailed history stays in memory only; disk paint cache is intentionally small.
+    const recent = s.sessions.filter(row => row.startedAt >= s.cutoff).slice(0, 250);
+    const raw = JSON.stringify({ ...s, sessions: recent, historyLoaded: false, at: 0 });
+    if (raw.length < 500_000) {
+      try { localStorage.setItem(lsKey(uid), raw); } catch { /* quota */ }
+    }
+  }, 200));
   return s;
+}
+
+async function fetchSessions(uid: string, cutoff: string, older = false): Promise<StudySession[]> {
+  const rows: StudySession[] = [];
+  for (let offset = 0; ; offset += 500) {
+    let query = supabase.from('study_sessions').select(SESSION_COLUMNS).eq('user_id', uid);
+    query = older ? query.lt('started_at', cutoff) : query.gte('started_at', cutoff);
+    const { data, error } = await query.order('started_at', { ascending: false }).order('id').range(offset, offset + 499);
+    if (error) throw error;
+    rows.push(...(data ?? []).map(mapSession));
+    if (!data || data.length < 500) break;
+  }
+  return rows;
 }
 
 function fetchSnapshot(uid: string): Promise<Snapshot> {
   const pending = pendingLoads.get(uid);
   if (pending) return pending;
+  const cutoff = recentStudyCutoff();
   const p = Promise.all([
-    db.from('study_tags').select('*').eq('user_id', uid).order('created_at', { ascending: true }),
-    db.from('study_sessions').select('*').eq('user_id', uid).order('started_at', { ascending: false }),
-  ]).then(([tRes, sRes]: any[]) => {
-    if (tRes.error || sRes.error) {
+    supabase.from('study_tags').select('id, name, color').eq('user_id', uid).order('created_at', { ascending: true }),
+    fetchSessions(uid, cutoff),
+  ]).then(([tRes, rows]) => {
+    if (tRes.error) {
       const prev = readSnapshot(uid);
       if (prev) return prev;
-      throw tRes.error ?? sRes.error;
+      throw tRes.error;
     }
-    return writeSnapshot(uid, (tRes.data ?? []).map(mapTag), (sRes.data ?? []).map(mapSession));
+    return writeSnapshot(uid, (tRes.data ?? []).map(mapTag), rows, { cutoff, historyLoaded: false, olderDayTotals: {} });
   }).finally(() => { pendingLoads.delete(uid); });
   pendingLoads.set(uid, p);
   return p;
@@ -99,6 +129,18 @@ export function useStudyStore() {
   const [tags, setTags] = useState<StudyTag[]>(initial?.tags ?? []);
   const [sessions, setSessions] = useState<StudySession[]>(initial?.sessions ?? []);
   const [loading, setLoading] = useState(!initial);
+  const [olderDayTotals, setOlderDayTotals] = useState<Record<string, number>>(initial?.olderDayTotals ?? {});
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoaded, setHistoryLoaded] = useState(false);
+
+  useEffect(() => {
+    if (!user || isGuest) return;
+    const listeners = snapshotListeners.get(user.id) ?? new Set();
+    const listener = (s: Snapshot) => { setTags(s.tags); setSessions(s.sessions); setOlderDayTotals(s.olderDayTotals); setHistoryLoaded(!!s.historyLoaded); };
+    listeners.add(listener);
+    snapshotListeners.set(user.id, listeners);
+    return () => { listeners.delete(listener); };
+  }, [user?.id, isGuest]);
 
   useEffect(() => {
     let cancelled = false;
@@ -106,6 +148,7 @@ export function useStudyStore() {
       if (isGuest) {
         setTags(readLS<StudyTag>(GUEST_TAGS));
         setSessions(readLS<StudySession>(GUEST_SESSIONS));
+        setHistoryLoaded(true);
         setLoading(false);
         return;
       }
@@ -114,6 +157,8 @@ export function useStudyStore() {
       if (cached) {
         setTags(cached.tags);
         setSessions(cached.sessions);
+        setOlderDayTotals(cached.olderDayTotals);
+        setHistoryLoaded(!!cached.historyLoaded);
         setLoading(false);
         if (Date.now() - cached.at < FRESH_MS) return;
       } else {
@@ -124,6 +169,14 @@ export function useStudyStore() {
         if (cancelled) return;
         setTags(snap.tags);
         setSessions(snap.sessions);
+        // Compact all-time day totals preserve long streaks without loading old rows.
+        void supabase.rpc('study_day_totals', { _before: snap.cutoff, _timezone: Intl.DateTimeFormat().resolvedOptions().timeZone }).then(({ data, error }) => {
+          if (cancelled || error) return;
+          const current = memCache.get(user.id);
+          if (!current || current.historyLoaded) return;
+          const totals = Object.fromEntries((data ?? []).map(row => [row.day, row.seconds]));
+          writeSnapshot(user.id, current.tags, current.sessions, { olderDayTotals: totals, at: current.at });
+        });
       } catch (e) {
         console.error('[study-store] load failed', e);
       } finally {
@@ -138,8 +191,28 @@ export function useStudyStore() {
   useEffect(() => {
     if (isGuest || !user || loading) return;
     const cur = memCache.get(user.id);
-    writeSnapshot(user.id, tags, sessions).at = cur?.at ?? Date.now();
+    if (cur?.tags === tags && cur.sessions === sessions) return;
+    writeSnapshot(user.id, tags, sessions, { at: cur?.at ?? Date.now() });
   }, [tags, sessions, user, isGuest, loading]);
+
+  const loadHistory = useCallback(async (): Promise<StudySession[]> => {
+    if (isGuest) return readLS<StudySession>(GUEST_SESSIONS);
+    if (!user) return [];
+    const current = memCache.get(user.id) ?? await fetchSnapshot(user.id);
+    if (current.historyLoaded) return current.sessions;
+    setHistoryLoading(true);
+    let promise = pendingHistory.get(user.id);
+    if (!promise) {
+      promise = fetchSessions(user.id, current.cutoff, true).then(older => {
+        const latest = memCache.get(user.id) ?? current;
+        const all = mergeStudySessions(older, latest.sessions);
+        writeSnapshot(user.id, latest.tags, all, { historyLoaded: true, olderDayTotals: {} });
+        return all;
+      }).finally(() => pendingHistory.delete(user.id));
+      pendingHistory.set(user.id, promise);
+    }
+    try { return await promise; } finally { setHistoryLoading(false); }
+  }, [user?.id, isGuest]);
 
   const addTag = useCallback(async (name: string, color: string) => {
     if (isGuest) {
@@ -245,5 +318,5 @@ export function useStudyStore() {
     if (!isGuest) await db.from('study_sessions').delete().eq('id', id);
   }, [isGuest]);
 
-  return { tags, sessions, loading, addTag, updateTag, removeTag, addSession, updateSession, removeSession };
+  return { tags, sessions, loading, olderDayTotals, historyLoaded, historyLoading, loadHistory, addTag, updateTag, removeTag, addSession, updateSession, removeSession };
 }
