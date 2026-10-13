@@ -1,4 +1,3 @@
-# Planner updates
 # Study performance
 - [ ] Scope subject timer ticks to clock displays and progress card
 - [ ] Load recent sessions on boot; defer full history and preserve all-time streaks

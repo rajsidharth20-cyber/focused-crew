@@ -39,6 +39,11 @@ const StudyTimer = () => {
   const immersive = timerRunning;
 
   useEffect(() => {
+    if (fullscreen || timerRunning || study.loading) return;
+    void study.loadHistory().catch(() => toast.error('Could not load study history'));
+  }, [fullscreen, timerRunning, study.loading, study.loadHistory]);
+
+  useEffect(() => {
     if (idleResetTimer.current) {
       clearTimeout(idleResetTimer.current);
       idleResetTimer.current = null;
@@ -77,11 +82,11 @@ const StudyTimer = () => {
     setDownloadingReport(true);
     const t = toast.loading('Building your weekly report…');
     try {
-      const pastObjectives = await planner.loadPastObjectives();
+      const [pastObjectives, sessions] = await Promise.all([planner.loadPastObjectives(), study.loadHistory()]);
       const { generateWeeklyReportPDF } = await import('@/lib/weekly-report-pdf');
       await generateWeeklyReportPDF({
         username,
-        sessions: study.sessions,
+        sessions,
         tags: study.tags,
         subjects: planner.subjects,
         dailyObjectives: planner.dailyObjectives,
@@ -383,13 +388,13 @@ const StudyTimer = () => {
           <>
             <StudyObjectivesPanel subjects={planner.subjects} objectives={planner.dailyObjectives} onToggle={planner.toggleDailyObjective} />
 
-            <StudyStats
+            {study.historyLoaded && <StudyStats
               sessions={study.sessions}
               tags={study.tags}
               subjects={planner.subjects}
               objectives={planner.dailyObjectives}
               pastObjectives={planner.pastObjectives}
-            />
+            />}
 
             <SessionList sessions={study.sessions} tags={study.tags} subjects={planner.subjects} onRemove={study.removeSession} onUpdate={study.updateSession} />
 
