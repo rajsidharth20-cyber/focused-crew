@@ -1152,32 +1152,47 @@ export type Database = {
       }
       notification_log: {
         Row: {
+          attempts: number
           body: string | null
           category: string
           created_at: string
           dedupe_key: string
           id: string
+          last_error: string | null
+          sent_at: string | null
+          status: string
           title: string
+          updated_at: string
           url: string | null
           user_id: string
         }
         Insert: {
+          attempts?: number
           body?: string | null
           category: string
           created_at?: string
           dedupe_key: string
           id?: string
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
           title: string
+          updated_at?: string
           url?: string | null
           user_id: string
         }
         Update: {
+          attempts?: number
           body?: string | null
           category?: string
           created_at?: string
           dedupe_key?: string
           id?: string
+          last_error?: string | null
+          sent_at?: string | null
+          status?: string
           title?: string
+          updated_at?: string
           url?: string | null
           user_id?: string
         }
@@ -1335,6 +1350,7 @@ export type Database = {
           id: string
           is_private: boolean
           theme: string | null
+          timezone: string | null
           username: string | null
         }
         Insert: {
@@ -1346,6 +1362,7 @@ export type Database = {
           id: string
           is_private?: boolean
           theme?: string | null
+          timezone?: string | null
           username?: string | null
         }
         Update: {
@@ -1357,6 +1374,7 @@ export type Database = {
           id?: string
           is_private?: boolean
           theme?: string | null
+          timezone?: string | null
           username?: string | null
         }
         Relationships: []
@@ -1893,10 +1911,17 @@ export type Database = {
         Returns: Json
       }
       assert_chat_access: { Args: { _group_id?: string }; Returns: undefined }
+      claim_reminders: {
+        Args: { _items: Json }
+        Returns: {
+          dedupe_key: string
+        }[]
+      }
       consume_rate_limit: {
         Args: { _action: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
+      finish_reminders: { Args: { _results: Json }; Returns: undefined }
       get_profile_overview: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
@@ -1940,6 +1965,10 @@ export type Database = {
         }[]
       }
       username_available: { Args: { _username: string }; Returns: boolean }
+      verify_reminder_cron_secret: {
+        Args: { _secret: string }
+        Returns: boolean
+      }
     }
     Enums: {
       app_role: "admin" | "moderator" | "user"
