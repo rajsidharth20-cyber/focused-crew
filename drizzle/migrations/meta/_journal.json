@@ -85,6 +85,13 @@
       "when": 1791878238254,
       "tag": "0011_study_day_totals_for_lazy_history",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793643022226,
+      "tag": "0012_backend_reminder_scheduling",
+      "breakpoints": true
     }
   ]
 }
