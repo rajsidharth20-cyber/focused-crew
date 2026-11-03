@@ -38,14 +38,16 @@ if (Object.values(firebaseConfig).every(Boolean)) {
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const url = (event.notification.data && event.notification.data.url) || "/";
+  const candidate = event.notification.data && event.notification.data.url;
+  const path = typeof candidate === 'string' && /^\/(?!\/)/.test(candidate) ? candidate : '/';
+  const url = new URL(path, self.location.origin).href;
   event.waitUntil(
     (async () => {
       const all = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
       for (const client of all) {
-        if ("focus" in client) {
+        if (new URL(client.url).origin === self.location.origin && "focus" in client) {
           await client.focus();
-          client.postMessage({ type: "NOTIFICATION_CLICK", url });
+          client.postMessage({ type: "NOTIFICATION_CLICK", url: path });
           return;
         }
       }
