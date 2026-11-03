@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import {
   pushSupported, registerPushToken, removePushToken, onForegroundMessage, getPushConfig,
 } from '@/lib/push';
+import { claimNotification } from '@/lib/notification-dedupe';
 
 export type NotificationPrefs = {
   push_enabled: boolean;
@@ -76,16 +77,18 @@ export function usePushNotifications() {
   // Foreground messages -> in-app toast that navigates on tap.
   useEffect(() => {
     if (!user || isGuest || permission !== 'granted') return;
-    let unsub: any;
+    let unsub: (() => void) | undefined;
+    let disposed = false;
     onForegroundMessage((payload) => {
       const d = payload?.data ?? {};
-      if (!d.title) return;
+      if (disposed || document.visibilityState === 'hidden' || !d.title || !claimNotification(d.tag ?? '')) return;
+      const path = typeof d.url === 'string' && /^\/(?!\/)/.test(d.url) ? d.url : '/';
       toast(d.title, {
         description: d.body,
-        action: d.url ? { label: 'Open', onClick: () => navigate(d.url) } : undefined,
+        action: d.url ? { label: 'Open', onClick: () => navigate(path) } : undefined,
       });
-    }).then((fn) => { unsub = fn; });
-    return () => { if (typeof unsub === 'function') unsub(); };
+    }).then((fn) => { if (disposed) fn(); else unsub = fn; });
+    return () => { disposed = true; unsub?.(); };
   }, [user, isGuest, permission, navigate]);
 
   // Notification taps coming from the service worker.
@@ -93,7 +96,8 @@ export function usePushNotifications() {
     if (!('serviceWorker' in navigator)) return;
     const handler = (event: MessageEvent) => {
       if (event.data?.type === 'NOTIFICATION_CLICK' && event.data.url) {
-        navigate(event.data.url);
+        const url = event.data.url;
+        navigate(typeof url === 'string' && /^\/(?!\/)/.test(url) ? url : '/');
       }
     };
     navigator.serviceWorker.addEventListener('message', handler);

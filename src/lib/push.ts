@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
 import { supabase } from '@/integrations/supabase/client';
+import { waitForWorkerActive } from '@/lib/service-worker-active';
 
 export type NotificationCategory =
   | 'direct_messages'
@@ -83,12 +84,12 @@ export async function registerPushToken(userId: string): Promise<string | null> 
     scope: '/firebase-cloud-messaging-push-scope',
     updateViaCache: 'none',
   });
-  await navigator.serviceWorker.ready;
-  await swReg.update();
+  await waitForWorkerActive(swReg);
+  swReg.update().catch(() => {});
   const token = await getToken(messaging, { vapidKey: cfg.vapidKey, serviceWorkerRegistration: swReg });
   if (!token) return null;
 
-  await supabase.from('push_tokens').upsert(
+  const { error } = await supabase.from('push_tokens').upsert(
     {
       user_id: userId,
       token,
@@ -98,6 +99,7 @@ export async function registerPushToken(userId: string): Promise<string | null> 
     },
     { onConflict: 'token' },
   );
+  if (error) throw new Error('Could not save this device for notifications.');
 
   localStorage.setItem('tp_push_token', token);
   return token;
