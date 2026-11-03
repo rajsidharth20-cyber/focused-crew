@@ -1,3 +1,10 @@
+# Backend reminders
+- [ ] Finish secured backend reminder processing and bounded delivery retries
+- [ ] Activate one five-minute schedule and verify automatic execution
+- [ ] Remove duplicate signed-in reminder sends; preserve guests and social notifications
+- [ ] Test timing, preferences, concurrency, delivery failures and worker behavior
+- [ ] Report phone-only verification limitations
+
 # Study performance
 - [x] Scope subject timer ticks to clock displays and progress card
 - [x] Load recent sessions on boot; defer full history and preserve all-time streaks
