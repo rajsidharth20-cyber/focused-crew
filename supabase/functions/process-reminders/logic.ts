@@ -52,7 +52,11 @@ export function zonedToUtc(date: string, time: string, tz: string): Date | null 
   const guess = Date.UTC(+dm[1], +dm[2] - 1, +dm[3], hh, mm);
   let t = guess - offsetMs(guess, tz);
   t = guess - offsetMs(t, tz);
-  return new Date(t);
+  const result = new Date(t);
+  const actual = localParts(result, tz);
+  // A nonexistent wall time during a DST jump must not fire at another hour.
+  if (actual.date !== date || actual.hh !== hh || actual.mm !== mm) return null;
+  return result;
 }
 
 export function addDays(date: string, n: number) {
@@ -70,7 +74,9 @@ export function plannerDay(now: Date, tz: string, dayStartHour: number) {
   const h = Number.isInteger(dayStartHour) && dayStartHour >= 0 && dayStartHour <= 11 ? dayStartHour : 3;
   const day = p.hh < h ? addDays(p.date, -1) : p.date;
   const hs = `${String(h).padStart(2, "0")}:00`;
-  return { day, start: zonedToUtc(day, hs, tz)!, end: zonedToUtc(addDays(day, 1), hs, tz)!, localHour: p.hh };
+  const start = zonedToUtc(day, hs, tz) ?? new Date(`${day}T00:00:00Z`);
+  const end = zonedToUtc(addDays(day, 1), hs, tz) ?? new Date(start.getTime() + 86400000);
+  return { day, start, end, localHour: p.hh };
 }
 
 export type Stage = "30" | "15" | "now";
@@ -136,7 +142,7 @@ export function dailyReminders(i: DailyInput, day: string, localHour: number): R
   const out: Reminder[] = [];
   const minutes = Math.round(i.studiedSeconds / 60);
   // Reminders expire at the end of the planner day.
-  const endTtl = 3 * 3600;
+  const endTtl = Math.max(1, Math.min(3 * 3600, Math.floor((plannerDay(i.now, i.tz, i.dayStartHour).end.getTime() - i.now.getTime()) / 1000)));
   if (i.totalObjectives > 0 && i.openObjectives === 0) {
     out.push({
       user_id: i.userId, category: "goal_completion", title: "All objectives cleared ✈️",
