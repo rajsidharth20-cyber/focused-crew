@@ -1155,8 +1155,10 @@ export type Database = {
           attempts: number
           body: string | null
           category: string
+          claim_id: string | null
           created_at: string
           dedupe_key: string
+          delivered_device_ids: string[]
           id: string
           last_error: string | null
           sent_at: string | null
@@ -1170,8 +1172,10 @@ export type Database = {
           attempts?: number
           body?: string | null
           category: string
+          claim_id?: string | null
           created_at?: string
           dedupe_key: string
+          delivered_device_ids?: string[]
           id?: string
           last_error?: string | null
           sent_at?: string | null
@@ -1185,8 +1189,10 @@ export type Database = {
           attempts?: number
           body?: string | null
           category?: string
+          claim_id?: string | null
           created_at?: string
           dedupe_key?: string
+          delivered_device_ids?: string[]
           id?: string
           last_error?: string | null
           sent_at?: string | null
@@ -1911,6 +1917,14 @@ export type Database = {
         Returns: Json
       }
       assert_chat_access: { Args: { _group_id?: string }; Returns: undefined }
+      begin_reminder_run: { Args: { _owner: string }; Returns: Json }
+      claim_reminder_batch: {
+        Args: { _claim_id: string; _items: Json }
+        Returns: {
+          dedupe_key: string
+          delivered_device_ids: string[]
+        }[]
+      }
       claim_reminders: {
         Args: { _items: Json }
         Returns: {
@@ -1921,6 +1935,14 @@ export type Database = {
         Args: { _action: string; _limit: number; _window_seconds: number }
         Returns: boolean
       }
+      end_reminder_run: {
+        Args: { _cursor: string; _owner: string }
+        Returns: undefined
+      }
+      finish_reminder_batch: {
+        Args: { _claim_id: string; _results: Json }
+        Returns: undefined
+      }
       finish_reminders: { Args: { _results: Json }; Returns: undefined }
       get_profile_overview: { Args: { _user_id: string }; Returns: Json }
       has_role: {
@@ -1929,6 +1951,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      record_reminder_device: {
+        Args: { _claim_id: string; _device_id: string; _key: string }
+        Returns: undefined
+      }
+      reminder_user_batch: {
+        Args: { _after?: string; _limit?: number }
+        Returns: Json
       }
       remove_recurring_objective: {
         Args: { _template_id: string }
