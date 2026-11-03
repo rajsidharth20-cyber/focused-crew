@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { PlannerEvent, Commitment } from '@/hooks/use-planner-store';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
-import { sendPush } from '@/lib/push';
+import { claimNotification } from '@/lib/notification-dedupe';
 
 const localDay = (d = new Date()) => {
   const y = d.getFullYear();
@@ -37,19 +37,14 @@ export function useEventReminders(events: PlannerEvent[], commitments: Commitmen
           ? `🚨 "${title}" is starting now!`
           : `⏰ "${title}" starts in ${timing}`;
 
-        toast(message, { duration: 10000 });
-
         const uid = userRef.current;
-        if (uid) {
-          sendPush({
-            userIds: [uid],
-            category: kind === 'event' ? 'event_reminders' : 'schedule_reminders',
-            title: kind === 'event' ? 'Event reminder' : 'Schedule reminder',
-            body: message,
-            url: kind === 'event' ? '/planner' : '/',
-            dedupeKey,
-          }).catch(() => {});
-        } else if ('Notification' in window && Notification.permission === 'granted') {
+        const category = kind === 'event' ? 'event_reminders' : 'schedule_reminders';
+        // Registered users receive the backend's foreground toast. Keep local
+        // reminders for guests and users without a registered push device.
+        if (uid && localStorage.getItem('tp_push_token')) return;
+        if (!claimNotification(`${uid ?? 'guest'}:${category}:${dedupeKey}`)) return;
+        toast(message, { duration: 10000 });
+        if (!uid && 'Notification' in window && Notification.permission === 'granted') {
           new Notification(kind === 'event' ? 'Event Reminder' : 'Schedule Reminder', {
             body: message,
             icon: '/pwa-192x192.png',

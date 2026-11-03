@@ -36,6 +36,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [usernameLoading, setUsernameLoading] = useState(true);
   const isGuestRef = useRef(false);
 
+  // Persist IANA timezone for closed-app reminders, including travel/resume.
+  useEffect(() => {
+    if (!user || isGuest) return;
+    let saved: string | null = null;
+    let pending = false;
+    const sync = async () => {
+      if (document.visibilityState === 'hidden' || pending) return;
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (!timezone || timezone === saved) return;
+      pending = true;
+      try {
+        new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+        const { error } = await supabase.from('profiles').update({ timezone }).eq('id', user.id);
+        if (!error) saved = timezone;
+      } finally { pending = false; }
+    };
+    const resume = () => { sync().catch(() => {}); };
+    resume();
+    document.addEventListener('visibilitychange', resume);
+    window.addEventListener('focus', resume);
+    return () => {
+      document.removeEventListener('visibilitychange', resume);
+      window.removeEventListener('focus', resume);
+    };
+  }, [user?.id, isGuest]);
+
   /**
    * Resolves the profile username. A failed request (offline, transient) must
    * NOT be treated as "no call sign" — otherwise the prompt pops up on refresh
