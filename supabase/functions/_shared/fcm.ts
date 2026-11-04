@@ -1,6 +1,8 @@
 // Shared Firebase Cloud Messaging (HTTP v1) sender used by send-push and
 // process-reminders. Never logs tokens or message contents.
 
+declare const Deno: { env: { get(name: string): string | undefined } };
+
 type ServiceAccount = { client_email: string; private_key: string; project_id: string };
 
 function pemToArrayBuffer(pem: string) {
