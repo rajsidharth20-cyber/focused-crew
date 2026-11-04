@@ -8,6 +8,7 @@
 export const FALLBACK_TZ = "Asia/Kolkata";
 /** A start reminder older than this is dropped instead of sent late. */
 export const START_GRACE_MIN = 10;
+export const EVENT_TTL_MIN_SECONDS = 3600;
 
 export function validTz(tz: string | null | undefined): string {
   if (!tz) return FALLBACK_TZ;
@@ -126,7 +127,9 @@ export function scheduleReminders(
         body, url: kind === "event" ? "/planner" : "/",
         // Time is part of the key so editing an event's time re-arms its reminders.
         dedupe_key: `${userId}:${category}:${kind}-${it.id}-${date}-${hhmm}-${stage}`,
-        ttlSeconds: Math.max(60, (startAt.getTime() - now.getTime()) / 1000 + START_GRACE_MIN * 60),
+        // A sleeping phone can hold pushes for a while; keep event alerts deliverable
+        // until an hour after the start instead of dropping them after minutes.
+        ttlSeconds: Math.max(EVENT_TTL_MIN_SECONDS, (startAt.getTime() - now.getTime()) / 1000 + 3600),
       });
     }
   }

@@ -92,3 +92,11 @@ describe('foreground notifications and worker activation', () => {
     vi.useRealTimers();
   });
 });
+
+describe('event reminder delivery window', () => {
+  it('keeps event and schedule pushes deliverable for at least an hour', () => {
+    const now = new Date('2026-11-04T14:20:00Z');
+    const [r] = scheduleReminders('u', 'event', [{ id: 'e', title: 'Testing', start_time: '19:47', date: '2026-11-04', recurring_days: null }], now, 'Asia/Kolkata');
+    expect(r.ttlSeconds).toBeGreaterThanOrEqual(3600);
+  });
+});
