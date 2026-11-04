@@ -1,8 +1,8 @@
 # Backend reminders
-- [ ] Finish secured backend reminder processing and bounded delivery retries
-- [ ] Activate one five-minute schedule and verify automatic execution
-- [ ] Remove duplicate signed-in reminder sends; preserve guests and social notifications
-- [ ] Test timing, preferences, concurrency, delivery failures and worker behavior
+- [x] Finish secured backend reminder processing and bounded delivery retries
+- [x] Activate one five-minute schedule and verify automatic execution
+- [x] Remove duplicate signed-in reminder sends; preserve guests and social notifications
+- [x] Test timing, preferences, concurrency, delivery failures and worker behavior
 - [ ] Report phone-only verification limitations
 
 # Study performance
