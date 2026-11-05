@@ -1,3 +1,7 @@
+# Chat notifications
+- [ ] Fix silent send failures, group reply authorization and delivery tracking
+- [ ] Verify private and group sends and preserve reminder behavior
+
 # Backend reminders
 - [x] Finish secured backend reminder processing and bounded delivery retries
 - [x] Activate one five-minute schedule and verify automatic execution
