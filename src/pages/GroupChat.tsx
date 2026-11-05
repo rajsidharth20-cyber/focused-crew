@@ -216,8 +216,9 @@ export default function GroupChat() {
 
   const notifyGroup = async (messageId: string, content: string, replyId: string | null) => {
     if (!groupId || !user) return;
-    const { data: members } = await supabase
+    const { data: members, error } = await supabase
       .from('group_members').select('user_id').eq('group_id', groupId);
+    if (error) { console.error('[push] group recipients unavailable'); return; }
     const ids = (members ?? []).map((m: any) => m.user_id).filter((id: string) => id !== user.id);
     if (!ids.length) return;
 
@@ -304,8 +305,10 @@ export default function GroupChat() {
       const replyId = replyTo?.id ?? null;
       const result = await callFocusBot<{ messageId: string; removed?: boolean; moderationPending?: boolean }>({ action: 'send_group_message', groupId, imageUrl: path, replyToId: replyId });
       if (result.removed) toast.error('FocusBot removed this image for violating the group rules.');
-      else if (result.moderationPending) toast.error('Image sent, but FocusBot could not complete its safety check.');
-      else void notifyGroup(result.messageId, 'Sent a photo', replyId);
+      else {
+        void notifyGroup(result.messageId, 'Sent a photo', replyId);
+        if (result.moderationPending) toast.error('Image sent, but FocusBot could not complete its safety check.');
+      }
       setReplyTo(null);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Could not send this image.');

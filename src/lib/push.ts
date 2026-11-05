@@ -1,6 +1,7 @@
 import { initializeApp, getApps, type FirebaseApp } from 'firebase/app';
 import { getMessaging, getToken, onMessage, isSupported, type Messaging } from 'firebase/messaging';
 import { supabase } from '@/integrations/supabase/client';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { waitForWorkerActive } from '@/lib/service-worker-active';
 
 export type NotificationCategory =
@@ -132,7 +133,13 @@ export async function sendPush(args: {
   const targets = args.userIds.filter(Boolean);
   if (targets.length === 0) return;
   try {
-    await supabase.functions.invoke('send-push', { body: { ...args, userIds: targets } });
+    const { data, error } = await supabase.functions.invoke('send-push', { body: { ...args, userIds: targets } });
+    if (error) {
+      const details = error instanceof FunctionsHttpError ? await error.context.text() : error.message;
+      console.error('[push] send rejected', details);
+      return;
+    }
+    if (data?.failed) console.error('[push] some devices could not receive the notification');
   } catch (e) {
     console.error('[push] send failed', e);
   }
