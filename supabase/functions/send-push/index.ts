@@ -3,6 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { loadServiceAccount, sendToToken, safeAppPath } from "../_shared/fcm.ts";
 import { z } from "npm:zod@3";
+import { deliverChatPush } from "../_shared/chat-delivery.ts";
 
 type Category =
   | "direct_messages"
@@ -64,10 +65,12 @@ async function isRelated(
       .or(
         `and(requester_id.eq.${callerId},addressee_id.eq.${targetId}),and(requester_id.eq.${targetId},addressee_id.eq.${callerId})`,
       );
-    return (friendCount ?? 0) > 0;
+    if ((friendCount ?? 0) > 0) return true;
+    // Group replies are mentions too; they do not require a private chat history.
+    if (category !== "mentions") return false;
   }
 
-  if (category === "group_messages") {
+  if (category === "group_messages" || category === "mentions") {
     const { data: mine } = await admin.from("group_members").select("group_id").eq("user_id", callerId);
     const groupIds = (mine ?? []).map((r: any) => r.group_id);
     if (groupIds.length === 0) return false;
@@ -174,28 +177,25 @@ serve(async (req) => {
     const sa = loadServiceAccount();
 
     let sent = 0;
-
-
+    let failed = 0;
+    let noDevices = 0;
+    let deduplicated = 0;
     for (const userId of allowed) {
-      // Deduplicate: unique dedupe_key means the same event never fires twice.
       const dedupeKey = `${userId}:${category}:${dedupeBase}`;
-      const { error: logError } = await admin.from("notification_log").insert({
-        user_id: userId, category, title, body, url, dedupe_key: dedupeKey,
-      });
-      if (logError) continue; // duplicate (or write failure) -> skip
-
-      const { data: tokens } = await admin
-        .from("push_tokens").select("token").eq("user_id", userId);
-      if (!tokens?.length) continue;
-
-      for (const { token } of tokens) {
-        const result = await sendToToken(sa, token, { title, body, url, category, tag: dedupeKey });
-        if (result.outcome === "ok") sent++;
-        if (result.outcome === "invalid_token") await admin.from("push_tokens").delete().eq("user_id", userId).eq("token", token);
+      try {
+        const message = { title, body, url, category, tag: dedupeKey };
+        const result = await deliverChatPush(admin, userId, message, token => sendToToken(sa, token, message));
+        sent += result.sent;
+        failed += result.failed;
+        noDevices += result.noDevices;
+        deduplicated += result.deduplicated;
+      } catch {
+        failed++;
+        console.error(JSON.stringify({ event: 'chat_push_recipient_failed' }));
       }
     }
-
-    return new Response(JSON.stringify({ sent }), {
+    console.log(JSON.stringify({ event: 'chat_push_delivery', category, recipients: allowed.length, sent, failed, noDevices, deduplicated }));
+    return new Response(JSON.stringify({ sent, failed, noDevices, deduplicated }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

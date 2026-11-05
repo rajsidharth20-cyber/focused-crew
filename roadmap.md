@@ -1,9 +1,13 @@
+# Chat notifications
+- [x] Fix silent send failures, group reply authorization and delivery tracking
+- [x] Verify signed-in private/group send requests and reminder tests; test recipient has no registered device, so physical delivery remains unverified
+
 # Backend reminders
 - [x] Finish secured backend reminder processing and bounded delivery retries
 - [x] Activate one five-minute schedule and verify automatic execution
 - [x] Remove duplicate signed-in reminder sends; preserve guests and social notifications
 - [x] Test timing, preferences, concurrency, delivery failures and worker behavior
-- [ ] Report phone-only verification limitations
+- [x] Report phone-only verification limitations
 
 # Study performance
 - [x] Scope subject timer ticks to clock displays and progress card
