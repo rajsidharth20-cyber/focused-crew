@@ -1,6 +1,6 @@
 # Chat notifications
-- [ ] Verify recipient preferences and registration; fix remaining registration or preference handling failures
-- [ ] Verify real device delivery where authorized; document missing-device and phone-only blockers
+- [x] Verify recipient preferences and registration; prevent automatic token refresh when push is disabled
+- [ ] Verify real device delivery where authorized; recipient accounts without registered devices still require on-device setup
 - [x] Fix silent send failures, group reply authorization and delivery tracking
 - [x] Verify signed-in private/group send requests and reminder tests; test recipient has no registered device, so physical delivery remains unverified
 

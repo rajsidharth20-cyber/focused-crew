@@ -103,14 +103,19 @@ export async function registerPushToken(userId: string): Promise<string | null> 
   if (error) throw new Error('Could not save this device for notifications.');
 
   localStorage.setItem('tp_push_token', token);
+  localStorage.setItem('tp_push_token_user_id', userId);
   return token;
 }
 
-export async function removePushToken() {
+export async function removePushToken(userId: string) {
   const token = localStorage.getItem('tp_push_token');
   if (!token) return;
-  await supabase.from('push_tokens').delete().eq('token', token);
+  const tokenUserId = localStorage.getItem('tp_push_token_user_id');
+  if (tokenUserId && tokenUserId !== userId) return;
+  const { error } = await supabase.from('push_tokens').delete().eq('token', token).eq('user_id', userId);
+  if (error) throw new Error('Could not remove this device from notifications.');
   localStorage.removeItem('tp_push_token');
+  localStorage.removeItem('tp_push_token_user_id');
 }
 
 export async function onForegroundMessage(handler: (payload: any) => void) {
