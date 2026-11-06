@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
@@ -46,6 +46,7 @@ export function usePushNotifications() {
   const [busy, setBusy] = useState(false);
   const [prefs, setPrefs] = useState<NotificationPrefs>(DEFAULT_PREFS);
   const [loadingPrefs, setLoadingPrefs] = useState(true);
+  const prefsReadyForUser = useRef<string | null>(null);
 
   const supported = pushSupported();
 
@@ -56,23 +57,32 @@ export function usePushNotifications() {
 
   // Load preferences
   useEffect(() => {
-    if (!user || isGuest) { setLoadingPrefs(false); return; }
+    if (!user || isGuest) {
+      prefsReadyForUser.current = null;
+      setPrefs(DEFAULT_PREFS);
+      setLoadingPrefs(false);
+      return;
+    }
     let cancelled = false;
+    prefsReadyForUser.current = null;
+    setPrefs(DEFAULT_PREFS);
+    setLoadingPrefs(true);
     (async () => {
       const { data } = await supabase
         .from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle();
       if (cancelled) return;
       if (data) setPrefs({ ...DEFAULT_PREFS, ...data } as NotificationPrefs);
+      prefsReadyForUser.current = user.id;
       setLoadingPrefs(false);
     })();
     return () => { cancelled = true; };
-  }, [user, isGuest]);
+  }, [user?.id, isGuest]);
 
-  // Keep the device token fresh whenever permission is already granted.
+  // Refresh only after this account's saved preference has loaded and permits push.
   useEffect(() => {
-    if (!user || isGuest || permission !== 'granted') return;
+    if (!user || isGuest || loadingPrefs || prefsReadyForUser.current !== user.id || !prefs.push_enabled || permission !== 'granted') return;
     registerPushToken(user.id).catch((e) => console.error('[push] token refresh failed', e));
-  }, [user, isGuest, permission]);
+  }, [user?.id, isGuest, permission, loadingPrefs, prefs.push_enabled]);
 
   // Foreground messages -> in-app toast that navigates on tap.
   useEffect(() => {
@@ -107,6 +117,10 @@ export function usePushNotifications() {
   const enable = useCallback(async () => {
     if (!supported) { toast.error('This browser does not support push notifications.'); return false; }
     if (!user || isGuest) { toast.error('Sign in to turn on notifications.'); return false; }
+    if (window.top !== window.self) {
+      toast.error('Open the app in its own tab to enable notifications.');
+      return false;
+    }
     setBusy(true);
     try {
       const result = await Notification.requestPermission();
@@ -120,8 +134,9 @@ export function usePushNotifications() {
         toast.error('Could not set up notifications on this device.');
         return false;
       }
-      await supabase.from('notification_preferences')
-        .upsert({ user_id: user.id, ...prefs, push_enabled: true }, { onConflict: 'user_id' });
+      const { error } = await supabase.from('notification_preferences')
+        .upsert({ user_id: user.id, push_enabled: true }, { onConflict: 'user_id' });
+      if (error) throw new Error('Could not save notification settings.');
       setPrefs((p) => ({ ...p, push_enabled: true }));
       localStorage.setItem('tp_push_asked', '1');
       toast.success('Notifications are on.');
@@ -133,33 +148,40 @@ export function usePushNotifications() {
     } finally {
       setBusy(false);
     }
-  }, [supported, user, isGuest, prefs]);
+  }, [supported, user?.id, isGuest]);
 
   const disable = useCallback(async () => {
-    if (!user) return;
+    if (!user || isGuest) return;
     setBusy(true);
     try {
-      await removePushToken();
-      await supabase.from('notification_preferences')
-        .upsert({ user_id: user.id, ...prefs, push_enabled: false }, { onConflict: 'user_id' });
+      const { error } = await supabase.from('notification_preferences')
+        .upsert({ user_id: user.id, push_enabled: false }, { onConflict: 'user_id' });
+      if (error) throw new Error('Could not save notification settings.');
       setPrefs((p) => ({ ...p, push_enabled: false }));
+      try {
+        await removePushToken(user.id);
+      } catch (e) {
+        console.error('[push] device cleanup failed after notifications were disabled');
+      }
       toast.success('Notifications turned off.');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not turn off notifications.');
     } finally {
       setBusy(false);
     }
-  }, [user, prefs]);
+  }, [user?.id, isGuest]);
 
   const updatePref = useCallback(async (key: keyof NotificationPrefs, value: boolean) => {
     if (!user) return;
-    const next = { ...prefs, [key]: value };
-    setPrefs(next);
+    const previousValue = prefs[key];
+    setPrefs((current) => ({ ...current, [key]: value }));
     const { error } = await supabase.from('notification_preferences')
-      .upsert({ user_id: user.id, ...next }, { onConflict: 'user_id' });
+      .upsert({ user_id: user.id, [key]: value }, { onConflict: 'user_id' });
     if (error) {
-      setPrefs(prefs);
+      setPrefs((current) => current[key] === value ? { ...current, [key]: previousValue } : current);
       toast.error('Could not save that setting.');
     }
-  }, [user, prefs]);
+  }, [user?.id, prefs]);
 
   return {
     supported, configured, permission, prefs, loadingPrefs, busy,
