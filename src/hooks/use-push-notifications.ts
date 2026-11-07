@@ -7,6 +7,7 @@ import {
   pushSupported, registerPushToken, removePushToken, onForegroundMessage, getPushConfig,
 } from '@/lib/push';
 import { claimNotification } from '@/lib/notification-dedupe';
+import { saveNotificationPreference } from '@/lib/notification-preferences';
 
 export type NotificationPrefs = {
   push_enabled: boolean;
@@ -175,9 +176,9 @@ export function usePushNotifications() {
     if (!user) return;
     const previousValue = prefs[key];
     setPrefs((current) => ({ ...current, [key]: value }));
-    const { error } = await supabase.from('notification_preferences')
-      .upsert({ user_id: user.id, [key]: value }, { onConflict: 'user_id' });
-    if (error) {
+    try {
+      await saveNotificationPreference(supabase, user.id, key, value, DEFAULT_PREFS);
+    } catch {
       setPrefs((current) => current[key] === value ? { ...current, [key]: previousValue } : current);
       toast.error('Could not save that setting.');
     }

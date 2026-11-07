@@ -3,6 +3,7 @@
 - [ ] Verify real device delivery where authorized; recipient accounts without registered devices still require on-device setup
 - [x] Fix silent send failures, group reply authorization and delivery tracking
 - [x] Verify signed-in private/group send requests and reminder tests; test recipient has no registered device, so physical delivery remains unverified
+- [x] Fix preference updates to save one setting without overwriting other saved choices
 
 # Backend reminders
 - [x] Finish secured backend reminder processing and bounded delivery retries
