@@ -4,6 +4,7 @@ import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { loadServiceAccount, sendToToken, safeAppPath } from "../_shared/fcm.ts";
 import { z } from "npm:zod@3";
 import { deliverChatPush } from "../_shared/chat-delivery.ts";
+import { directMessageTitle } from "../_shared/direct-message-title.ts";
 
 type Category =
   | "direct_messages"
@@ -132,7 +133,7 @@ serve(async (req) => {
     if (SELF_CATEGORIES.includes(category)) return new Response(JSON.stringify({ sent: 0, skipped: "backend scheduled" }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     if (!CATEGORIES.includes(category)) throw new Error("Invalid category");
 
-    const title: string = String(payload.title ?? "Focused Crew").slice(0, 120);
+    let title: string = String(payload.title ?? "Focused Crew").slice(0, 120);
     const body: string = String(payload.body ?? "").slice(0, 240);
     const url = safeAppPath(payload.url);
     const dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
@@ -148,6 +149,12 @@ serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+    if (category === 'direct_messages') {
+      const { data: sender, error } = await admin.from('profiles')
+        .select('full_name, username').eq('id', caller.id).maybeSingle();
+      if (error) throw error;
+      title = directMessageTitle(sender);
+    }
 
     // Only notify people the caller actually has a relationship with.
     const authorized = allowSelf
