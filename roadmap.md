@@ -15,6 +15,8 @@
 - [x] Fix preference updates to save one setting without overwriting other saved choices
 
 # Backend reminders
+- [x] Recheck automatic scheduling authentication, fair user batches and delivery outcomes (13:15 UTC automatic run verified; 23 tests passed)
+- [ ] Verify closed-phone reminder display and save the remaining registered user's timezone (requires that user to open the app; seven accounts have no registered devices)
 - [x] Finish secured backend reminder processing and bounded delivery retries
 - [x] Activate one five-minute schedule and verify automatic execution
 - [x] Remove duplicate signed-in reminder sends; preserve guests and social notifications

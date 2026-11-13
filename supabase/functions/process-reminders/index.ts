@@ -2,6 +2,7 @@ import { createClient } from 'npm:@supabase/supabase-js@2';
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { loadServiceAccount, sendToToken } from '../_shared/fcm.ts';
 import { countObjectives, dailyReminders, plannerDay, scheduleReminders, validTz, type ScheduledItem, type ObjectiveRow, type Reminder } from './logic.ts';
+import { exhaustedReminderUsers } from './batching.ts';
 
 type UserBatch = {
   user: { id: string; timezone: string; day_start_hour: number };
@@ -45,6 +46,7 @@ Deno.serve(async (req) => {
       const users = data as UserBatch[];
       if (!users.length) { cursor = null; break; }
       // Four users at a time; each user sends sequentially to bounded devices.
+      let processedCount = 0;
       for (let offset = 0; offset < users.length; offset += 4) {
         if (Date.now() - started >= 90_000) break;
         const slice = users.slice(offset, offset + 4);
@@ -102,8 +104,10 @@ Deno.serve(async (req) => {
           }
         }));
         cursor = slice.at(-1)?.user.id ?? cursor;
+        processedCount += slice.length;
       }
-      if (users.length < 100) { cursor = null; break; }
+      if (exhaustedReminderUsers(users.length, processedCount)) { cursor = null; break; }
+      if (processedCount < users.length) break;
     }
     metrics.duration_ms = Date.now() - started;
     console.log(JSON.stringify({ event: 'reminder_run', run_id: runId, ...metrics }));

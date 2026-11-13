@@ -5,6 +5,7 @@
 - Persist objective mutations optimistically with operation-scoped rollback and exclude in-flight edits from startup revalidation, because slow requests must not overwrite newer local work.
 - Dispatch social pushes with the shared atomic notification claims and per-device tracking, because failed or unregistered delivery must not be recorded as sent.
 - Evaluate signed-in scheduled reminders only through the secret-authenticated backend scheduler, with atomic claims and per-device success tracking, because closed tabs cannot schedule and retries must not resend to successful devices.
+- Preserve the reminder cursor on time-limited partial pages, because later users must not be starved by repeated restarts of a short final batch.
 - Use data-only FCM payloads with one background service-worker display and shared foreground deduplication, because mixing automatic and manual display produces duplicate notifications.
 - Enforce reporting thresholds and messaging restrictions transactionally at the database boundary, because client-only safeguards can be bypassed and concurrent reports must count reliably.
 - Share one user-events Realtime channel per signed-in browser session, because mounting multiple social hooks must not multiply subscriptions.
