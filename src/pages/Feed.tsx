@@ -1,12 +1,12 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { PenSquare, Users } from 'lucide-react';
 import { BottomNav } from '@/components/shell/BottomNav';
 import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/EmptyState';
 import { StoryBar } from '@/components/social/StoryBar';
 import { PostCard } from '@/components/social/PostCard';
-import { ComposeDialog } from '@/components/social/ComposeDialog';
-import { FriendsDialog } from '@/components/social/FriendsDialog';
+const ComposeDialog = lazy(() => import('@/components/social/ComposeDialog').then(m => ({ default: m.ComposeDialog })));
+const FriendsDialog = lazy(() => import('@/components/social/FriendsDialog').then(m => ({ default: m.FriendsDialog })));
 import { useFeed } from '@/hooks/use-feed';
 import { useFriends } from '@/hooks/use-friends';
 
@@ -109,14 +109,16 @@ export default function Feed({ embedded = false }: { embedded?: boolean } = {}) 
         </div>
       </main>
 
-      <ComposeDialog
+      <Suspense fallback={null}>
+      {compose !== null && <ComposeDialog
         open={compose !== null}
         mode={compose ?? 'post'}
         onOpenChange={v => setCompose(v ? compose : null)}
         onCreatePost={createPost}
         onCreateStory={createStory}
-      />
-      <FriendsDialog open={friendsOpen} onOpenChange={setFriendsOpen} />
+      />}
+      {friendsOpen && <FriendsDialog open={friendsOpen} onOpenChange={setFriendsOpen} />}
+      </Suspense>
       {!embedded && <BottomNav />}
     </div>
   );

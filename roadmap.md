@@ -1,3 +1,7 @@
+# Social performance
+- [x] Share cached friends/groups/feed reads and eliminate loading waterfalls
+- [x] Split Social tabs and verify signed-in switching, chat, and live presence regressions
+
 # Startup performance
 - [x] Hydrate returning auth and planner snapshots synchronously without blocking revalidation
 - [x] Split hidden dialogs, defer push/live subscriptions, and configure query caching

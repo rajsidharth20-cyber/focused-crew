@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
 import type { SocialProfile } from '@/hooks/use-friends';
+import { useSocialResource } from '@/hooks/use-social-resource';
+import type { SetStateAction } from 'react';
 
 const db = supabase as any;
 
@@ -36,63 +38,46 @@ export interface PostComment {
 /** Posts + stories that RLS already limits to the signed-in user and their friends. */
 export function useFeed() {
   const { user } = useAuth();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [stories, setStories] = useState<Story[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
-  const [likes, setLikes] = useState<Record<string, string[]>>({});
-  const [commentCounts, setCommentCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    const [{ data: postRows }, { data: storyRows }] = await Promise.all([
-      db.from('posts').select('*').order('created_at', { ascending: false }).limit(100),
-      db.from('stories').select('*').order('created_at', { ascending: true }),
+  const empty = { posts: [] as Post[], stories: [] as Story[], profiles: {} as Record<string, SocialProfile>, likes: {} as Record<string, string[]>, commentCounts: {} as Record<string, number> };
+  const fetchFeed = useCallback(async () => {
+    if (!user) return empty;
+    const [postResult, storyResult] = await Promise.all([
+      db.from('posts').select('id, user_id, kind, caption, image_url, created_at').order('created_at', { ascending: false }).limit(100),
+      db.from('stories').select('id, user_id, image_url, caption, background, created_at, expires_at').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true }),
     ]);
-    const p = (postRows ?? []) as Post[];
-    const s = (storyRows ?? []) as Story[];
-    setPosts(p);
-    setStories(s);
-
-    const ids = Array.from(new Set([...p.map(x => x.user_id), ...s.map(x => x.user_id)]));
-    if (ids.length) {
-      const { data: profs } = await db
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .in('id', ids);
-      const map: Record<string, SocialProfile> = {};
-      ((profs ?? []) as SocialProfile[]).forEach(x => (map[x.id] = x));
-      setProfiles(map);
-    }
-
-    const postIds = p.map(x => x.id);
-    if (postIds.length) {
-      const [{ data: likeRows }, { data: commentRows }] = await Promise.all([
-        db.from('post_likes').select('post_id, user_id').in('post_id', postIds),
-        db.from('post_comments').select('post_id').in('post_id', postIds),
-      ]);
-      const lm: Record<string, string[]> = {};
-      ((likeRows ?? []) as { post_id: string; user_id: string }[]).forEach(r => {
-        (lm[r.post_id] ??= []).push(r.user_id);
-      });
-      setLikes(lm);
-      const cm: Record<string, number> = {};
-      ((commentRows ?? []) as { post_id: string }[]).forEach(r => {
-        cm[r.post_id] = (cm[r.post_id] ?? 0) + 1;
-      });
-      setCommentCounts(cm);
-    } else {
-      setLikes({});
-      setCommentCounts({});
-    }
-    setLoading(false);
-  }, [user]);
+    if (postResult.error || storyResult.error) throw postResult.error || storyResult.error;
+    const posts = (postResult.data ?? []) as Post[];
+    const stories = (storyResult.data ?? []) as Story[];
+    const ids = [...new Set([...posts.map(p => p.user_id), ...stories.map(s => s.user_id)])];
+    const postIds = posts.map(p => p.id);
+    // Profiles, likes, and counts are independent: no extra request waterfall.
+    const results = await Promise.all([
+      ids.length ? db.from('profiles').select('id, username, full_name, avatar_url').in('id', ids) : Promise.resolve({ data: [] }),
+      postIds.length ? db.from('post_likes').select('post_id, user_id').in('post_id', postIds) : Promise.resolve({ data: [] }),
+      postIds.length ? db.from('post_comments').select('post_id').in('post_id', postIds) : Promise.resolve({ data: [] }),
+    ]);
+    const failed = results.find(r => r.error);
+    if (failed) throw failed.error;
+    const profiles: Record<string, SocialProfile> = {};
+    (results[0].data ?? []).forEach((p: SocialProfile) => { profiles[p.id] = p; });
+    const likes: Record<string, string[]> = {};
+    (results[1].data ?? []).forEach((r: { post_id: string; user_id: string }) => { (likes[r.post_id] ??= []).push(r.user_id); });
+    const commentCounts: Record<string, number> = {};
+    (results[2].data ?? []).forEach((r: { post_id: string }) => { commentCounts[r.post_id] = (commentCounts[r.post_id] ?? 0) + 1; });
+    return { posts, stories, profiles, likes, commentCounts };
+  }, [user?.id]);
+  const { data: state, setData, loading, reload: load } = useSocialResource(user?.id, 'feed', empty, fetchFeed);
+  const { posts, stories, profiles, likes, commentCounts } = state;
+  function setter<K extends keyof typeof empty>(key: K) {
+    return (update: SetStateAction<(typeof empty)[K]>) => setData(prev => ({ ...prev, [key]: typeof update === 'function' ? (update as (value: (typeof empty)[K]) => (typeof empty)[K])(prev[key]) : update }));
+  }
+  const setPosts = setter('posts');
+  const setStories = setter('stories');
+  const setProfiles = setter('profiles');
+  const setLikes = setter('likes');
+  const setCommentCounts = setter('commentCounts');
 
   useEffect(() => {
-    load();
     if (!user) return;
     const onPost = onUserEvent(user.id, 'posts', payload => {
       const row = payload.new as unknown as Post;

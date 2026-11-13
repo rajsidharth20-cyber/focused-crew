@@ -22,6 +22,8 @@ import {
 } from "@/components/ui/context-menu";
 import { useHiddenMessages } from "@/hooks/use-hidden-messages";
 import { useLiveStudy } from "@/hooks/use-live-study";
+import { useSocialResource } from "@/hooks/use-social-resource";
+import { onUserEvent } from "@/lib/user-events";
 import {
   ArrowLeft,
   Loader2,
@@ -150,45 +152,46 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
   const { counts } = useUnreadMessages();
-  const [people, setPeople] = useState<Profile[]>([]);
-  const [lastMessages, setLastMessages] = useState<Record<string, Message>>({});
-  const [loading, setLoading] = useState(true);
-  const instanceId = useId();
-
-  const load = useCallback(async () => {
-    if (!user) return;
-    const [{ data: profiles }, { data: msgs }] = await Promise.all([
-      supabase.from("profiles").select("id, username, full_name, avatar_url").neq("id", user.id),
-      supabase
-        .from("messages")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(500),
+  const fetchChats = useCallback(async () => {
+    if (!user) return { people: [] as Profile[], lastMessages: {} as Record<string, Message> };
+    const [profileResult, messageResult] = await Promise.all([
+      supabase.from('profiles').select('id, username, full_name, avatar_url').neq('id', user.id),
+      supabase.from('messages').select('id, sender_id, receiver_id, message, created_at, read_at')
+        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order('created_at', { ascending: false }).limit(500),
     ]);
-    const latest: Record<string, Message> = {};
-    ((msgs as Message[]) ?? []).forEach((m) => {
+    if (profileResult.error || messageResult.error) throw profileResult.error || messageResult.error;
+    const lastMessages: Record<string, Message> = {};
+    (messageResult.data ?? []).forEach(m => {
       const other = m.sender_id === user.id ? m.receiver_id : m.sender_id;
-      if (!latest[other]) latest[other] = m;
+      if (!lastMessages[other]) lastMessages[other] = m;
     });
-    setLastMessages(latest);
-    setPeople((profiles as Profile[]) ?? []);
-    setLoading(false);
-  }, [user]);
-
+    return { people: (profileResult.data ?? []) as Profile[], lastMessages };
+  }, [user?.id]);
+  const { data: state, setData, loading } = useSocialResource(user?.id, 'chats', { people: [] as Profile[], lastMessages: {} as Record<string, Message> }, fetchChats);
+  const { people, lastMessages } = state;
   useEffect(() => {
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-    load();
-    const channel = supabase
-      .channel(`chat-list-${instanceId}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, () => load())
-      .subscribe();
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [user, load, instanceId]);
+    if (!user) return;
+    return onUserEvent(user.id, 'messages', payload => {
+      const row = payload.new as unknown as Message;
+      if (payload.eventType === 'DELETE') {
+        const id = (payload.old as { id?: string }).id;
+        setData(prev => ({ ...prev, lastMessages: Object.fromEntries(Object.entries(prev.lastMessages).filter(([, m]) => m.id !== id)) }));
+        return;
+      }
+      if (!row.id || (row.sender_id !== user.id && row.receiver_id !== user.id)) return;
+      const other = row.sender_id === user.id ? row.receiver_id : row.sender_id;
+      setData(prev => {
+        const last = prev.lastMessages[other];
+        if (last && last.id !== row.id && last.created_at > row.created_at) return prev;
+        return { ...prev, lastMessages: { ...prev.lastMessages, [other]: row } };
+      });
+      if (!people.some(p => p.id === other)) {
+        void supabase.from('profiles').select('id, username, full_name, avatar_url').eq('id', other).maybeSingle().then(({ data }) => {
+          if (data) setData(prev => ({ ...prev, people: [...prev.people.filter(p => p.id !== other), data] }));
+        });
+      }
+    });
+  }, [user?.id, setData, people]);
 
   const { isUserLive } = useLiveStudy(people.map((p) => p.id));
 

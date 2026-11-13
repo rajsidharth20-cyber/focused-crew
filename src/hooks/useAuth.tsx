@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { readStartupSession } from '@/lib/startup-cache';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface AuthContextType {
   user: User | null;
@@ -47,6 +48,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isGuest, setIsGuest] = useState(startup.guest);
   const [usernameLoading, setUsernameLoading] = useState(!startup.guest);
   const isGuestRef = useRef(startup.guest);
+  const queryClient = useQueryClient();
+  const socialCacheOwner = useRef(user?.id);
+  useEffect(() => {
+    const previous = socialCacheOwner.current;
+    if (previous && previous !== user?.id) {
+      void queryClient.cancelQueries({ queryKey: ['social', previous] });
+      queryClient.removeQueries({ queryKey: ['social', previous] });
+    }
+    socialCacheOwner.current = user?.id;
+  }, [user?.id, queryClient]);
 
   // Persist IANA timezone for closed-app reminders, including travel/resume.
   useEffect(() => {

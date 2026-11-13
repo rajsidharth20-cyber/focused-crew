@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocialResource } from '@/hooks/use-social-resource';
+import type { SetStateAction } from 'react';
 
 export interface StudyGroup {
   id: string;
@@ -34,39 +36,25 @@ export const memberName = (p?: MemberProfile | null) =>
 /** Groups the signed-in user belongs to. */
 export function useMyGroups() {
   const { user } = useAuth();
-  const [groups, setGroups] = useState<StudyGroup[]>([]);
-  const [memberships, setMemberships] = useState<GroupMember[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  const refresh = useCallback(async () => {
-    if (!user) {
-      setGroups([]);
-      setMemberships([]);
-      setLoading(false);
-      return;
-    }
-    const { data: mems } = await supabase
-      .from('group_members')
-      .select('*')
-      .eq('user_id', user.id);
-    const ids = (mems ?? []).map(m => m.group_id);
-    setMemberships((mems ?? []) as GroupMember[]);
-    if (ids.length === 0) {
-      setGroups([]);
-      setLoading(false);
-      return;
-    }
-    const { data } = await supabase
-      .from('study_groups')
-      .select('*')
-      .in('id', ids)
-      .order('created_at', { ascending: false });
-    setGroups((data ?? []) as StudyGroup[]);
-    setLoading(false);
-  }, [user]);
+  const fetchGroups = useCallback(async () => {
+    if (!user) return { groups: [] as StudyGroup[], memberships: [] as GroupMember[] };
+    const { data: mems, error } = await supabase.from('group_members')
+      .select('id, group_id, user_id, role, joined_at').eq('user_id', user.id);
+    if (error) throw error;
+    const memberships = (mems ?? []) as GroupMember[];
+    const ids = memberships.map(m => m.group_id);
+    if (!ids.length) return { groups: [] as StudyGroup[], memberships };
+    const { data, error: groupError } = await supabase.from('study_groups')
+      .select('id, name, description, is_public, owner_id, join_code, created_at').in('id', ids).order('created_at', { ascending: false });
+    if (groupError) throw groupError;
+    return { groups: (data ?? []) as StudyGroup[], memberships };
+  }, [user?.id]);
+  const { data: state, setData, loading, reload: refresh } = useSocialResource(user?.id, 'groups', { groups: [] as StudyGroup[], memberships: [] as GroupMember[] }, fetchGroups);
+  const { groups, memberships } = state;
+  const setGroups = (update: SetStateAction<StudyGroup[]>) => setData(prev => ({ ...prev, groups: typeof update === 'function' ? update(prev.groups) : update }));
+  const setMemberships = (update: (rows: GroupMember[]) => GroupMember[]) => setData(prev => ({ ...prev, memberships: update(prev.memberships) }));
 
   useEffect(() => {
-    refresh();
     if (!user) return;
     return onUserEvent(user.id, 'group_members', payload => {
       const row = payload.new as unknown as GroupMember;
@@ -75,17 +63,17 @@ export function useMyGroups() {
       // DELETE payloads may contain only the primary key; match existing memberships by id.
       const id = old?.id ?? row?.id;
       if (!id) return;
-      setMemberships(prev => {
-        const existing = prev.find(m => m.id === id);
+      if (payload.eventType !== 'DELETE') {
+        void supabase.from('study_groups').select('id, name, description, is_public, owner_id, join_code, created_at').eq('id', row.group_id).maybeSingle()
+          .then(({ data }) => { if (data) setGroups(groups => [data as StudyGroup, ...groups.filter(g => g.id !== data.id)]); });
+      }
+      setData(prev => {
+        const existing = prev.memberships.find(m => m.id === id);
         if (payload.eventType === 'DELETE' && !existing) return prev;
-        if (payload.eventType !== 'DELETE' && !existing) {
-          void supabase.from('study_groups').select('*').eq('id', row.group_id).maybeSingle()
-            .then(({ data }) => { if (data) setGroups(groups => [data as StudyGroup, ...groups.filter(g => g.id !== data.id)]); });
-        }
-        if (payload.eventType === 'DELETE' && existing) {
-          setGroups(groups => groups.filter(g => g.id !== existing.group_id));
-        }
-        return payload.eventType === 'DELETE' ? prev.filter(m => m.id !== id) : [...prev.filter(m => m.id !== id), row];
+        return {
+          groups: payload.eventType === 'DELETE' ? prev.groups.filter(g => g.id !== existing?.group_id) : prev.groups,
+          memberships: payload.eventType === 'DELETE' ? prev.memberships.filter(m => m.id !== id) : [...prev.memberships.filter(m => m.id !== id), row],
+        };
       });
     });
   }, [user?.id, refresh]);

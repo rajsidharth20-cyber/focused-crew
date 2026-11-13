@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { MessagesSquare, Users, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
-import Chat from './Chat';
-import StudyGroups from './StudyGroups';
-import Feed from './Feed';
+const Chat = lazy(() => import('./Chat'));
+const StudyGroups = lazy(() => import('./StudyGroups'));
+const Feed = lazy(() => import('./Feed'));
 import { BottomNav } from '@/components/shell/BottomNav';
 import { useUnreadMessages } from '@/hooks/use-unread-messages';
 
@@ -67,7 +67,7 @@ export default function SocialHub() {
       </header>
 
       <div className="flex-1 min-h-0 flex flex-col max-w-2xl w-full mx-auto pb-24 overflow-x-hidden">
-        <AnimatePresence mode="wait" initial={false}>
+        <AnimatePresence initial={false}>
           <motion.div
             key={tab}
             initial={{ opacity: 0, x: 12 }}
@@ -76,7 +76,7 @@ export default function SocialHub() {
             transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
             className="flex-1 min-h-0 flex flex-col"
           >
-            {tab === 'feed' ? <Feed embedded /> : tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}
+            <Suspense fallback={<div className="mx-4 mt-4 h-40 rounded-3xl bg-muted/50 animate-pulse" />}>{tab === 'feed' ? <Feed embedded /> : tab === 'chats' ? <Chat embedded /> : <StudyGroups embedded />}</Suspense>
           </motion.div>
         </AnimatePresence>
       </div>

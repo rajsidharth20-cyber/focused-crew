@@ -52,10 +52,10 @@ export default function StudyGroups({ embedded = false }: { embedded?: boolean }
   }, []);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || tab !== 'more') return;
     const id = setTimeout(() => runSearch(term), 250);
     return () => clearTimeout(id);
-  }, [term, user, runSearch]);
+  }, [term, user?.id, tab, runSearch]);
 
   const handleCreate = async () => {
     if (!user || !name.trim()) return;

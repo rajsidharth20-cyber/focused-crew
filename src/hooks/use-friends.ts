@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { onUserEvent } from '@/lib/user-events';
 import { useAuth } from '@/hooks/useAuth';
+import { useSocialResource } from '@/hooks/use-social-resource';
 
 const db = supabase as any;
 
@@ -29,41 +30,28 @@ export const socialName = (p?: SocialProfile | null) =>
  */
 export function useFriends() {
   const { user } = useAuth();
-  const [rows, setRows] = useState<Friendship[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, SocialProfile>>({});
-  const [loading, setLoading] = useState(true);
-
-  const load = useCallback(async () => {
-    if (!user) {
-      setRows([]);
-      setLoading(false);
-      return;
-    }
-    const { data } = await db
-      .from('friendships')
-      .select('*')
-      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
-      .order('created_at', { ascending: false });
-    const list = (data ?? []) as Friendship[];
-    setRows(list);
-
-    const ids = Array.from(
-      new Set(list.map(r => (r.requester_id === user.id ? r.addressee_id : r.requester_id)))
-    );
+  const fetchFriends = useCallback(async () => {
+    if (!user) return { rows: [] as Friendship[], profiles: {} as Record<string, SocialProfile> };
+    const { data, error } = await db.from('friendships')
+      .select('id, requester_id, addressee_id, status, created_at')
+      .or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`).order('created_at', { ascending: false });
+    if (error) throw error;
+    const rows = (data ?? []) as Friendship[];
+    const ids = [...new Set(rows.map(r => r.requester_id === user.id ? r.addressee_id : r.requester_id))];
+    const profiles: Record<string, SocialProfile> = {};
     if (ids.length) {
-      const { data: profs } = await db
-        .from('profiles')
-        .select('id, username, full_name, avatar_url')
-        .in('id', ids);
-      const map: Record<string, SocialProfile> = {};
-      ((profs ?? []) as SocialProfile[]).forEach(p => (map[p.id] = p));
-      setProfiles(map);
+      const { data, error } = await db.from('profiles').select('id, username, full_name, avatar_url').in('id', ids);
+      if (error) throw error;
+      (data ?? []).forEach((p: SocialProfile) => { profiles[p.id] = p; });
     }
-    setLoading(false);
-  }, [user]);
+    return { rows, profiles };
+  }, [user?.id]);
+  const { data: state, setData, loading, reload: load } = useSocialResource(user?.id, 'friends', { rows: [] as Friendship[], profiles: {} as Record<string, SocialProfile> }, fetchFriends);
+  const { rows, profiles } = state;
+  const setRows = (update: (rows: Friendship[]) => Friendship[]) => setData(prev => ({ ...prev, rows: update(prev.rows) }));
+  const setProfiles = (update: (profiles: Record<string, SocialProfile>) => Record<string, SocialProfile>) => setData(prev => ({ ...prev, profiles: update(prev.profiles) }));
 
   useEffect(() => {
-    load();
     if (!user) return;
     return onUserEvent(user.id, 'friendships', payload => {
       const row = payload.new as unknown as Friendship;

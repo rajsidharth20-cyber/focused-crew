@@ -16,10 +16,13 @@ export function onUserEvent(userId: string, table: Table, listener: Listener) {
     const tables: Table[] = ['posts', 'stories', 'friendships', 'group_members', 'messages', 'active_timers'];
     for (const name of tables) {
       const options = { event: '*' as const, schema: 'public' as const, table: name,
-        ...(name === 'messages' ? { filter: `receiver_id=eq.${userId}` } : {}),
         ...(name === 'active_timers' ? { filter: `user_id=eq.${userId}` } : {}),
       };
       channel = channel.on('postgres_changes', options, payload => {
+        if (name === 'messages' && payload.eventType !== 'DELETE') {
+          const row = payload.new as Record<string, unknown>;
+          if (row.sender_id !== userId && row.receiver_id !== userId) return;
+        }
         listeners.get(name)?.forEach(fn => fn(payload as RealtimePostgresChangesPayload<Record<string, unknown>>));
       });
     }
