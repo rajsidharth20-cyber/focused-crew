@@ -5,6 +5,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useProfileOverview } from "@/hooks/use-follows";
 import { useSocialImage } from "@/lib/social-media";
 import { UserAvatar } from "@/components/UserAvatar";
+import { FollowListSheet } from "@/components/FollowListSheet";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Clock, Flame, Loader2, Lock, MessageCircle, UserCheck, UserPlus } from "lucide-react";
 
@@ -23,7 +24,8 @@ export default function UserProfile() {
   const { userId } = useParams<{ userId: string }>();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const { data, loading, busy, follow, unfollow } = useProfileOverview(userId);
+  const { data, loading, busy, follow, unfollow, reload } = useProfileOverview(userId);
+  const [listKind, setListKind] = useState<"followers" | "following" | null>(null);
   const [posts, setPosts] = useState<{ id: string; image_url: string | null; caption: string | null }[]>([]);
 
   useEffect(() => {
@@ -64,13 +66,19 @@ export default function UserProfile() {
             <div className="grid flex-1 grid-cols-3 gap-1 text-center">
               {[
                 { label: "Posts", value: data.posts_count },
-                { label: "Followers", value: data.followers_count },
-                { label: "Following", value: data.following_count },
-              ].map(s => (
-                <div key={s.label}>
+                { label: "Followers", value: data.followers_count, kind: "followers" as const },
+                { label: "Following", value: data.following_count, kind: "following" as const },
+              ].map((s: { label: string; value: number; kind?: "followers" | "following" }) => (
+                <button
+                  type="button"
+                  key={s.label}
+                  disabled={!s.kind || !data.can_see}
+                  onClick={() => s.kind && setListKind(s.kind)}
+                  className="rounded-lg py-1 enabled:hover:bg-secondary/50"
+                >
                   <div className="text-[16px] font-bold tabular-nums leading-none">{s.value}</div>
                   <div className="mt-1 text-[10.5px] uppercase tracking-wider text-muted-foreground">{s.label}</div>
-                </div>
+                </button>
               ))}
             </div>
           </section>
@@ -159,6 +167,9 @@ export default function UserProfile() {
                 )}
               </section>
             </>
+          )}
+          {userId && (
+            <FollowListSheet userId={userId} kind={listKind} onClose={() => setListKind(null)} onChanged={reload} />
           )}
         </main>
       )}

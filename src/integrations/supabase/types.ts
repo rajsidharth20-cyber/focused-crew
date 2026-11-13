@@ -1944,6 +1944,16 @@ export type Database = {
         Returns: undefined
       }
       finish_reminders: { Args: { _results: Json }; Returns: undefined }
+      get_follow_list: {
+        Args: { _kind: string; _user_id: string }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          id: string
+          username: string
+          viewer_status: string
+        }[]
+      }
       get_profile_overview: { Args: { _user_id: string }; Returns: Json }
       has_role: {
         Args: {
