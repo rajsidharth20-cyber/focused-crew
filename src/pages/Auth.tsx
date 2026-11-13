@@ -131,7 +131,10 @@ export default function Auth() {
       setPhoneCodeSent(true);
       toast.success('Sign-in code sent to your phone.');
     } catch (err: any) {
-      toast.error(err?.message ?? 'Phone sign-in could not be started.');
+      const msg = String(err?.message ?? '');
+      toast.error(/sms provider|otp_disabled|unexpected/i.test(msg)
+        ? 'Phone sign-in is temporarily unavailable. Please sign in with email or Google.'
+        : msg || 'Phone sign-in could not be started.');
     } finally {
       setSubmitting(false);
     }
