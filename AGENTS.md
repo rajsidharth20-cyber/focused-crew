@@ -1,4 +1,7 @@
 # Architecture rules
+- Hydrate auth and account/day-scoped planner snapshots synchronously as untrusted paint hints, then revalidate in the background; server authorization remains authoritative.
+- Yield non-critical push setup and shared live subscriptions until after paint with cancellable scheduling, because startup must prioritize the dashboard without leaking connections.
+- Persist objective mutations optimistically with operation-scoped rollback and exclude in-flight edits from startup revalidation, because slow requests must not overwrite newer local work.
 - Dispatch social pushes with the shared atomic notification claims and per-device tracking, because failed or unregistered delivery must not be recorded as sent.
 - Evaluate signed-in scheduled reminders only through the secret-authenticated backend scheduler, with atomic claims and per-device success tracking, because closed tabs cannot schedule and retries must not resend to successful devices.
 - Use data-only FCM payloads with one background service-worker display and shared foreground deduplication, because mixing automatic and manual display produces duplicate notifications.

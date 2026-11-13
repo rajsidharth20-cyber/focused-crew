@@ -8,6 +8,7 @@ import {
 } from '@/lib/push';
 import { claimNotification } from '@/lib/notification-dedupe';
 import { saveNotificationPreference } from '@/lib/notification-preferences';
+import { afterPaint } from '@/lib/after-paint';
 
 export type NotificationPrefs = {
   push_enabled: boolean;
@@ -53,7 +54,11 @@ export function usePushNotifications() {
 
   useEffect(() => {
     if (!supported) { setConfigured(false); return; }
-    getPushConfig().then((c) => setConfigured(!!c));
+    let cancelled = false;
+    const cancel = afterPaint(() => {
+      void getPushConfig().then(c => { if (!cancelled) setConfigured(!!c); }).catch(() => { if (!cancelled) setConfigured(false); });
+    });
+    return () => { cancelled = true; cancel(); };
   }, [supported]);
 
   // Load preferences
@@ -68,21 +73,21 @@ export function usePushNotifications() {
     prefsReadyForUser.current = null;
     setPrefs(DEFAULT_PREFS);
     setLoadingPrefs(true);
-    (async () => {
-      const { data } = await supabase
+    const cancel = afterPaint(() => { void (async () => {
+      const { data, error } = await supabase
         .from('notification_preferences').select('*').eq('user_id', user.id).maybeSingle();
-      if (cancelled) return;
+      if (cancelled || error) { if (!cancelled) setLoadingPrefs(false); return; }
       if (data) setPrefs({ ...DEFAULT_PREFS, ...data } as NotificationPrefs);
       prefsReadyForUser.current = user.id;
       setLoadingPrefs(false);
-    })();
-    return () => { cancelled = true; };
+    })().catch(() => { if (!cancelled) setLoadingPrefs(false); }); });
+    return () => { cancelled = true; cancel(); };
   }, [user?.id, isGuest]);
 
   // Refresh only after this account's saved preference has loaded and permits push.
   useEffect(() => {
     if (!user || isGuest || loadingPrefs || prefsReadyForUser.current !== user.id || !prefs.push_enabled || permission !== 'granted') return;
-    registerPushToken(user.id).catch((e) => console.error('[push] token refresh failed', e));
+    return afterPaint(() => { void registerPushToken(user.id).catch(() => console.error('[push] token refresh failed')); });
   }, [user?.id, isGuest, permission, loadingPrefs, prefs.push_enabled]);
 
   // Foreground messages -> in-app toast that navigates on tap.
@@ -90,7 +95,7 @@ export function usePushNotifications() {
     if (!user || isGuest || permission !== 'granted') return;
     let unsub: (() => void) | undefined;
     let disposed = false;
-    onForegroundMessage((payload) => {
+    const cancel = afterPaint(() => { void onForegroundMessage((payload) => {
       const d = payload?.data ?? {};
       if (disposed || document.visibilityState === 'hidden' || !d.title || !claimNotification(d.tag ?? '')) return;
       const path = typeof d.url === 'string' && /^\/(?!\/)/.test(d.url) ? d.url : '/';
@@ -98,8 +103,8 @@ export function usePushNotifications() {
         description: d.body,
         action: d.url ? { label: 'Open', onClick: () => navigate(path) } : undefined,
       });
-    }).then((fn) => { if (disposed) fn(); else unsub = fn; });
-    return () => { disposed = true; unsub?.(); };
+    }).then((fn) => { if (disposed) fn(); else unsub = fn; }).catch(() => {}); });
+    return () => { disposed = true; cancel(); unsub?.(); };
   }, [user, isGuest, permission, navigate]);
 
   // Notification taps coming from the service worker.

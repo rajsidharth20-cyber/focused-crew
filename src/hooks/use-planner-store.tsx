@@ -3,6 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { getEffectiveToday } from '@/lib/day-boundary';
 import { appendPlannerNote, withoutRecurringSeries } from '@/lib/planner-mutations';
+import { readPlannerSnapshot, writePlannerSnapshot } from '@/lib/startup-cache';
+import { toast } from 'sonner';
 
 export interface Subject {
   id: string;
@@ -94,9 +96,13 @@ const mapObjective = (o: any): DailyObjective => ({
 
 function usePlannerStoreInternal() {
   const { user, isGuest } = useAuth();
-  const [subjects, setSubjects] = useState<Subject[]>([]);
-  const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>([]);
-  const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>([]);
+  const [today] = useState(() => getEffectiveToday());
+  const [snapshot] = useState(() => readPlannerSnapshot(user?.id, isGuest, today));
+  const mutationRevision = useRef(0);
+  const toggleVersions = useRef(new Map<string, number>());
+  const [subjects, setSubjects] = useState<Subject[]>(() => snapshot?.subjects ?? []);
+  const [weeklyTargets, setWeeklyTargets] = useState<WeeklyTarget[]>(() => snapshot?.weeklyTargets ?? []);
+  const [dailyObjectives, setDailyObjectives] = useState<DailyObjective[]>(() => snapshot?.dailyObjectives ?? []);
   const [pastObjectives, setPastObjectives] = useState<DailyObjective[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(false);
@@ -106,12 +112,19 @@ function usePlannerStoreInternal() {
   activeUserId.current = user?.id;
   const [objectiveTemplates, setObjectiveTemplates] = useState<DailyObjective[]>([]);
   const [pastWeeklyTargets, setPastWeeklyTargets] = useState<WeeklyTarget[]>([]);
-  const [commitments, setCommitments] = useState<Commitment[]>([]);
-  const [events, setEvents] = useState<PlannerEvent[]>([]);
-  const [protocols, setProtocols] = useState<string[]>([]);
-  const [loading, setLoading] = useState(true);
-  // Memoize today so it stays stable across re-renders within the same effective day
-  const [today] = useState(() => getEffectiveToday());
+  const [commitments, setCommitments] = useState<Commitment[]>(() => snapshot?.commitments ?? []);
+  const [events, setEvents] = useState<PlannerEvent[]>(() => snapshot?.events ?? []);
+  const [protocols, setProtocols] = useState<string[]>(() => snapshot?.protocols ?? []);
+  const [loading, setLoading] = useState(!snapshot && !isGuest);
+  const currentSnapshot = useRef<PlannerState>({ subjects, weeklyTargets, dailyObjectives, commitments, events, protocols });
+  currentSnapshot.current = { subjects, weeklyTargets, dailyObjectives, commitments, events, protocols };
+  const cacheObjectives = (rows: DailyObjective[]) => {
+    currentSnapshot.current = { ...currentSnapshot.current, dailyObjectives: rows };
+    if (user && !isGuest) writePlannerSnapshot(user.id, today, currentSnapshot.current);
+  };
+  useEffect(() => {
+    if (user && !isGuest && !loading) writePlannerSnapshot(user.id, today, currentSnapshot.current);
+  }, [user?.id, isGuest, today, subjects, weeklyTargets, dailyObjectives, commitments, events, protocols, loading]);
 
   // Guest mode: localStorage helpers
   const getGuestData = useCallback(() => {
@@ -165,26 +178,8 @@ function usePlannerStoreInternal() {
     }
 
     if (!user) return;
-    const cacheKey = `fc_planner_cache_${user.id}_${today}`;
-
-    // Instant paint from the last snapshot while the network request runs.
-    try {
-      const cached = localStorage.getItem(cacheKey);
-      if (cached) {
-        const c = JSON.parse(cached);
-        setSubjects(c.subjects ?? []);
-        setWeeklyTargets(c.weeklyTargets ?? []);
-        setDailyObjectives(c.dailyObjectives ?? []);
-        setCommitments(c.commitments ?? []);
-        setEvents(c.events ?? []);
-        setLoading(false);
-      } else {
-        setLoading(true);
-      }
-    } catch {
-      setLoading(true);
-    }
-
+    let cancelled = false;
+    const revision = mutationRevision.current;
     const fetchAll = async () => {
       const [sRes, wtRes, doRes, cRes, evRes, tplRes] = await Promise.all([
 
@@ -200,6 +195,9 @@ function usePlannerStoreInternal() {
         supabase.from('daily_objectives').select(OBJECTIVE_COLUMNS).eq('user_id', user.id).eq('is_template', true),
       ]);
 
+      if (cancelled || activeUserId.current !== user.id) return;
+      const firstError = sRes.error || wtRes.error || doRes.error || cRes.error || evRes.error || tplRes.error;
+      if (firstError) throw firstError;
       setSubjects((sRes.data ?? [])
         .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
         .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)));
@@ -207,11 +205,13 @@ function usePlannerStoreInternal() {
       const mapWT = (t: any): WeeklyTarget => ({
         id: t.id, subjectId: t.subject_id, target: t.target, completed: t.completed, deadline: t.deadline, progressNotes: t.progress_notes ?? [],
       });
-      setWeeklyTargets((wtRes.data ?? []).map(mapWT));
+      if (mutationRevision.current === revision) setWeeklyTargets((wtRes.data ?? []).map(mapWT));
 
       // Recurring objectives: create today's copy for each template that matches today.
       const templates = (tplRes.data ?? []).map(mapObjective);
-      setObjectiveTemplates(templates);
+      setObjectiveTemplates(prev => mutationRevision.current === revision ? templates : [
+        ...templates, ...prev.filter(t => !templates.some(row => row.id === t.id)),
+      ]);
       const todayDow = new Date(today + 'T00:00:00').getDay();
       const todayAll = (doRes.data ?? []).map(mapObjective).filter(o => !o.isTemplate);
       const todaysRows = todayAll.filter(o => !o.skipped);
@@ -254,7 +254,8 @@ function usePlannerStoreInternal() {
         seen.add(key);
         return true;
       });
-      setDailyObjectives(deduped);
+      if (cancelled) return;
+      if (mutationRevision.current === revision) setDailyObjectives(deduped);
 
       const nextCommitments = (cRes.data ?? []).map((c: any) => ({
         id: c.id, title: c.title, startTime: c.start_time,
@@ -272,22 +273,12 @@ function usePlannerStoreInternal() {
       setEvents(nextEvents);
       setLoading(false);
 
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify({
-          subjects: (sRes.data ?? [])
-            .map((s: any) => ({ id: s.id, name: s.name, color: s.color ?? undefined, sortOrder: s.sort_order ?? 0 }))
-            .sort((a: Subject, b: Subject) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0)),
-          weeklyTargets: (wtRes.data ?? []).map(mapWT),
-          dailyObjectives: deduped,
-          commitments: nextCommitments,
-          events: nextEvents,
-        }));
-      } catch { /* cache is best-effort */ }
     };
 
 
-    fetchAll();
-  }, [user, isGuest, today, getGuestData]);
+    void fetchAll().catch(() => { /* Keep the last snapshot on offline/error. */ }).finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [user?.id, isGuest, today, getGuestData]);
 
   // History is fetched only when the history list or weekly report actually needs it.
   // Share an in-flight request so opening history and exporting at once never doubles it.
@@ -406,19 +397,40 @@ function usePlannerStoreInternal() {
       return;
     }
     if (!user) return;
-    const { data, error } = await supabase.from('weekly_targets')
-      .insert({ subject_id: subjectId, target, user_id: user.id, deadline: deadline || null }).select().single();
-    if (!error && data) setWeeklyTargets(prev => [...prev, {
-      id: data.id, subjectId: data.subject_id, target: data.target, completed: data.completed, deadline: data.deadline, progressNotes: data.progress_notes ?? [],
-    }]);
-  }, [user, isGuest, getGuestData, saveGuestData]);
+    const row: WeeklyTarget = { id: crypto.randomUUID(), subjectId, target, completed: false, deadline: deadline || null, progressNotes: [] };
+    mutationRevision.current++;
+    const rows = [...currentSnapshot.current.weeklyTargets, row];
+    currentSnapshot.current = { ...currentSnapshot.current, weeklyTargets: rows };
+    writePlannerSnapshot(user.id, today, currentSnapshot.current);
+    setWeeklyTargets(rows);
+    try {
+      const { error } = await supabase.from('weekly_targets')
+        .insert({ id: row.id, subject_id: subjectId, target, user_id: user.id, deadline: row.deadline });
+      if (error) throw error;
+    } catch (error) {
+      if (activeUserId.current !== user.id) return;
+      const restored = currentSnapshot.current.weeklyTargets.filter(t => t.id !== row.id);
+      currentSnapshot.current = { ...currentSnapshot.current, weeklyTargets: restored };
+      writePlannerSnapshot(user.id, today, currentSnapshot.current);
+      setWeeklyTargets(restored);
+      toast.error('Could not save the weekly objective. Please try again.');
+      throw error;
+    }
+  }, [user, today, isGuest, getGuestData, saveGuestData]);
 
   const toggleWeeklyTarget = useCallback(async (id: string) => {
-    const all = [...weeklyTargets, ...pastWeeklyTargets];
+    const all = [...currentSnapshot.current.weeklyTargets, ...pastWeeklyTargets];
     const t = all.find(t => t.id === id);
     if (!t) return;
-    const updater = (prev: WeeklyTarget[]) => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t);
-    setWeeklyTargets(updater);
+    const completed = !t.completed;
+    mutationRevision.current++;
+    const version = (toggleVersions.current.get(id) ?? 0) + 1;
+    toggleVersions.current.set(id, version);
+    const updater = (prev: WeeklyTarget[]) => prev.map(t => t.id === id ? { ...t, completed } : t);
+    const rows = updater(currentSnapshot.current.weeklyTargets);
+    currentSnapshot.current = { ...currentSnapshot.current, weeklyTargets: rows };
+    if (user && !isGuest) writePlannerSnapshot(user.id, today, currentSnapshot.current);
+    setWeeklyTargets(rows);
     setPastWeeklyTargets(updater);
     if (isGuest) {
       const data = getGuestData();
@@ -426,8 +438,21 @@ function usePlannerStoreInternal() {
       saveGuestData(data);
       return;
     }
-    await supabase.from('weekly_targets').update({ completed: !t.completed }).eq('id', id);
-  }, [weeklyTargets, pastWeeklyTargets, isGuest, getGuestData, saveGuestData]);
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('weekly_targets').update({ completed }).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
+    } catch {
+      if (activeUserId.current !== user.id || toggleVersions.current.get(id) !== version) return;
+      const rollback = (rows: WeeklyTarget[]) => rows.map(row => row.id === id && row.completed === completed ? { ...row, completed: t.completed } : row);
+      const restored = rollback(currentSnapshot.current.weeklyTargets);
+      currentSnapshot.current = { ...currentSnapshot.current, weeklyTargets: restored };
+      writePlannerSnapshot(user.id, today, currentSnapshot.current);
+      setWeeklyTargets(restored);
+      setPastWeeklyTargets(rollback);
+      toast.error('Could not save that change. Please try again.');
+    }
+  }, [pastWeeklyTargets, user, today, isGuest, getGuestData, saveGuestData]);
 
   const addWeeklyTargetNote = useCallback(async (id: string, note: string) => {
     const target = [...weeklyTargets, ...pastWeeklyTargets].find(t => t.id === id);
@@ -467,55 +492,51 @@ function usePlannerStoreInternal() {
     const initialNotes = initialNote && initialNote.trim()
       ? [JSON.stringify({ text: initialNote.trim(), timestamp: new Date().toISOString() })]
       : [];
+    if (!isGuest && !user) return;
+    const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority, skipped: false, date: today, recurringDays: rec };
+    const template: DailyObjective | null = rec ? { ...base, id: crypto.randomUUID(), isTemplate: true, templateId: null, deadline: null, progressNotes: [] } : null;
+    const instance: DailyObjective | null = !rec || rec.includes(todayDow) ? { ...base, id: crypto.randomUUID(), isTemplate: false, templateId: template?.id ?? null } : null;
+    mutationRevision.current++;
+    if (template) setObjectiveTemplates(prev => [...prev, template]);
+    if (instance) {
+      const rows = [...currentSnapshot.current.dailyObjectives, instance];
+      cacheObjectives(rows);
+      setDailyObjectives(rows);
+    }
     if (isGuest) {
-      const base = { subjectId, task, estimatedMinutes, completed: false, progressNotes: initialNotes, deadline: deadline || null, priority, skipped: false };
       const data = getGuestData();
-      const rows: DailyObjective[] = [];
-      let template: DailyObjective | null = null;
-      if (rec) {
-        template = { ...base, id: crypto.randomUUID(), date: today, recurringDays: rec, isTemplate: true, templateId: null };
-        rows.push(template);
-        setObjectiveTemplates(prev => [...prev, template!]);
-      }
-      let instance: DailyObjective | null = null;
-      if (!rec || rec.includes(todayDow)) {
-        instance = { ...base, id: crypto.randomUUID(), date: today, recurringDays: rec, isTemplate: false, templateId: template?.id ?? null };
-        rows.push(instance);
-        setDailyObjectives(prev => [...prev, instance!]);
-      }
-      data.dailyObjectives = [...(data.dailyObjectives || []), ...rows];
+      data.dailyObjectives = [...(data.dailyObjectives || []), ...[template, instance].filter(Boolean)];
       saveGuestData(data);
       return;
     }
     if (!user) return;
-    const map = (d: any): DailyObjective => ({
-      id: d.id, subjectId: d.subject_id, task: d.task,
-      estimatedMinutes: d.estimated_minutes, completed: d.completed,
-      progressNotes: d.progress_notes ?? [], date: d.date, deadline: d.deadline,
-      priority: (d.priority || 'medium') as Priority,
-      recurringDays: d.recurring_days ?? null,
-      isTemplate: !!d.is_template,
-      templateId: d.template_id ?? null,
-      skipped: !!d.skipped,
-    });
-
-    let templateId: string | null = null;
-    if (rec) {
-      const { data: tpl } = await supabase.from('daily_objectives')
-        .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: null, priority, progress_notes: [], recurring_days: rec, is_template: true })
-        .select().single();
-      if (tpl) {
-        templateId = tpl.id;
-        setObjectiveTemplates(prev => [...prev, map(tpl)]);
+    let templateSaved = false;
+    try {
+      // Explicit UUIDs keep the optimistic identity stable throughout persistence.
+      for (const row of [template, instance]) {
+        if (!row) continue;
+        const { error } = await supabase.from('daily_objectives').insert({
+          id: row.id, user_id: user.id, subject_id: row.subjectId, task: row.task,
+          estimated_minutes: row.estimatedMinutes, date: row.date, deadline: row.deadline,
+          priority: row.priority, progress_notes: row.progressNotes, recurring_days: row.isTemplate ? rec : null,
+          is_template: row.isTemplate, template_id: row.templateId,
+        });
+        if (error) throw error;
+        if (row.isTemplate) templateSaved = true;
       }
+    } catch (error) {
+      if (activeUserId.current !== user.id) return;
+      mutationRevision.current++;
+      if (instance) {
+        const rows = currentSnapshot.current.dailyObjectives.filter(o => o.id !== instance.id);
+        cacheObjectives(rows);
+        setDailyObjectives(rows);
+      }
+      // A persisted template is real and must remain visible even if today's insert fails.
+      if (template && !templateSaved) setObjectiveTemplates(prev => prev.filter(o => o.id !== template.id));
+      toast.error('Could not save the objective. Please try again.');
+      throw error;
     }
-
-    if (rec && !rec.includes(todayDow)) return;
-
-    const { data, error } = await supabase.from('daily_objectives')
-      .insert({ subject_id: subjectId, task, estimated_minutes: estimatedMinutes, user_id: user.id, date: today, deadline: deadline || null, priority, progress_notes: initialNotes, template_id: templateId })
-      .select().single();
-    if (!error && data) setDailyObjectives(prev => [...prev, map(data)]);
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
   const removeObjectiveTemplate = useCallback(async (id: string) => {
@@ -536,20 +557,37 @@ function usePlannerStoreInternal() {
   }, [user, today, isGuest, getGuestData, saveGuestData]);
 
   const toggleDailyObjective = useCallback(async (id: string) => {
-    const all = [...dailyObjectives, ...pastObjectives];
-    const o = all.find(o => o.id === id);
-    if (!o) return;
-    const updater = (prev: DailyObjective[]) => prev.map(o => o.id === id ? { ...o, completed: !o.completed } : o);
-    setDailyObjectives(updater);
-    setPastObjectives(updater);
+    const o = [...currentSnapshot.current.dailyObjectives, ...pastObjectives].find(o => o.id === id);
+    if (!o || (!isGuest && !user)) return;
+    const completed = !o.completed;
+    mutationRevision.current++;
+    const version = (toggleVersions.current.get(id) ?? 0) + 1;
+    toggleVersions.current.set(id, version);
+    const rows = currentSnapshot.current.dailyObjectives.map(row => row.id === id ? { ...row, completed } : row);
+    cacheObjectives(rows);
+    setDailyObjectives(rows);
+    setPastObjectives(prev => prev.map(row => row.id === id ? { ...row, completed } : row));
     if (isGuest) {
       const data = getGuestData();
-      data.dailyObjectives = (data.dailyObjectives || []).map((o: DailyObjective) => o.id === id ? { ...o, completed: !o.completed } : o);
+      data.dailyObjectives = (data.dailyObjectives || []).map((row: DailyObjective) => row.id === id ? { ...row, completed } : row);
       saveGuestData(data);
       return;
     }
-    await supabase.from('daily_objectives').update({ completed: !o.completed }).eq('id', id);
-  }, [dailyObjectives, pastObjectives, isGuest, getGuestData, saveGuestData]);
+    if (!user) return;
+    try {
+      const { error } = await supabase.from('daily_objectives').update({ completed }).eq('id', id).eq('user_id', user.id);
+      if (error) throw error;
+    } catch {
+      if (activeUserId.current !== user.id || toggleVersions.current.get(id) !== version) return;
+      mutationRevision.current++;
+      const rollback = (rows: DailyObjective[]) => rows.map(row => row.id === id && row.completed === completed ? { ...row, completed: o.completed } : row);
+      const restored = rollback(currentSnapshot.current.dailyObjectives);
+      cacheObjectives(restored);
+      setDailyObjectives(restored);
+      setPastObjectives(rollback);
+      toast.error('Could not save that change. Please try again.');
+    }
+  }, [pastObjectives, isGuest, user, today, getGuestData, saveGuestData]);
 
   const addProgressNote = useCallback(async (id: string, note: string) => {
     const all = [...dailyObjectives, ...pastObjectives];
@@ -913,6 +951,11 @@ const PlannerContext = createContext<PlannerStore | null>(null);
  * and mutations made on one screen are immediately visible on every other screen.
  */
 export function PlannerProvider({ children }: { children: ReactNode }) {
+  const { user, isGuest } = useAuth();
+  return <PlannerScope key={isGuest ? 'guest' : user?.id ?? 'signed-out'}>{children}</PlannerScope>;
+}
+
+function PlannerScope({ children }: { children: ReactNode }) {
   const store = usePlannerStoreInternal();
   return <PlannerContext.Provider value={store}>{children}</PlannerContext.Provider>;
 }

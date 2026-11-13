@@ -1,9 +1,10 @@
 import { supabase } from '@/integrations/supabase/client';
+import { afterPaint } from '@/lib/after-paint';
 import type { RealtimePostgresChangesPayload, RealtimeChannel } from '@supabase/supabase-js';
 
 type Table = 'posts' | 'stories' | 'friendships' | 'group_members' | 'messages' | 'active_timers';
 type Listener = (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => void;
-type Shared = { channel: RealtimeChannel; listeners: Map<Table, Set<Listener>>; count: number };
+type Shared = { channel: RealtimeChannel; listeners: Map<Table, Set<Listener>>; count: number; cancel: () => void };
 const channels = new Map<string, Shared>();
 
 /** One connection subscription per user, independent of which views are mounted. */
@@ -22,7 +23,7 @@ export function onUserEvent(userId: string, table: Table, listener: Listener) {
         listeners.get(name)?.forEach(fn => fn(payload as RealtimePostgresChangesPayload<Record<string, unknown>>));
       });
     }
-    shared = { channel: channel.subscribe(), listeners, count: 0 };
+    shared = { channel, listeners, count: 0, cancel: afterPaint(() => { channel.subscribe(); }) };
     channels.set(userId, shared);
   }
   const current = shared;
@@ -34,6 +35,7 @@ export function onUserEvent(userId: string, table: Table, listener: Listener) {
     set.delete(listener);
     current.count--;
     if (current.count === 0) {
+      current.cancel();
       channels.delete(userId);
       void supabase.removeChannel(current.channel);
     }

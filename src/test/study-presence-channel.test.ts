@@ -10,6 +10,7 @@ const mock = vi.hoisted(() => {
   return { handlers, channel, create: vi.fn(() => channel), remove: vi.fn() };
 });
 vi.mock('@/integrations/supabase/client', () => ({ supabase: { channel: mock.create, removeChannel: mock.remove } }));
+vi.mock('@/lib/after-paint', () => ({ afterPaint: (fn: () => void) => { fn(); return () => {}; } }));
 import { acquireStudyChannel } from '@/lib/study-presence-channel';
 
 describe('shared study Presence', () => {

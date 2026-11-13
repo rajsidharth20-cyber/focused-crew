@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { readStartupSession } from '@/lib/startup-cache';
 
 interface AuthContextType {
   user: User | null;
@@ -28,13 +29,24 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [username, setUsernameState] = useState<string | null>(null);
-  const [isGuest, setIsGuest] = useState(false);
-  const [usernameLoading, setUsernameLoading] = useState(true);
-  const isGuestRef = useRef(false);
+  const [startup] = useState(() => {
+    const key = `sb-${new URL(import.meta.env.VITE_SUPABASE_URL).hostname.split('.')[0]}-auth-token`;
+    const session = readStartupSession(key);
+    let guest = false;
+    let name = 'Guest';
+    try {
+      guest = !session && localStorage.getItem('taskpilot_guest') === 'true';
+      name = localStorage.getItem('taskpilot_guest_username') || name;
+    } catch { /* Storage may be unavailable. */ }
+    return { session, guest, name };
+  });
+  const [user, setUser] = useState<User | null>(startup.session?.user ?? null);
+  const [session, setSession] = useState<Session | null>(startup.session);
+  const [loading, setLoading] = useState(!startup.session && !startup.guest);
+  const [username, setUsernameState] = useState<string | null>(startup.guest ? startup.name : null);
+  const [isGuest, setIsGuest] = useState(startup.guest);
+  const [usernameLoading, setUsernameLoading] = useState(!startup.guest);
+  const isGuestRef = useRef(startup.guest);
 
   // Persist IANA timezone for closed-app reminders, including travel/resume.
   useEffect(() => {
@@ -114,7 +126,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) { setLoading(false); return; }
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
@@ -124,7 +137,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         fetchUsername(session.user.id);
       }
       setLoading(false);
-    });
+    }).catch(() => setLoading(false));
 
     return () => subscription.unsubscribe();
   }, []);

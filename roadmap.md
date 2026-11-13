@@ -1,3 +1,8 @@
+# Startup performance
+- [x] Hydrate returning auth and planner snapshots synchronously without blocking revalidation
+- [x] Split hidden dialogs, defer push/live subscriptions, and configure query caching
+- [x] Persist optimistic objective changes with rollback; verify signed-in and guest startup/timers
+
 # Chat notifications
 - [x] Verify recipient preferences and registration; prevent automatic token refresh when push is disabled
 - [ ] Verify real device delivery where authorized; recipient accounts without registered devices still require on-device setup

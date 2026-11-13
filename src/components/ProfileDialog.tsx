@@ -19,9 +19,11 @@ const GUEST_KEY = 'taskpilot_guest_profile';
 
 interface GuestProfile { fullName: string; bio: string; avatarUrl: string }
 
-export function ProfileDialog() {
+export function ProfileDialog({ open: controlledOpen, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
   const { user, username, isGuest, setUsername } = useAuth();
-  const [open, setOpen] = useState(false);
+  const [localOpen, setLocalOpen] = useState(false);
+  const open = controlledOpen ?? localOpen;
+  const setOpen = onOpenChange ?? setLocalOpen;
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -115,7 +117,7 @@ export function ProfileDialog() {
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
+      {controlledOpen === undefined && <DialogTrigger asChild>
         <button
           className="inline-flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors px-2 py-1.5 rounded-md hover:bg-secondary"
           aria-label="Open profile"
@@ -126,7 +128,7 @@ export function ProfileDialog() {
           </Avatar>
           <span className="hidden sm:inline">Profile</span>
         </button>
-      </DialogTrigger>
+      </DialogTrigger>}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display flex items-center gap-2">

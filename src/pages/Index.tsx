@@ -1,22 +1,22 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'sonner';
-import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame, CalendarDays } from 'lucide-react';
+import { Timer, ChevronRight, Pause, Play, Sparkles, ListChecks, Flame, CalendarDays, Settings } from 'lucide-react';
 import { SubjectTimerClock } from '@/components/home/SubjectTimerClock';
 import { TodayProgressCard } from '@/components/home/TodayProgressCard';
 import { TodayObjectiveList } from '@/components/home/TodayObjectiveList';
 import { WeeklyTargetsHome } from '@/components/home/WeeklyTargetsHome';
 import { TodayTimeline } from '@/components/TodayTimeline';
-import { StartStudyingSheet } from '@/components/home/StartStudyingSheet';
-import { FullScreenSubjectTimer } from '@/components/study/FullScreenSubjectTimer';
+
+
 import { DelayPromptHost, promptDelay } from '@/components/study/DelayPromptDialog';
 import { useSubjectTimer } from '@/hooks/use-subject-timer';
 import { useDayStart } from '@/hooks/use-day-start';
 import { dayKeyFor, getEffectiveToday } from '@/lib/day-boundary';
 import { Link } from 'react-router-dom';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { SettingsDialog } from '@/components/SettingsDialog';
-import { ProfileDialog } from '@/components/ProfileDialog';
+
+
 import { useTheme } from '@/hooks/use-theme';
 import appLogo from '@/assets/logo.png.asset.json';
 
@@ -29,14 +29,25 @@ import { StreakCard } from '@/components/StreakCard';
 import { JustTellMeMode, JustTellMeToggle } from '@/components/JustTellMeMode';
 import { BottomNav, QUICK_ADD_EVENT } from '@/components/shell/BottomNav';
 import { AnnouncementsButton } from '@/components/announcements/AnnouncementsButton';
-import { CalendarAgendaDialog } from '@/components/home/CalendarAgendaDialog';
+
 import { Button } from '@/components/ui/button';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { usePlannerStore } from '@/hooks/use-planner-store';
 import { useStudyStore } from '@/hooks/use-study-store';
 import { useStreak } from '@/hooks/use-streak';
 import { useAuth } from '@/hooks/useAuth';
 import { useEventReminders } from '@/hooks/use-event-reminders';
 import { useNow } from '@/hooks/use-now';
+
+const StartStudyingSheet = lazy(() => import('@/components/home/StartStudyingSheet').then(m => ({ default: m.StartStudyingSheet })));
+
+const FullScreenSubjectTimer = lazy(() => import('@/components/study/FullScreenSubjectTimer').then(m => ({ default: m.FullScreenSubjectTimer })));
+
+const SettingsDialog = lazy(() => import('@/components/SettingsDialog').then(m => ({ default: m.SettingsDialog })));
+
+const ProfileDialog = lazy(() => import('@/components/ProfileDialog').then(m => ({ default: m.ProfileDialog })));
+
+const CalendarAgendaDialog = lazy(() => import('@/components/home/CalendarAgendaDialog').then(m => ({ default: m.CalendarAgendaDialog })));
 
 const greeting = (d: Date) => {
   const h = d.getHours();
@@ -60,6 +71,8 @@ const Index = () => {
   const [streakOpen, setStreakOpen] = useState(false);
   const [startOpen, setStartOpen] = useState(false);
   const [calendarOpen, setCalendarOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const dailyRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -194,8 +207,13 @@ const Index = () => {
               {streak.streak}
             </button>
             <JustTellMeToggle active={focusMode} onClick={() => setFocusMode(v => !v)} />
-            <ProfileDialog />
-            <SettingsDialog />
+            <Button variant="ghost" aria-label="Open profile" onClick={() => setProfileOpen(true)} className="h-auto gap-1.5 px-2 py-1.5 text-xs text-muted-foreground">
+              <Avatar className="h-6 w-6 border border-border"><AvatarFallback className="text-[10px] bg-primary/20 text-primary font-bold">{(username || 'P').charAt(0).toUpperCase()}</AvatarFallback></Avatar>
+              <span className="hidden sm:inline">Profile</span>
+            </Button>
+            <Button variant="ghost" aria-label="Settings" onClick={() => setSettingsOpen(true)} className="h-auto gap-1.5 p-0 text-xs text-muted-foreground">
+              <Settings className="h-3.5 w-3.5" /><span className="hidden sm:inline">Settings</span>
+            </Button>
           </div>
         </div>
       </header>
@@ -324,13 +342,17 @@ const Index = () => {
         </AnimatePresence>
       </main>
 
-      <StartStudyingSheet
+      <Suspense fallback={null}>
+      {profileOpen && <ProfileDialog open={profileOpen} onOpenChange={setProfileOpen} />}
+      {settingsOpen && <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />}
+      {startOpen && <StartStudyingSheet
         open={startOpen}
         onOpenChange={setStartOpen}
         subjects={store.subjects}
         onStart={handlePlay}
         onCreate={store.addSubject}
-      />
+      />}
+      </Suspense>
 
       <Dialog open={streakOpen} onOpenChange={setStreakOpen}>
         <DialogContent className="max-w-sm">
@@ -341,12 +363,14 @@ const Index = () => {
         </DialogContent>
       </Dialog>
 
-      <CalendarAgendaDialog
+      <Suspense fallback={null}>
+      {calendarOpen && <CalendarAgendaDialog
         open={calendarOpen}
         onOpenChange={setCalendarOpen}
         subjects={store.subjects}
         loadDate={store.loadAgendaDate}
-      />
+      />}
+      </Suspense>
 
       {/* Compact floating session pill */}
       <AnimatePresence>
@@ -382,7 +406,7 @@ const Index = () => {
 
       <AnimatePresence>
         {timerOpen && activeSubject && (
-          <FullScreenSubjectTimer
+          <Suspense fallback={null}><FullScreenSubjectTimer
             subjectName={activeSubject.name}
             color={activeSubject.color || 'hsl(var(--primary))'}
             timer={timer.timer}
@@ -391,7 +415,7 @@ const Index = () => {
             onResume={timer.resume}
             onStop={handleStop}
             onClose={() => setTimerOpen(false)}
-          />
+          /></Suspense>
         )}
       </AnimatePresence>
 

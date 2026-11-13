@@ -12,7 +12,7 @@ import { Link } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import { GoogleCalendarCard } from '@/components/GoogleCalendarCard';
 
-export function SettingsDialog() {
+export function SettingsDialog({ open, onOpenChange }: { open?: boolean; onOpenChange?: (open: boolean) => void } = {}) {
   const { theme, setTheme, themes } = useTheme();
   const { user, isGuest } = useAuth();
   const dayStart = useDayStart();
@@ -55,13 +55,13 @@ export function SettingsDialog() {
   };
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open === undefined && <DialogTrigger asChild>
         <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors">
           <Settings className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Settings</span>
         </button>
-      </DialogTrigger>
+      </DialogTrigger>}
       <DialogContent className="sm:max-w-md max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="font-display">Settings</DialogTitle>
