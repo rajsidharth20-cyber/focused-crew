@@ -1,6 +1,7 @@
 # Audio calls
-- [ ] Add friend-only audio call signaling, global incoming dialog, active controls and full cleanup
-- [ ] Test call states, microphone failures and authenticated calling; report phone/network limits
+- [x] Add friend-only audio call signaling, global incoming dialog, active controls and full cleanup
+- [x] Test call states, microphone failures and authenticated calling controls: 15 tests pass; live friend authorization and mobile denial checked
+- [ ] Verify a connected call between two real active friends on phones; sandbox native peers exchanged descriptions/tracks but ICE networking never connected, so live two-account signaling/audio remains unverified
 
 # Social notifications
 - [x] Add story-like and friend/followed-public post alerts with separate preferences and saved-action privacy checks; deployed and live post request accepted three device sends, switches verified (story-like live delivery and physical phone display unverified)
