@@ -1214,8 +1214,10 @@ export type Database = {
           group_invites: boolean
           group_messages: boolean
           mentions: boolean
+          new_posts: boolean
           push_enabled: boolean
           schedule_reminders: boolean
+          story_likes: boolean
           streak_reminders: boolean
           study_reminders: boolean
           updated_at: string
@@ -1230,8 +1232,10 @@ export type Database = {
           group_invites?: boolean
           group_messages?: boolean
           mentions?: boolean
+          new_posts?: boolean
           push_enabled?: boolean
           schedule_reminders?: boolean
+          story_likes?: boolean
           streak_reminders?: boolean
           study_reminders?: boolean
           updated_at?: string
@@ -1246,8 +1250,10 @@ export type Database = {
           group_invites?: boolean
           group_messages?: boolean
           mentions?: boolean
+          new_posts?: boolean
           push_enabled?: boolean
           schedule_reminders?: boolean
+          story_likes?: boolean
           streak_reminders?: boolean
           study_reminders?: boolean
           updated_at?: string
@@ -1986,6 +1992,12 @@ export type Database = {
       set_group_message_pinned: {
         Args: { _message_id: string; _pinned: boolean }
         Returns: undefined
+      }
+      social_post_notification_recipients: {
+        Args: { _post_id: string }
+        Returns: {
+          user_id: string
+        }[]
       }
       study_day_totals: {
         Args: { _before: string; _timezone: string }

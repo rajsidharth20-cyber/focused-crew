@@ -1,3 +1,6 @@
+# Social notifications
+- [x] Add story-like and friend/followed-public post alerts with separate preferences and saved-action privacy checks; deployed and live post request accepted three device sends, switches verified (story-like live delivery and physical phone display unverified)
+
 # Photo sharing
 - [x] Read all pickers: profile compression also needed independent bytes and is corrected; group uploads and Copilot immediately read bytes, while private chats and background jobs have no photo picker
 - [x] Snapshot post/story picker bytes immediately and reject unreadable selections; four tests passed, signed-in photo post upload/render/reload verified, temporary content removed (physical phone picker and story playback unverified)

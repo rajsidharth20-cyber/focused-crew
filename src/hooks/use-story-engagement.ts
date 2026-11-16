@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { sendPush } from '@/lib/push';
+import { toast } from 'sonner';
 
 const db = supabase as any;
 
@@ -70,12 +72,15 @@ export function useStoryEngagement(storyIds: string[]) {
         };
       });
       if (liked) {
-        await db.from('story_likes').delete().eq('story_id', storyId).eq('user_id', user.id);
+        const { error } = await db.from('story_likes').delete().eq('story_id', storyId).eq('user_id', user.id);
+        if (error) { void load(); toast.error('Could not remove this like.'); }
       } else {
-        await db.from('story_likes').insert({ story_id: storyId, user_id: user.id });
+        const { error } = await db.from('story_likes').insert({ story_id: storyId, user_id: user.id });
+        if (error) { void load(); toast.error('Could not like this story.'); return; }
+        void sendPush({ category: 'story_likes', sourceId: storyId, userIds: [], title: '', body: '', url: '/feed', dedupeKey: storyId });
       }
     },
-    [user, likes]
+    [user, likes, load]
   );
 
   return { views, likes, markViewed, toggleLike, reload: load };

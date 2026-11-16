@@ -1,11 +1,15 @@
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Bell, BellOff, Loader2, MessageSquare, Users, UserPlus, Mail, Timer, Flame, Target, AtSign, CalendarClock, CalendarDays, ChevronRight } from 'lucide-react';
+import { ArrowLeft, Bell, BellOff, Loader2, MessageSquare, Users, UserPlus, Mail, Timer, Flame, Target, AtSign, CalendarClock, CalendarDays, ChevronRight, Heart, ImagePlus } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { usePushNotifications, type NotificationPrefs } from '@/hooks/use-push-notifications';
 
 type Item = { key: keyof NotificationPrefs; label: string; desc: string; Icon: any };
 
 const GROUPS: { title: string; items: Item[] }[] = [
+  { title: 'Posts & stories', items: [
+    { key: 'story_likes', label: 'Story likes', desc: 'When someone likes your story', Icon: Heart },
+    { key: 'new_posts', label: 'New posts', desc: 'From friends and public accounts you follow', Icon: ImagePlus },
+  ] },
   {
     title: 'Chats',
     items: [

@@ -5,6 +5,8 @@ import { FunctionsHttpError } from '@supabase/supabase-js';
 import { waitForWorkerActive } from '@/lib/service-worker-active';
 
 export type NotificationCategory =
+  | 'story_likes'
+  | 'new_posts'
   | 'direct_messages'
   | 'group_messages'
   | 'friend_requests'
@@ -134,9 +136,10 @@ export async function sendPush(args: {
   body: string;
   url: string;
   dedupeKey: string;
+  sourceId?: string;
 }) {
   const targets = args.userIds.filter(Boolean);
-  if (targets.length === 0) return;
+  if (targets.length === 0 && !args.sourceId) return;
   try {
     const { data, error } = await supabase.functions.invoke('send-push', { body: { ...args, userIds: targets } });
     if (error) {

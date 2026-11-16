@@ -5,9 +5,12 @@ import { loadServiceAccount, sendToToken, safeAppPath } from "../_shared/fcm.ts"
 import { z } from "npm:zod@3";
 import { deliverChatPush } from "../_shared/chat-delivery.ts";
 import { directMessageTitle } from "../_shared/direct-message-title.ts";
+import { resolveSocialNotification, socialNotificationAllowed } from "../_shared/social-notifications.ts";
 
 type Category =
   | "direct_messages"
+  | "story_likes"
+  | "new_posts"
   | "group_messages"
   | "friend_requests"
   | "group_invites"
@@ -19,6 +22,8 @@ type Category =
   | "event_reminders";
 
 const CATEGORIES: Category[] = [
+  "story_likes",
+  "new_posts",
   "direct_messages",
   "group_messages",
   "friend_requests",
@@ -126,7 +131,7 @@ serve(async (req) => {
       });
     }
 
-    const parsed = z.object({ category: z.enum(CATEGORIES as [Category, ...Category[]]), userIds: z.array(z.string().uuid()).max(100), title: z.string().max(120).optional(), body: z.string().max(240).optional(), url: z.string().max(200).optional(), dedupeKey: z.string().max(200).optional() }).safeParse(await req.json());
+    const parsed = z.object({ category: z.enum(CATEGORIES as [Category, ...Category[]]), sourceId: z.string().uuid().optional(), userIds: z.array(z.string().uuid()).max(100), title: z.string().max(120).optional(), body: z.string().max(240).optional(), url: z.string().max(200).optional(), dedupeKey: z.string().max(200).optional() }).safeParse(await req.json());
     if (!parsed.success) return new Response(JSON.stringify({ error: "Invalid notification request" }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     const payload = parsed.data;
     const category: Category = payload.category;
@@ -134,13 +139,17 @@ serve(async (req) => {
     if (!CATEGORIES.includes(category)) throw new Error("Invalid category");
 
     let title: string = String(payload.title ?? "Focused Crew").slice(0, 120);
-    const body: string = String(payload.body ?? "").slice(0, 240);
-    const url = safeAppPath(payload.url);
-    const dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
+    let body: string = String(payload.body ?? "").slice(0, 240);
+    let url = safeAppPath(payload.url);
+    let dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
+    const social = category === 'story_likes' || category === 'new_posts';
+    const resolved = social && payload.sourceId ? await resolveSocialNotification(userClient, caller.id, category, payload.sourceId) : null;
+    if (social && !resolved) return new Response(JSON.stringify({ sent: 0, skipped: 'invalid social action' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    if (resolved) { title = resolved.title; body = resolved.body; url = resolved.url; dedupeBase = resolved.dedupeBase; }
 
     // Never notify the caller about their own action — except for self-reminders.
     const allowSelf = SELF_CATEGORIES.includes(category);
-    const recipients: string[] = [...new Set((payload.userIds ?? []) as string[])]
+    const recipients: string[] = [...new Set(resolved?.recipients ?? payload.userIds)]
       .filter((id) => id && (allowSelf ? id === caller.id : id !== caller.id));
     if (recipients.length === 0) {
       return new Response(JSON.stringify({ sent: 0, skipped: "no recipients" }), {
@@ -157,7 +166,7 @@ serve(async (req) => {
     }
 
     // Only notify people the caller actually has a relationship with.
-    const authorized = allowSelf
+    const authorized = allowSelf || social
       ? recipients
       : (await Promise.all(
         recipients.map(async (id) => (await isRelated(admin, category, caller.id, id)) ? id : null),
@@ -170,13 +179,15 @@ serve(async (req) => {
     }
 
     // Respect per-user preferences (missing row = defaults on).
-    const { data: prefs } = await admin
+    const { data: prefs, error: prefsError } = await admin
       .from("notification_preferences")
-      .select("user_id,push_enabled,direct_messages,group_messages,friend_requests,group_invites,mentions")
+      .select("user_id,push_enabled,direct_messages,group_messages,friend_requests,group_invites,mentions,story_likes,new_posts")
       .in("user_id", authorized);
+    if (prefsError) throw prefsError;
     const prefMap = new Map((prefs ?? []).map((p: any) => [p.user_id, p]));
     const allowed = authorized.filter((id) => {
       const p = prefMap.get(id);
+      if (category === 'story_likes' || category === 'new_posts') return socialNotificationAllowed(p as Record<string, boolean> | undefined, category);
       if (!p) return true;
       return p.push_enabled !== false && p[category] !== false;
     });

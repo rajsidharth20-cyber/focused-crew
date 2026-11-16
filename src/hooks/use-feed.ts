@@ -5,6 +5,7 @@ import { useAuth } from '@/hooks/useAuth';
 import type { SocialProfile } from '@/hooks/use-friends';
 import { useSocialResource } from '@/hooks/use-social-resource';
 import type { SetStateAction } from 'react';
+import { sendPush } from '@/lib/push';
 
 const db = supabase as any;
 
@@ -116,13 +117,14 @@ export function useFeed() {
   const createPost = useCallback(
     async (input: { kind: Post['kind']; caption?: string; image_url?: string | null }) => {
       if (!user) return;
-      const { error } = await db.from('posts').insert({
+      const { data, error } = await db.from('posts').insert({
         user_id: user.id,
         kind: input.kind,
         caption: input.caption?.trim() || null,
         image_url: input.image_url ?? null,
-      });
+      }).select('id').single();
       if (error) throw new Error(error.message);
+      if (data?.id) void sendPush({ category: 'new_posts', sourceId: data.id, userIds: [], title: '', body: '', url: '/feed', dedupeKey: data.id });
       await load();
     },
     [user, load]

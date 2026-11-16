@@ -11,6 +11,8 @@ import { saveNotificationPreference } from '@/lib/notification-preferences';
 import { afterPaint } from '@/lib/after-paint';
 
 export type NotificationPrefs = {
+  story_likes: boolean;
+  new_posts: boolean;
   push_enabled: boolean;
   direct_messages: boolean;
   group_messages: boolean;
@@ -25,6 +27,8 @@ export type NotificationPrefs = {
 };
 
 export const DEFAULT_PREFS: NotificationPrefs = {
+  story_likes: true,
+  new_posts: true,
   push_enabled: true,
   direct_messages: true,
   group_messages: true,
