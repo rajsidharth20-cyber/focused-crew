@@ -1,4 +1,5 @@
-import { assertImageFile, MAX_AVATAR_BYTES } from '@/lib/upload-guard';
+import { MAX_AVATAR_BYTES } from '@/lib/upload-guard';
+import { snapshotSelectedImage } from '@/lib/selected-image';
 import { secureImageUpload } from '@/lib/secure-image-upload';
 import { useEffect, useRef, useState } from 'react';
 import { UserCircle2, Loader2, Camera, Save, Lock, ChevronRight } from 'lucide-react';
@@ -66,17 +67,17 @@ export function ProfileDialog({ open: controlledOpen, onOpenChange }: { open?: b
   const handleFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    try { assertImageFile(file, MAX_AVATAR_BYTES); } catch (err: any) { toast.error(err.message); return; }
     setUploading(true);
     try {
+      const snapshot = await snapshotSelectedImage(file, MAX_AVATAR_BYTES);
       if (isGuest) {
         const dataUrl = await new Promise<string>((res, rej) => {
-          const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(file);
+          const r = new FileReader(); r.onload = () => res(r.result as string); r.onerror = rej; r.readAsDataURL(snapshot);
         });
         setAvatarUrl(dataUrl);
         toast.success('Photo ready — remember to save.');
       } else if (user) {
-        const small = await compressImage(file, { maxSize: 320, quality: 0.82 });
+        const small = await compressImage(snapshot, { maxSize: 320, quality: 0.82 });
         const path = await secureImageUpload({ bucket: 'avatars', file: small });
         setAvatarUrl(path);
         toast.success('Photo uploaded — remember to save.');

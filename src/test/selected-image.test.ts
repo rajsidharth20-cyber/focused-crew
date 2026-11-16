@@ -29,4 +29,12 @@ describe('phone photo selection', () => {
     Object.defineProperty(source, 'arrayBuffer', { value: vi.fn().mockRejectedValue(new DOMException('', 'NotReadableError')) });
     await expect(snapshotSelectedImage(source)).rejects.toThrow('Please select it again');
   });
+
+  it('preserves the smaller profile-photo limit before copying bytes', async () => {
+    const source = new File([new Uint8Array(2 * 1024 * 1024 + 1)], 'avatar.jpg', { type: 'image/jpeg' });
+    const pickerRead = vi.fn();
+    Object.defineProperty(source, 'arrayBuffer', { value: pickerRead });
+    await expect(snapshotSelectedImage(source, 2 * 1024 * 1024)).rejects.toThrow('under 2 MB');
+    expect(pickerRead).not.toHaveBeenCalled();
+  });
 });

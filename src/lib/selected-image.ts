@@ -1,8 +1,8 @@
 import { assertImageFile } from '@/lib/upload-guard';
 
 /** Copy temporary phone-picker bytes before its file permission expires. */
-export async function snapshotSelectedImage(source: File): Promise<File> {
-  assertImageFile(source);
+export async function snapshotSelectedImage(source: File, maxBytes?: number): Promise<File> {
+  assertImageFile(source, maxBytes);
   try {
     const bytes = await source.arrayBuffer();
     if (bytes.byteLength === 0) throw new Error('Empty image');

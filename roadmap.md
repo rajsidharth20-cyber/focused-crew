@@ -1,4 +1,5 @@
 # Photo sharing
+- [x] Read all pickers: profile compression also needed independent bytes and is corrected; group uploads and Copilot immediately read bytes, while private chats and background jobs have no photo picker
 - [x] Snapshot post/story picker bytes immediately and reject unreadable selections; four tests passed, signed-in photo post upload/render/reload verified, temporary content removed (physical phone picker and story playback unverified)
 
 # Social performance
