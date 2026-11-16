@@ -24,6 +24,7 @@ import { useHiddenMessages } from "@/hooks/use-hidden-messages";
 import { useLiveStudy } from "@/hooks/use-live-study";
 import { useSocialResource } from "@/hooks/use-social-resource";
 import { onUserEvent } from "@/lib/user-events";
+import { useAudioCall } from "@/hooks/use-audio-call";
 import {
   ArrowLeft,
   Loader2,
@@ -36,6 +37,7 @@ import {
   BookOpen,
   Bot,
   ShieldCheck,
+  Phone,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -290,6 +292,7 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
 /* ------------------------------ Chat thread ------------------------------ */
 
 export function ChatThread() {
+  const { call, start: startCall } = useAudioCall();
   const { userId } = useParams<{ userId: string }>();
   const { user, isGuest } = useAuth();
   const navigate = useNavigate();
@@ -431,7 +434,7 @@ export function ChatThread() {
           <ArrowLeft className="w-5 h-5" />
         </Button>
         {other && (
-          <Link to={`/u/${other.id}`} className="flex items-center gap-3 min-w-0">
+          <Link to={`/u/${other.id}`} className="flex items-center gap-3 min-w-0 flex-1">
             <UserAvatar
               src={other.avatar_url}
               name={displayName(other)}
@@ -448,6 +451,7 @@ export function ChatThread() {
             </div>
           </Link>
         )}
+        {other && <Button variant="ghost" size="icon" aria-label="Start audio call" title="Start audio study call" disabled={!!call} onClick={() => startCall(other)}><Phone className="w-5 h-5" /></Button>}
       </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-1.5">

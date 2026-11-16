@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { PlannerProvider } from "@/hooks/use-planner-store";
+import { AudioCallProvider } from "@/hooks/use-audio-call";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 
@@ -66,6 +67,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <AudioCallProvider>
           <PlannerProvider>
           <Suspense fallback={<PageFallback />}>
           <Routes>
@@ -100,6 +102,7 @@ const App = () => (
           </Routes>
           </Suspense>
           </PlannerProvider>
+          </AudioCallProvider>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

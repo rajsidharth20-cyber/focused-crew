@@ -135,6 +135,39 @@ export type Database = {
         }
         Relationships: []
       }
+      audio_call_signals: {
+        Row: {
+          call_id: string
+          created_at: string
+          expires_at: string
+          id: string
+          kind: string
+          payload: Json
+          receiver_id: string
+          sender_id: string
+        }
+        Insert: {
+          call_id: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind: string
+          payload?: Json
+          receiver_id: string
+          sender_id: string
+        }
+        Update: {
+          call_id?: string
+          created_at?: string
+          expires_at?: string
+          id?: string
+          kind?: string
+          payload?: Json
+          receiver_id?: string
+          sender_id?: string
+        }
+        Relationships: []
+      }
       blocks: {
         Row: {
           blocked_id: string
@@ -1924,6 +1957,7 @@ export type Database = {
       }
       assert_chat_access: { Args: { _group_id?: string }; Returns: undefined }
       begin_reminder_run: { Args: { _owner: string }; Returns: Json }
+      can_audio_call: { Args: { _peer: string }; Returns: boolean }
       claim_reminder_batch: {
         Args: { _claim_id: string; _items: Json }
         Returns: {
@@ -1988,6 +2022,15 @@ export type Database = {
           id: string
           username: string
         }[]
+      }
+      send_audio_call_signal: {
+        Args: {
+          _call_id: string
+          _kind: string
+          _payload?: Json
+          _peer: string
+        }
+        Returns: undefined
       }
       set_group_message_pinned: {
         Args: { _message_id: string; _pinned: boolean }

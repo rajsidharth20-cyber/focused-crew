@@ -113,6 +113,13 @@
       "when": 1794820059142,
       "tag": "0015_social_notification_preferences",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794821455332,
+      "tag": "0016_friend_audio_call_signals",
+      "breakpoints": true
     }
   ]
 }

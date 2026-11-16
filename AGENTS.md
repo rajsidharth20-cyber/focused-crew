@@ -1,4 +1,5 @@
 # Architecture rules
+- Keep audio peer-to-peer and authorize short-lived call signals against accepted friendships and blocks in the database; a single account-scoped call provider owns microphone tracks and signaling cleanup across navigation.
 - Resolve social notification recipients and text from saved actions on the server; public-post alerts target followed public accounts, never an unsolicited global audience.
 - Snapshot delayed picker files into memory before previewing or compressing and upload that copy, because phone picker permissions may expire before Share or after asynchronous compression.
 - Share account-scoped in-memory query snapshots for Social lists and apply live deltas to that cache, because tab remounts and presence readers must not duplicate reads or persist private conversations on disk.
