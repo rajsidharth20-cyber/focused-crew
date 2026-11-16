@@ -1,3 +1,6 @@
+# Photo sharing
+- [x] Snapshot post/story picker bytes immediately and reject unreadable selections; four tests passed, signed-in photo post upload/render/reload verified, temporary content removed (physical phone picker and story playback unverified)
+
 # Social performance
 - [x] Share cached friends/groups/feed reads and eliminate loading waterfalls
 - [x] Split Social tabs and verify signed-in switching, chat, and live presence regressions

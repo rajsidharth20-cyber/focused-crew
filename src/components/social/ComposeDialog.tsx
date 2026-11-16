@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ImagePlus, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -11,6 +11,7 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { uploadSocialImage } from '@/lib/social-media';
 import { toast } from '@/hooks/use-toast';
+import { snapshotSelectedImage } from '@/lib/selected-image';
 
 type Mode = 'post' | 'story';
 
@@ -29,25 +30,42 @@ export function ComposeDialog({ open, onOpenChange, mode, onCreatePost, onCreate
   const [preview, setPreview] = useState<string>('');
   const [caption, setCaption] = useState('');
   const [busy, setBusy] = useState(false);
+  const [preparing, setPreparing] = useState(false);
+  const selection = useRef(0);
+
+  useEffect(() => () => { selection.current += 1; }, []);
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
 
   const reset = () => {
+    selection.current += 1;
+    setPreparing(false);
     setFile(null);
     setPreview('');
     setCaption('');
+    if (fileRef.current) fileRef.current.value = '';
   };
 
-  const pick = (f: File | null) => {
+  const pick = async (f: File | null) => {
     if (!f) return;
-    if (f.size > 8 * 1024 * 1024) {
-      toast({ title: 'Image too large', description: 'Please pick an image under 8 MB.', variant: 'destructive' });
-      return;
+    const current = ++selection.current;
+    setPreparing(true);
+    setFile(null);
+    setPreview('');
+    try {
+      const snapshot = await snapshotSelectedImage(f);
+      if (current !== selection.current) return;
+      setFile(snapshot);
+      setPreview(URL.createObjectURL(snapshot));
+    } catch (e) {
+      if (current !== selection.current) return;
+      toast({ title: 'Could not open photo', description: e instanceof Error ? e.message : 'Please select the photo again.', variant: 'destructive' });
+    } finally {
+      if (current === selection.current) setPreparing(false);
     }
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
   };
 
   const submit = async () => {
-    if (!user) return;
+    if (!user || preparing || busy) return;
     if (mode === 'story' && !file && !caption.trim()) return;
     if (mode === 'post' && !file && !caption.trim()) return;
     setBusy(true);
@@ -75,6 +93,7 @@ export function ComposeDialog({ open, onOpenChange, mode, onCreatePost, onCreate
     <Dialog
       open={open}
       onOpenChange={v => {
+        if (busy) return;
         if (!v) reset();
         onOpenChange(v);
       }}
@@ -87,29 +106,39 @@ export function ComposeDialog({ open, onOpenChange, mode, onCreatePost, onCreate
         {preview ? (
           <div className="relative">
             <img src={preview} alt="Selected" className="w-full max-h-64 object-cover rounded-2xl" />
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
+              disabled={busy}
               onClick={reset}
               aria-label="Remove image"
               className="absolute top-2 right-2 w-7 h-7 rounded-full bg-background/80 grid place-items-center"
             >
               <X className="w-4 h-4" />
-            </button>
+            </Button>
           </div>
         ) : (
-          <button
+          <Button
+            variant="ghost"
+            disabled={preparing || busy}
             onClick={() => fileRef.current?.click()}
             className="w-full h-28 rounded-2xl border border-dashed border-border grid place-items-center gap-1 text-muted-foreground"
           >
-            <ImagePlus className="w-5 h-5" />
-            <span className="text-[12px] font-medium">Add a photo</span>
-          </button>
+            {preparing ? <Loader2 className="w-5 h-5 animate-spin" /> : <ImagePlus className="w-5 h-5" />}
+            <span className="text-[12px] font-medium">{preparing ? 'Opening photo…' : 'Add a photo'}</span>
+          </Button>
         )}
         <input
           ref={fileRef}
           type="file"
           accept="image/*"
           className="hidden"
-          onChange={e => pick(e.target.files?.[0] ?? null)}
+          disabled={busy || preparing}
+          onChange={e => {
+            const selected = e.target.files?.[0] ?? null;
+            e.target.value = '';
+            void pick(selected);
+          }}
         />
 
         <Textarea
@@ -125,7 +154,7 @@ export function ComposeDialog({ open, onOpenChange, mode, onCreatePost, onCreate
           Only your accepted friends can see this. {mode === 'story' && 'Stories disappear after 24 hours.'}
         </p>
 
-        <Button onClick={submit} disabled={busy || (!file && !caption.trim())} className="rounded-full">
+        <Button onClick={submit} disabled={busy || preparing || (!file && !caption.trim())} className="rounded-full">
           {busy && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
           Share
         </Button>

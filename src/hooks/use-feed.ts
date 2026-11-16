@@ -116,13 +116,14 @@ export function useFeed() {
   const createPost = useCallback(
     async (input: { kind: Post['kind']; caption?: string; image_url?: string | null }) => {
       if (!user) return;
-      await db.from('posts').insert({
+      const { error } = await db.from('posts').insert({
         user_id: user.id,
         kind: input.kind,
         caption: input.caption?.trim() || null,
         image_url: input.image_url ?? null,
       });
-      load();
+      if (error) throw new Error(error.message);
+      await load();
     },
     [user, load]
   );
@@ -155,13 +156,14 @@ export function useFeed() {
   const createStory = useCallback(
     async (input: { image_url?: string | null; caption?: string; background?: string | null }) => {
       if (!user) return;
-      await db.from('stories').insert({
+      const { error } = await db.from('stories').insert({
         user_id: user.id,
         image_url: input.image_url ?? null,
         caption: input.caption?.trim() || null,
         background: input.background ?? null,
       });
-      load();
+      if (error) throw new Error(error.message);
+      await load();
     },
     [user, load]
   );

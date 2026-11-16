@@ -1,4 +1,5 @@
 # Architecture rules
+- Snapshot post/story picker files immediately into memory and preview/upload that copy, because phone picker permissions may expire before Share is tapped.
 - Share account-scoped in-memory query snapshots for Social lists and apply live deltas to that cache, because tab remounts and presence readers must not duplicate reads or persist private conversations on disk.
 - Hydrate auth and account/day-scoped planner snapshots synchronously as untrusted paint hints, then revalidate in the background; server authorization remains authoritative.
 - Yield non-critical push setup and shared live subscriptions until after paint with cancellable scheduling, because startup must prioritize the dashboard without leaking connections.
