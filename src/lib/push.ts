@@ -7,6 +7,7 @@ import { waitForWorkerActive } from '@/lib/service-worker-active';
 export type NotificationCategory =
   | 'story_likes'
   | 'new_posts'
+  | 'new_stories'
   | 'direct_messages'
   | 'group_messages'
   | 'friend_requests'

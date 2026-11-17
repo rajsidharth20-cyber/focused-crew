@@ -2042,6 +2042,12 @@ export type Database = {
           user_id: string
         }[]
       }
+      social_story_notification_recipients: {
+        Args: { _story_id: string }
+        Returns: {
+          user_id: string
+        }[]
+      }
       study_day_totals: {
         Args: { _before: string; _timezone: string }
         Returns: {

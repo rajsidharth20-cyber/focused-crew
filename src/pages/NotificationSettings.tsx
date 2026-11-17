@@ -8,7 +8,7 @@ type Item = { key: keyof NotificationPrefs; label: string; desc: string; Icon: a
 const GROUPS: { title: string; items: Item[] }[] = [
   { title: 'Posts & stories', items: [
     { key: 'story_likes', label: 'Story likes', desc: 'When someone likes your story', Icon: Heart },
-    { key: 'new_posts', label: 'New posts', desc: 'From friends and public accounts you follow', Icon: ImagePlus },
+    { key: 'new_posts', label: 'New posts & stories', desc: 'From friends and people you follow', Icon: ImagePlus },
   ] },
   {
     title: 'Chats',

@@ -11,6 +11,7 @@ type Category =
   | "direct_messages"
   | "story_likes"
   | "new_posts"
+  | "new_stories"
   | "group_messages"
   | "friend_requests"
   | "group_invites"
@@ -25,6 +26,7 @@ type Category =
 const CATEGORIES: Category[] = [
   "story_likes",
   "new_posts",
+  "new_stories",
   "direct_messages",
   "group_messages",
   "friend_requests",
@@ -144,7 +146,7 @@ serve(async (req) => {
     let body: string = String(payload.body ?? "").slice(0, 240);
     let url = safeAppPath(payload.url);
     let dedupeBase: string = String(payload.dedupeKey ?? crypto.randomUUID());
-    const social = category === 'story_likes' || category === 'new_posts';
+    const social = category === 'story_likes' || category === 'new_posts' || category === 'new_stories';
     const resolved = social && payload.sourceId ? await resolveSocialNotification(userClient, caller.id, category, payload.sourceId) : null;
     if (social && !resolved) return new Response(JSON.stringify({ sent: 0, skipped: 'invalid social action' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     let ttlSeconds: number | undefined;
@@ -201,7 +203,7 @@ serve(async (req) => {
     const prefMap = new Map((prefs ?? []).map((p: any) => [p.user_id, p]));
     const allowed = authorized.filter((id) => {
       const p = prefMap.get(id);
-      if (category === 'story_likes' || category === 'new_posts') return socialNotificationAllowed(p as Record<string, boolean> | undefined, category);
+      if (social) return socialNotificationAllowed(p as Record<string, boolean> | undefined, category);
       if (!p) return true;
       if (category === 'calls') return p.push_enabled !== false && p.direct_messages !== false;
       return p.push_enabled !== false && p[category] !== false;

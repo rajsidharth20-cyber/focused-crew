@@ -158,13 +158,14 @@ export function useFeed() {
   const createStory = useCallback(
     async (input: { image_url?: string | null; caption?: string; background?: string | null }) => {
       if (!user) return;
-      const { error } = await db.from('stories').insert({
+      const { data, error } = await db.from('stories').insert({
         user_id: user.id,
         image_url: input.image_url ?? null,
         caption: input.caption?.trim() || null,
         background: input.background ?? null,
-      });
+      }).select('id').single();
       if (error) throw new Error(error.message);
+      if (data?.id) void sendPush({ category: 'new_stories', sourceId: data.id, userIds: [], title: '', body: '', url: '/feed', dedupeKey: data.id });
       await load();
     },
     [user, load]

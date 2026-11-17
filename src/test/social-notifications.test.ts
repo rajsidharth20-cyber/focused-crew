@@ -30,4 +30,13 @@ describe('social notifications', () => {
     expect(await resolveSocialNotification(database(true, true), 'liker', 'story_likes', 'story1')).toBeNull();
     expect(await resolveSocialNotification(database(false, false), 'liker', 'story_likes', 'story1')).toBeNull();
   });
+  it('sends a new story to its followers and respects the posts & stories switch', async () => {
+    const db: any = { rpc: async (fn: string) => ({ data: fn === 'social_story_notification_recipients' ? [{ user_id: 'follower' }] : [] }),
+      from: (t: string) => ({ select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: t === 'profiles' ? { full_name: 'Author' } : { user_id: 'author', created_at: new Date().toISOString() } }) }) }) }) };
+    const r = await resolveSocialNotification(db, 'author', 'new_stories', 's1');
+    expect(r?.recipients).toEqual(['follower']);
+    expect(r?.body).toBe('Added a new story');
+    expect(await resolveSocialNotification(db, 'other', 'new_stories', 's1')).toBeNull();
+    expect(socialNotificationAllowed({ push_enabled: true, new_posts: false }, 'new_stories')).toBe(false);
+  });
 });
