@@ -19,7 +19,8 @@ type Category =
   | "goal_completion"
   | "mentions"
   | "schedule_reminders"
-  | "event_reminders";
+  | "event_reminders"
+  | "calls";
 
 const CATEGORIES: Category[] = [
   "story_likes",
@@ -34,6 +35,7 @@ const CATEGORIES: Category[] = [
   "mentions",
   "schedule_reminders",
   "event_reminders",
+  "calls",
 ];
 
 // Categories that are reminders to the user themselves — the caller may be a recipient.
@@ -145,11 +147,23 @@ serve(async (req) => {
     const social = category === 'story_likes' || category === 'new_posts';
     const resolved = social && payload.sourceId ? await resolveSocialNotification(userClient, caller.id, category, payload.sourceId) : null;
     if (social && !resolved) return new Response(JSON.stringify({ sent: 0, skipped: 'invalid social action' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    let ttlSeconds: number | undefined;
+    let callRecipient: string | null = null;
+    if (category === 'calls') {
+      // Only the caller of a just-sent offer may alert that call's saved recipient.
+      if (!payload.sourceId) return new Response(JSON.stringify({ sent: 0, skipped: 'invalid call' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const { data: offer } = await createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } }).from('audio_call_signals')
+        .select('receiver_id').eq('call_id', payload.sourceId).eq('sender_id', caller.id).eq('kind', 'offer')
+        .gt('created_at', new Date(Date.now() - 60000).toISOString()).maybeSingle();
+      if (!offer) return new Response(JSON.stringify({ sent: 0, skipped: 'invalid call' }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      callRecipient = offer.receiver_id;
+      body = 'Incoming audio call — tap to answer'; url = `/chat/${caller.id}`; dedupeBase = `call:${payload.sourceId}`; ttlSeconds = 60;
+    }
     if (resolved) { title = resolved.title; body = resolved.body; url = resolved.url; dedupeBase = resolved.dedupeBase; }
 
     // Never notify the caller about their own action — except for self-reminders.
     const allowSelf = SELF_CATEGORIES.includes(category);
-    const recipients: string[] = [...new Set(resolved?.recipients ?? payload.userIds)]
+    const recipients: string[] = [...new Set(callRecipient ? [callRecipient] : resolved?.recipients ?? payload.userIds)]
       .filter((id) => id && (allowSelf ? id === caller.id : id !== caller.id));
     if (recipients.length === 0) {
       return new Response(JSON.stringify({ sent: 0, skipped: "no recipients" }), {
@@ -158,7 +172,7 @@ serve(async (req) => {
     }
 
     const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
-    if (category === 'direct_messages') {
+    if (category === 'direct_messages' || category === 'calls') {
       const { data: sender, error } = await admin.from('profiles')
         .select('full_name, username').eq('id', caller.id).maybeSingle();
       if (error) throw error;
@@ -166,7 +180,7 @@ serve(async (req) => {
     }
 
     // Only notify people the caller actually has a relationship with.
-    const authorized = allowSelf || social
+    const authorized = allowSelf || social || category === 'calls'
       ? recipients
       : (await Promise.all(
         recipients.map(async (id) => (await isRelated(admin, category, caller.id, id)) ? id : null),
@@ -189,6 +203,7 @@ serve(async (req) => {
       const p = prefMap.get(id);
       if (category === 'story_likes' || category === 'new_posts') return socialNotificationAllowed(p as Record<string, boolean> | undefined, category);
       if (!p) return true;
+      if (category === 'calls') return p.push_enabled !== false && p.direct_messages !== false;
       return p.push_enabled !== false && p[category] !== false;
     });
 
@@ -201,7 +216,7 @@ serve(async (req) => {
     for (const userId of allowed) {
       const dedupeKey = `${userId}:${category}:${dedupeBase}`;
       try {
-        const message = { title, body, url, category, tag: dedupeKey };
+        const message = { title, body, url, category, tag: dedupeKey, ttlSeconds };
         const result = await deliverChatPush(admin, userId, message, token => sendToToken(sa, token, message));
         sent += result.sent;
         failed += result.failed;

@@ -16,7 +16,8 @@ export type NotificationCategory =
   | 'goal_completion'
   | 'mentions'
   | 'schedule_reminders'
-  | 'event_reminders';
+  | 'event_reminders'
+  | 'calls';
 
 type PushConfig = {
   apiKey: string;

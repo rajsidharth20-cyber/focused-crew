@@ -1,3 +1,4 @@
+import { sendPush } from '@/lib/push';
 import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -32,6 +33,8 @@ export function AudioCallProvider({ children }: { children: React.ReactNode }) {
       send: async (peer, id, kind, payload = {}) => {
         const { error } = await supabase.rpc('send_audio_call_signal', { _peer: peer, _call_id: id, _kind: kind, _payload: JSON.parse(JSON.stringify(payload)) });
         if (error) throw error;
+        // Wake the friend's phone when the app is closed; the server verifies this saved offer.
+        if (kind === 'offer') void sendPush({ category: 'calls', userIds: [peer], sourceId: id, title: 'Incoming call', body: 'Incoming audio call', url: '/chat', dedupeKey: id }).catch(() => {});
       },
       allowed: async peer => { const { data, error } = await supabase.rpc('can_audio_call', { _peer: peer }); if (error) throw error; return data === true; },
       profile: async peer => {
