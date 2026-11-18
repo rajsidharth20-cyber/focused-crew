@@ -127,6 +127,20 @@
       "when": 1794911479025,
       "tag": "0017_follower_post_story_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794991438738,
+      "tag": "0018_private_chat_attachments",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794991725049,
+      "tag": "0019_chat_attachment_upload_policy",
+      "breakpoints": true
     }
   ]
 }

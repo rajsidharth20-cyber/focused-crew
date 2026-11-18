@@ -1,0 +1,1 @@
+ALTER POLICY "Upload private chat attachments" ON storage.objects WITH CHECK (bucket_id='chat-attachments' AND (storage.foldername(name))[1]=auth.uid()::text AND private.dm_allowed(auth.uid(),((storage.foldername(name))[2])::uuid) AND NOT private.is_restricted(auth.uid()));

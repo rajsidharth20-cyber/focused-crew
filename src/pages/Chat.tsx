@@ -41,6 +41,9 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ChatAttachment } from '@/components/social/ChatAttachment';
+import { attachmentLabel, snapshotChatFile, uploadChatAttachment, type ChatAttachment as Attachment } from '@/lib/chat-attachments';
+import { Paperclip, X } from 'lucide-react';
 
 interface Profile {
   id: string;
@@ -49,7 +52,7 @@ interface Profile {
   avatar_url: string | null;
 }
 
-interface Message {
+interface Message extends Attachment {
   id: string;
   sender_id: string;
   receiver_id: string;
@@ -158,7 +161,7 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
     if (!user) return { people: [] as Profile[], lastMessages: {} as Record<string, Message> };
     const [profileResult, messageResult] = await Promise.all([
       supabase.from('profiles').select('id, username, full_name, avatar_url').neq('id', user.id),
-      supabase.from('messages').select('id, sender_id, receiver_id, message, created_at, read_at')
+      supabase.from('messages').select('id, sender_id, receiver_id, message, created_at, read_at, attachment_path, attachment_name, attachment_type, attachment_size')
         .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`).order('created_at', { ascending: false }).limit(500),
     ]);
     if (profileResult.error || messageResult.error) throw profileResult.error || messageResult.error;
@@ -268,7 +271,7 @@ export default function Chat({ embedded = false }: { embedded?: boolean }) {
                       <div className="flex items-center justify-between gap-2">
                         <p className="text-sm text-muted-foreground truncate">
                           {last
-                            ? `${last.sender_id === user.id ? "You: " : ""}${last.message}`
+                            ? `${last.sender_id === user.id ? "You: " : ""}${attachmentLabel(last)}`
                             : "Tap to start chatting"}
                         </p>
                         {unread > 0 && (
@@ -299,6 +302,33 @@ export function ChatThread() {
   const [other, setOther] = useState<Profile | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
+  const [attachment, setAttachment] = useState<File | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [sending, setSending] = useState(false);
+  const pickerRef = useRef<HTMLInputElement>(null);
+  const selectionVersion = useRef(0);
+  const [preview, setPreview] = useState('');
+  useEffect(() => {
+    selectionVersion.current++;
+    setAttachment(null); setPreparing(false); setDraft('');
+    return () => { selectionVersion.current++; };
+  }, [userId, user?.id]);
+  useEffect(() => {
+    if (!attachment || !attachment.type.startsWith('image/') || !['image/jpeg','image/png','image/webp','image/gif'].includes(attachment.type)) { setPreview(''); return; }
+    const url = URL.createObjectURL(attachment); setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [attachment]);
+  const selectFile = async (source?: File) => {
+    if (!source) return;
+    const version = ++selectionVersion.current;
+    setPreparing(true); setAttachment(null);
+    try {
+      const copy = await snapshotChatFile(source);
+      if (version === selectionVersion.current) setAttachment(copy);
+    } catch (error) {
+      if (version === selectionVersion.current) toast.error(error instanceof Error ? error.message : 'Could not open this file');
+    } finally { if (version === selectionVersion.current) setPreparing(false); }
+  };
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -383,41 +413,42 @@ export function ChatThread() {
 
   /** Removes the message for both people (Telegram-style "delete for everyone"). */
   const deleteForAll = async (id: string) => {
+    const path = messages.find(m => m.id === id)?.attachment_path;
     const prev = messages;
     setMessages((list) => list.filter((m) => m.id !== id));
     const { error } = await supabase.from("messages").delete().eq("id", id);
     if (error) {
       setMessages(prev);
       toast.error("Could not delete this message");
+    } else if (path) {
+      await supabase.storage.from('chat-attachments').remove([path]);
     }
   };
 
   const send = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = draft.trim();
-    if (!text || !user || !userId) return;
-    setDraft("");
-    const { data, error } = await supabase
-      .from("messages")
-      .insert({ sender_id: user.id, receiver_id: userId, message: text })
-      .select()
-      .single();
-    inputRef.current?.focus();
-    if (error) {
-      setDraft(text);
-      return;
-    }
-    setMessages((prev) =>
-      prev.some((p) => p.id === (data as Message).id) ? prev : [...prev, data as Message]
-    );
-    sendPush({
-      userIds: [userId],
-      category: "direct_messages",
-      title: "New message",
-      body: text.slice(0, 120),
-      url: `/chat/${user.id}`,
-      dedupeKey: (data as Message).id,
-    });
+    if ((!text && !attachment) || !user || !userId || sending || preparing) return;
+    const version = selectionVersion.current;
+    setSending(true);
+    let uploaded: Attachment | undefined;
+    let saved = false;
+    try {
+      if (attachment) uploaded = await uploadChatAttachment(user.id, userId, attachment);
+      const { data, error } = await supabase.from('messages')
+        .insert({ sender_id: user.id, receiver_id: userId, message: text, ...uploaded }).select().single();
+      if (error || !data) throw error;
+      saved = true;
+      if (version === selectionVersion.current) {
+        setDraft(''); setAttachment(null);
+        setMessages(prev => prev.some(p => p.id === data.id) ? prev : [...prev, data]);
+        inputRef.current?.focus();
+      }
+      void sendPush({ userIds: [userId], category: 'direct_messages', title: 'New message', body: attachmentLabel(data).slice(0, 120), url: `/chat/${user.id}`, dedupeKey: data.id });
+    } catch (error) {
+      if (!saved && uploaded?.attachment_path) await supabase.storage.from('chat-attachments').remove([uploaded.attachment_path]);
+      toast.error(error instanceof Error ? error.message : 'Could not send this message. Please try again.');
+    } finally { setSending(false); }
   };
 
   if (isGuest || !user) return <GuestGate />;
@@ -489,7 +520,8 @@ export function ChatThread() {
                         : "bg-card text-card-foreground border border-border/50 rounded-bl-sm"
                     )}
                   >
-                    <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
+                    {m.attachment_path && <ChatAttachment attachment={m} />}
+                    {m.message && <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>}
                     <div
                       className={cn(
                         "flex items-center gap-1 justify-end mt-0.5 text-[10px]",
@@ -527,19 +559,27 @@ export function ChatThread() {
 
       <form
         onSubmit={send}
-        className="sticky bottom-0 flex items-center gap-2 p-2 border-t border-border/60 bg-background/95 backdrop-blur"
+        className="sticky bottom-0 flex flex-wrap items-center gap-2 p-2 border-t border-border/60 bg-background/95 backdrop-blur"
         style={{ paddingBottom: "calc(0.5rem + env(safe-area-inset-bottom))" }}
       >
+        {(attachment || preparing) && <div className="w-full flex items-center gap-2 min-w-0">
+          {preparing ? <Loader2 className="w-5 h-5 animate-spin text-primary" /> : preview ? <img src={preview} alt="Selected photo" className="w-12 h-12 object-cover rounded-md" /> : <Paperclip className="w-5 h-5 text-muted-foreground" />}
+          <span className="text-sm truncate flex-1">{preparing ? 'Preparing attachment…' : attachment?.name}</span>
+          <Button type="button" size="icon" variant="ghost" disabled={sending} aria-label="Remove attachment" onClick={() => { selectionVersion.current++; setAttachment(null); setPreparing(false); }}><X className="w-4 h-4" /></Button>
+        </div>}
+        <input ref={pickerRef} type="file" className="hidden" aria-label="Choose photo or file" onChange={e => { void selectFile(e.target.files?.[0]); e.target.value = ''; }} />
+        <Button type="button" variant="ghost" size="icon" className="shrink-0" disabled={sending || preparing} aria-label="Attach photo or file" title="Attach photo or file" onClick={() => pickerRef.current?.click()}><Paperclip className="w-5 h-5" /></Button>
         <Input
           ref={inputRef}
           value={draft}
           onChange={(e) => setDraft(e.target.value)}
           placeholder="Message"
-          className="rounded-full"
+          className="rounded-full flex-1 min-w-0"
+          disabled={sending}
           aria-label="Message"
         />
-        <Button type="submit" size="icon" className="rounded-full shrink-0" disabled={!draft.trim()}>
-          <Send className="w-4 h-4" />
+        <Button type="submit" size="icon" aria-label="Send message" className="rounded-full shrink-0" disabled={(!draft.trim() && !attachment) || preparing || sending}>
+          {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
         </Button>
       </form>
     </div>

@@ -1,4 +1,5 @@
 # Architecture rules
+- Store direct-chat attachment paths on existing messages in a private bucket with saved-recipient read checks and sender/contact upload checks; download arbitrary files as attachments rather than rendering active content.
 - Keep audio peer-to-peer and authorize short-lived call signals against accepted friendships and blocks in the database; a single account-scoped call provider owns microphone tracks and signaling cleanup across navigation.
 - Resolve social notification recipients and text from saved actions on the server; public-post alerts target followed public accounts, never an unsolicited global audience.
 - Snapshot delayed picker files into memory before previewing or compressing and upload that copy, because phone picker permissions may expire before Share or after asynchronous compression.

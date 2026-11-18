@@ -1,3 +1,7 @@
+# Private chat attachments
+- [x] Add private photos/files with secure participant-only access, previews and downloads
+- [x] Seven tests passed; signed-in photo/file sends, reload, image rendering, exact download bytes, mobile fit and anonymous denial verified; temporary messages/files removed (physical phone picker and recipient-side access not exercised)
+
 # Audio calls
 - [x] Add friend-only audio call signaling, global incoming dialog, active controls and full cleanup
 - [x] Test call states, microphone failures and authenticated calling controls: 15 tests pass; live friend authorization and mobile denial checked

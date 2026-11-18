@@ -1152,6 +1152,10 @@ export type Database = {
       }
       messages: {
         Row: {
+          attachment_name: string | null
+          attachment_path: string | null
+          attachment_size: number | null
+          attachment_type: string | null
           bot_role: string | null
           bot_type: string | null
           created_at: string
@@ -1162,6 +1166,10 @@ export type Database = {
           sender_id: string
         }
         Insert: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
           bot_role?: string | null
           bot_type?: string | null
           created_at?: string
@@ -1172,6 +1180,10 @@ export type Database = {
           sender_id: string
         }
         Update: {
+          attachment_name?: string | null
+          attachment_path?: string | null
+          attachment_size?: number | null
+          attachment_type?: string | null
           bot_role?: string | null
           bot_type?: string | null
           created_at?: string
